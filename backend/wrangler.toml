@@ -1,0 +1,12 @@
+name = "frozi-api"
+main = "worker.js"
+compatibility_date = "2026-07-01"
+
+# Create the namespace first:  npx wrangler kv namespace create INQUIRIES
+# then paste the id it prints below.
+[[kv_namespaces]]
+binding = "INQUIRIES"
+id = "PASTE_NAMESPACE_ID_HERE"
+
+[vars]
+ALLOWED_ORIGINS = "https://netkenny1.github.io"

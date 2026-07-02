@@ -279,17 +279,5 @@
     });
   }
 
-  /* ---- Contact form (front-end only) ---- */
-  var form = document.querySelector("[data-appointment]");
-  if (form) {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      form.classList.add("is-hidden");
-      var success = document.querySelector(".form-success");
-      if (success) {
-        success.classList.add("is-shown");
-        success.focus();
-      }
-    });
-  }
+  /* Forms are handled in store.js, which owns bag state and transport. */
 })();

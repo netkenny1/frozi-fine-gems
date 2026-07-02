@@ -28,6 +28,7 @@
           <li><a class="nav-link" href="collections.html" aria-current="page">Collection</a></li>
           <li><a class="nav-link" href="about.html">The Maison</a></li>
           <li><a class="nav-link" href="contact.html">Appointments</a></li>
+          <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
         </ul>
       </nav>
     </div>
@@ -96,9 +97,10 @@
           </div>
 
           <div class="product-actions reveal" style="--i:5">
-            <a class="btn btn--solid" href="contact.html">Reserve this piece</a>
+            <button class="btn btn--solid" type="button" data-add-to-bag><span>Add to the bag</span></button>
             <a class="btn" href="contact.html">Ask about this piece</a>
           </div>
+          <p class="bag-note" data-bag-note hidden><strong>One piece in your bag</strong> — <a href="bag.html">review it and request the invoice</a>.</p>
           <p class="product-note reveal" style="--i:6">Made at the bench in six weeks. Hand-finished, engraved <strong data-p="refcode">FG-011</strong>, delivered with its original drawing.</p>
 
           <div class="reveal" style="--i:7">
@@ -271,6 +273,7 @@
   </div>
 
   <script src="js/products.js" defer></script>
+  <script src="js/store.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>

@@ -28,6 +28,7 @@
           <li><a class="nav-link" href="collections.html">Collection</a></li>
           <li><a class="nav-link" href="about.html">The Maison</a></li>
           <li><a class="nav-link" href="contact.html" aria-current="page">Appointments</a></li>
+          <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
         </ul>
       </nav>
     </div>
@@ -53,7 +54,7 @@
       <div class="wrap split" style="align-items:start">
 
         <div class="reveal">
-          <form class="form-grid" data-appointment novalidate>
+          <form class="form-grid" data-appointment>
             <div class="field">
               <label for="f-name">Name</label>
               <input id="f-name" name="name" type="text" autocomplete="name" required>
@@ -75,6 +76,7 @@
               <label for="f-message">Your note</label>
               <textarea id="f-message" name="message" placeholder="A ring for a June wedding. Emerald, if it suits her hand…"></textarea>
             </div>
+            <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <div class="form-footer">
               <p>We reply within two working days. There is no mailing list — we only write back.</p>
               <button class="btn btn--solid" type="submit">Send your note</button>
@@ -83,6 +85,7 @@
           <div class="form-success" tabindex="-1" role="status">
             <h2 class="h3">Thank you — your note is with the atelier.</h2>
             <p class="muted">We reply within two working days, in the order notes arrive.</p>
+            <p class="muted" data-note-hint></p>
           </div>
         </div>
 
@@ -145,6 +148,7 @@
     </div>
   </footer>
 
+  <script src="js/store.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>

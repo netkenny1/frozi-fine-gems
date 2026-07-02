@@ -91,3 +91,24 @@ Static site: no runtime errors to handle beyond JS feature-guards
 (`IntersectionObserver` guard degrades to visible content). Verification: serve
 locally, check each page renders, links resolve, filter works, reduced-motion
 honored.
+
+## Addendum — commerce layer & backend (2026-07-02, v5)
+
+The storefront is now a complete system rather than a brochure:
+
+- **Bag**: `js/store.js` owns all state and transport. Items live in
+  localStorage (`frozi-bag-v1`) as `{ref, size, qty}`, re-normalized on
+  every read (registry-validated refs, digit-only sizes, qty 1–9) so
+  nothing hand-edited can reach markup. Header shows a Bag link with a
+  count badge on every page.
+- **Checkout**: `bag.html` — request-invoice flow (fine-jewelry pattern:
+  nothing charged online). Issues an `FZ-` ledger reference on submit.
+- **Transport**: one constant (`API_BASE` in store.js). Empty → submissions
+  compose a structured mail to the atelier (works on GitHub Pages today).
+  Set → POST JSON to `backend/worker.js`, a Cloudflare Worker that
+  validates, honeypot-filters, stores to KV, and optionally forwards via
+  Resend. Deploy guide in `backend/README.md`.
+- **404.html**: branded "Not in the ledger" page (GitHub Pages serves it
+  automatically).
+- Gotcha for posterity: the `hidden` attribute loses to any class-set
+  `display`; a global `[hidden]{display:none!important}` guard now exists.
