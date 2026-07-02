@@ -1,5 +1,5 @@
 /* ==========================================================================
-   VIRIDIAN — fine jewelry, quietly made
+   FRUZI FINE GEMS — fine jewelry, quietly made
    Hand-authored design system. No frameworks, no build step.
    v2 — photography, deeper motion, larger type.
    ========================================================================== */
@@ -386,6 +386,7 @@ body.no-intro .intro {
 .wordmark {
   font-family: var(--font-brand);
   font-size: 1.5rem;
+  line-height: 1;
   letter-spacing: 0.34em;
   text-transform: uppercase;
   transition: letter-spacing 0.6s var(--ease-out);
@@ -393,6 +394,17 @@ body.no-intro .intro {
 
 .wordmark:hover {
   letter-spacing: 0.42em;
+}
+
+/* maison lockup: FRUZI over a hairline of FINE GEMS */
+.wordmark span {
+  display: block;
+  margin-top: 0.35rem;
+  font-family: var(--font-ui);
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.6em;
+  color: var(--sage);
 }
 
 .nav-links {
