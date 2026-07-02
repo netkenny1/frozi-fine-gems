@@ -14,6 +14,8 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <div class="progress" aria-hidden="true"></div>
+
   <header class="site-header">
     <div class="wrap nav">
       <a class="wordmark" href="index.html">Viridian</a>
@@ -32,38 +34,45 @@
 
   <main id="main">
 
-    <section class="wrap page-intro">
-      <span class="eyebrow reveal">The maison</span>
-      <h1 class="display reveal" style="--i:1">A small house<br>with a <em>deep</em> green.</h1>
-      <p class="lede reveal" style="--i:2">Viridian is the name of a pigment — a green so dark it reads as black until the light finds it. It is also a fair description of how we like jewelry to behave.</p>
+    <section class="page-intro">
+      <div class="page-intro-bg" data-parallax-speed="0.1">
+        <img src="assets/img/lumen.jpg" alt="" width="1200" height="1200" fetchpriority="high">
+      </div>
+      <div class="wrap">
+        <span class="eyebrow reveal">The maison</span>
+        <h1 class="display masked">
+          <span class="lm"><span>A small house</span></span>
+          <span class="lm" style="--i:1"><span>with a <em>deep</em> green.</span></span>
+        </h1>
+        <p class="lede reveal" style="--i:2">Viridian is the name of a pigment — a green so dark it reads as black until the light finds it. It is also a fair description of how we like jewelry to behave.</p>
+      </div>
     </section>
 
     <section class="section section--light" aria-labelledby="story-title">
       <div class="wrap split">
-        <div class="observe">
-          <!-- The first plate: an emerald drawn as a draftsman's sheet -->
-          <svg class="illus split-art" viewBox="0 0 260 240" role="img" aria-label="Draftsman's drawing of a step-cut emerald with guide lines and a dimension line">
-            <g class="fine" opacity=".45">
-              <line class="draw" pathLength="1" x1="130" y1="6" x2="130" y2="234"/>
-              <line class="draw" pathLength="1" x1="10" y1="120" x2="250" y2="120"/>
-            </g>
+        <div class="split-figure observe">
+          <div class="img-frame">
+            <img src="assets/img/emeralds.jpg" alt="At the atelier desk: loose emeralds being sorted and read against the ledger" width="1920" height="2880" loading="lazy">
+          </div>
+          <!-- Plate no. 1 overlaps its photograph — the drawing beneath every piece -->
+          <svg class="illus" viewBox="0 0 260 240" aria-hidden="true">
             <path class="draw" pathLength="1" style="--i:1" d="M96 56h68l30 30v68l-30 30H96l-30-30V86z"/>
             <path class="draw" pathLength="1" style="--i:2" d="M108 76h44l20 20v48l-20 20h-44l-20-20V96z"/>
             <path class="draw" pathLength="1" style="--i:3" d="M118 92h24l12 12v32l-12 12h-24l-12-12v-32z"/>
             <g style="--i:4">
-              <line class="draw fine" pathLength="1" x1="96" y1="56" x2="108" y2="76"/>
-              <line class="draw fine" pathLength="1" x1="164" y1="56" x2="152" y2="76"/>
-              <line class="draw fine" pathLength="1" x1="194" y1="86" x2="172" y2="96"/>
-              <line class="draw fine" pathLength="1" x1="194" y1="154" x2="172" y2="144"/>
-              <line class="draw fine" pathLength="1" x1="164" y1="184" x2="152" y2="164"/>
-              <line class="draw fine" pathLength="1" x1="96" y1="184" x2="108" y2="164"/>
-              <line class="draw fine" pathLength="1" x1="66" y1="154" x2="88" y2="144"/>
-              <line class="draw fine" pathLength="1" x1="66" y1="86" x2="88" y2="96"/>
+              <line class="draw fine" pathLength="1" x1="88" y1="76" x2="98" y2="92"/>
+              <line class="draw fine" pathLength="1" x1="172" y1="76" x2="162" y2="92"/>
+              <line class="draw fine" pathLength="1" x1="192" y1="96" x2="174" y2="104"/>
+              <line class="draw fine" pathLength="1" x1="192" y1="144" x2="174" y2="136"/>
+              <line class="draw fine" pathLength="1" x1="172" y1="164" x2="162" y2="148"/>
+              <line class="draw fine" pathLength="1" x1="88" y1="164" x2="98" y2="148"/>
+              <line class="draw fine" pathLength="1" x1="68" y1="144" x2="86" y2="136"/>
+              <line class="draw fine" pathLength="1" x1="68" y1="96" x2="86" y2="104"/>
             </g>
             <g class="fine" style="--i:5">
-              <line class="draw" pathLength="1" x1="66" y1="204" x2="194" y2="204"/>
-              <line class="draw" pathLength="1" x1="66" y1="198" x2="66" y2="210"/>
-              <line class="draw" pathLength="1" x1="194" y1="198" x2="194" y2="210"/>
+              <line class="draw" pathLength="1" x1="68" y1="204" x2="192" y2="204"/>
+              <line class="draw" pathLength="1" x1="68" y1="198" x2="68" y2="210"/>
+              <line class="draw" pathLength="1" x1="192" y1="198" x2="192" y2="210"/>
             </g>
           </svg>
         </div>
@@ -85,7 +94,7 @@
           </div>
         </div>
         <ul class="detail-list reveal" style="--i:1">
-          <li><span class="k">Materials</span><span>Muzo-origin emeralds and recycled platinum. Nothing else, including gold.</span></li>
+          <li><span class="k">Materials</span><span>Muzo-origin emeralds and recycled platinum 950 — two materials, known deeply.</span></li>
           <li><span class="k">Editions</span><span>None. Every piece is made once, for the person who asked.</span></li>
           <li><span class="k">Provenance</span><span>Each stone's cutting house and export record travel with the piece.</span></li>
           <li><span class="k">Guarantee</span><span>Resizing, re-oiling, and re-polishing for the life of the piece.</span></li>
@@ -94,7 +103,10 @@
       </div>
     </section>
 
-    <section class="section section--emerald">
+    <section class="section bg-section">
+      <div class="bg-media" data-parallax-speed="0.1">
+        <img src="assets/img/hero.jpg" alt="" width="1920" height="2929" loading="lazy">
+      </div>
       <div class="wrap quote reveal">
         <blockquote>“We are not trying to be a large house done small. We are trying to be a small house done completely.”</blockquote>
         <cite>The founder's notebook, p. 41</cite>

@@ -14,6 +14,8 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <div class="progress" aria-hidden="true"></div>
+
   <header class="site-header">
     <div class="wrap nav">
       <a class="wordmark" href="index.html">Viridian</a>
@@ -32,10 +34,18 @@
 
   <main id="main">
 
-    <section class="wrap page-intro">
-      <span class="eyebrow reveal">The collection</span>
-      <h1 class="display reveal" style="--i:1">Twelve drawings,<br><em>eight</em> in metal.</h1>
-      <p class="lede reveal" style="--i:2">Every piece below exists first as a numbered plate in the maison ledger. Filter by form, or read the collection in full.</p>
+    <section class="page-intro">
+      <div class="page-intro-bg" data-parallax-speed="0.1">
+        <img src="assets/img/rings-trio.jpg" alt="" width="1920" height="2886" fetchpriority="high">
+      </div>
+      <div class="wrap">
+        <span class="eyebrow reveal">The collection</span>
+        <h1 class="display masked">
+          <span class="lm"><span>Twelve drawings,</span></span>
+          <span class="lm" style="--i:1"><span><em>eight</em> in metal.</span></span>
+        </h1>
+        <p class="lede reveal" style="--i:2">Every piece below exists first as a numbered plate in the maison ledger. Filter by form, or read the collection in full — and hover any piece to see its original drawing.</p>
+      </div>
     </section>
 
     <section class="section section--dark" style="padding-top:0" aria-label="All pieces">
@@ -51,185 +61,207 @@
 
         <div class="vitrine-grid">
 
-          <article class="vitrine observe reveal" data-category="rings">
+          <article class="vitrine reveal" data-tilt data-category="rings">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-011</span>
               <span class="ref">Ring</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 200 200" role="img" aria-label="Line drawing of the Vipera Ring">
-              <circle class="draw" pathLength="1" cx="100" cy="122" r="54"/>
-              <circle class="draw fine" pathLength="1" style="--i:1" cx="100" cy="122" r="47"/>
-              <path class="draw" pathLength="1" style="--i:2" d="M85 32h30l11 11v18l-11 11H85L74 61V43z"/>
-              <path class="draw" pathLength="1" style="--i:3" d="M91 41h18l6 6v10l-6 6H91l-6-6V47z"/>
-              <g style="--i:4">
-                <line class="draw fine" pathLength="1" x1="85" y1="32" x2="91" y2="41"/>
-                <line class="draw fine" pathLength="1" x1="115" y1="32" x2="109" y2="41"/>
-                <line class="draw fine" pathLength="1" x1="115" y1="72" x2="109" y2="63"/>
-                <line class="draw fine" pathLength="1" x1="85" y1="72" x2="91" y2="63"/>
-                <line class="draw" pathLength="1" x1="85" y1="72" x2="89" y2="80"/>
-                <line class="draw" pathLength="1" x1="115" y1="72" x2="111" y2="80"/>
-              </g>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/vipera.jpg" alt="The Vipera Ring — a step-cut emerald in a diamond halo, photographed on white" width="1200" height="1600" loading="lazy">
+              <svg class="illus" viewBox="0 0 200 200" aria-hidden="true">
+                <circle class="draw" pathLength="1" cx="100" cy="122" r="54"/>
+                <circle class="draw fine" pathLength="1" style="--i:1" cx="100" cy="122" r="47"/>
+                <path class="draw" pathLength="1" style="--i:2" d="M85 32h30l11 11v18l-11 11H85L74 61V43z"/>
+                <path class="draw" pathLength="1" style="--i:3" d="M91 41h18l6 6v10l-6 6H91l-6-6V47z"/>
+                <g style="--i:4">
+                  <line class="draw fine" pathLength="1" x1="85" y1="32" x2="91" y2="41"/>
+                  <line class="draw fine" pathLength="1" x1="115" y1="32" x2="109" y2="41"/>
+                  <line class="draw" pathLength="1" x1="85" y1="72" x2="89" y2="80"/>
+                  <line class="draw" pathLength="1" x1="115" y1="72" x2="111" y2="80"/>
+                </g>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Vipera Ring</a></h3>
-            <p class="muted" style="font-size:.9375rem">Muzo emerald, recycled platinum</p>
+            <p class="vitrine-sub">Step-cut emerald, diamond halo</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">$3,400</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" style="--i:1" data-category="rings">
+          <article class="vitrine reveal" style="--i:1" data-tilt data-category="rings">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-014</span>
               <span class="ref">Ring</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 200 200" role="img" aria-label="Line drawing of the Meridian Band">
-              <circle class="draw" pathLength="1" cx="100" cy="100" r="56"/>
-              <circle class="draw" pathLength="1" style="--i:1" cx="100" cy="100" r="46"/>
-              <circle class="draw fine" pathLength="1" style="--i:2" cx="100" cy="100" r="51"/>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/meridian.jpg" alt="The Meridian Band — a wide pavé-set band photographed on black" width="1200" height="800" loading="lazy">
+              <svg class="illus" viewBox="0 0 200 200" aria-hidden="true">
+                <circle class="draw" pathLength="1" cx="100" cy="100" r="56"/>
+                <circle class="draw" pathLength="1" style="--i:1" cx="100" cy="100" r="46"/>
+                <circle class="draw fine" pathLength="1" style="--i:2" cx="100" cy="100" r="51"/>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Meridian Band</a></h3>
-            <p class="muted" style="font-size:.9375rem">Hairline groove, satin platinum</p>
+            <p class="vitrine-sub">Pavé-set band, satin platinum</p>
             <div class="vitrine-meta">
-              <span class="vitrine-price">$1,250</span>
+              <span class="vitrine-price">$1,850</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" style="--i:2" data-category="necklaces">
+          <article class="vitrine reveal" style="--i:2" data-tilt data-category="necklaces">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-021</span>
               <span class="ref">Necklace</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 220 280" role="img" aria-label="Line drawing of the Lumen Pendant">
-              <path class="draw" pathLength="1" d="M40 0C46 64 74 112 106 138"/>
-              <path class="draw" pathLength="1" d="M180 0C174 64 146 112 114 138"/>
-              <circle class="draw" pathLength="1" style="--i:1" cx="110" cy="148" r="8"/>
-              <line class="draw" pathLength="1" style="--i:2" x1="110" y1="156" x2="110" y2="168"/>
-              <path class="draw" pathLength="1" style="--i:2" d="M94 170h32l14 14v48l-14 14H94l-14-14v-48z"/>
-              <path class="draw" pathLength="1" style="--i:3" d="M102 185h16l9 9v28l-9 9h-16l-9-9v-28z"/>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/lumen.jpg" alt="The Lumen Pendant — an emerald drop on a fine chain, resting on deep green cloth" width="1200" height="1200" loading="lazy">
+              <svg class="illus" viewBox="0 0 220 280" aria-hidden="true">
+                <path class="draw" pathLength="1" d="M40 0C46 64 74 112 106 138"/>
+                <path class="draw" pathLength="1" d="M180 0C174 64 146 112 114 138"/>
+                <circle class="draw" pathLength="1" style="--i:1" cx="110" cy="148" r="8"/>
+                <line class="draw" pathLength="1" style="--i:2" x1="110" y1="156" x2="110" y2="168"/>
+                <path class="draw" pathLength="1" style="--i:2" d="M94 170h32l14 14v48l-14 14H94l-14-14v-48z"/>
+                <path class="draw" pathLength="1" style="--i:3" d="M102 185h16l9 9v28l-9 9h-16l-9-9v-28z"/>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Lumen Pendant</a></h3>
-            <p class="muted" style="font-size:.9375rem">Step-cut emerald, hand-drawn chain</p>
+            <p class="vitrine-sub">Emerald drop, hand-drawn chain</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">$2,900</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" style="--i:3" data-category="necklaces">
+          <article class="vitrine reveal" style="--i:3" data-tilt data-category="necklaces">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-024</span>
               <span class="ref">Necklace</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 220 170" role="img" aria-label="Line drawing of the Voss Collier">
-              <path class="draw" pathLength="1" d="M18 22C58 122 162 122 202 22"/>
-              <path class="draw fine" pathLength="1" style="--i:1" d="M26 22C62 112 158 112 194 22"/>
-              <path class="draw" pathLength="1" style="--i:2" d="M78 86l6 8-6 10-6-10z"/>
-              <path class="draw" pathLength="1" style="--i:3" d="M110 96l7 9-7 11-7-11z"/>
-              <path class="draw" pathLength="1" style="--i:4" d="M142 86l6 8-6 10-6-10z"/>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/voss.jpg" alt="The Voss Collier — a diamond fringe necklace with emerald drops" width="1200" height="800" loading="lazy">
+              <svg class="illus" viewBox="0 0 220 170" aria-hidden="true">
+                <path class="draw" pathLength="1" d="M18 22C58 122 162 122 202 22"/>
+                <path class="draw fine" pathLength="1" style="--i:1" d="M26 22C62 112 158 112 194 22"/>
+                <path class="draw" pathLength="1" style="--i:2" d="M78 86l6 8-6 10-6-10z"/>
+                <path class="draw" pathLength="1" style="--i:3" d="M110 96l7 9-7 11-7-11z"/>
+                <path class="draw" pathLength="1" style="--i:4" d="M142 86l6 8-6 10-6-10z"/>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Voss Collier</a></h3>
-            <p class="muted" style="font-size:.9375rem">Three graduated emeralds</p>
+            <p class="vitrine-sub">Diamond fringe, emerald drops</p>
             <div class="vitrine-meta">
-              <span class="vitrine-price">$6,800</span>
+              <span class="vitrine-price">$9,200</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" data-category="earrings">
+          <article class="vitrine reveal" data-tilt data-category="earrings">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-031</span>
               <span class="ref">Earrings</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 200 200" role="img" aria-label="Line drawing of the Eos Hoops">
-              <circle class="dot" cx="70" cy="54" r="2.5"/>
-              <line class="draw" pathLength="1" x1="70" y1="58" x2="70" y2="68"/>
-              <circle class="draw" pathLength="1" style="--i:1" cx="70" cy="112" r="44"/>
-              <circle class="draw fine" pathLength="1" style="--i:2" cx="70" cy="112" r="37"/>
-              <circle class="dot" cx="132" cy="46" r="2.5"/>
-              <line class="draw" pathLength="1" style="--i:1" x1="132" y1="50" x2="132" y2="60"/>
-              <circle class="draw" pathLength="1" style="--i:3" cx="132" cy="104" r="44"/>
-              <circle class="draw fine" pathLength="1" style="--i:4" cx="132" cy="104" r="37"/>
-            </svg>
-            <h3 class="vitrine-name"><a href="product.html">Eos Hoops</a></h3>
-            <p class="muted" style="font-size:.9375rem">Recycled platinum, mirror finish</p>
+            <div class="vitrine-media">
+              <img src="assets/img/eos.jpg" alt="The Eos Earrings — pavé chevron drops photographed on black" width="1200" height="800" loading="lazy">
+              <svg class="illus" viewBox="0 0 200 200" aria-hidden="true">
+                <circle class="dot" cx="70" cy="54" r="2.5"/>
+                <line class="draw" pathLength="1" x1="70" y1="58" x2="70" y2="68"/>
+                <circle class="draw" pathLength="1" style="--i:1" cx="70" cy="112" r="44"/>
+                <circle class="draw fine" pathLength="1" style="--i:2" cx="70" cy="112" r="37"/>
+                <circle class="dot" cx="132" cy="46" r="2.5"/>
+                <line class="draw" pathLength="1" style="--i:1" x1="132" y1="50" x2="132" y2="60"/>
+                <circle class="draw" pathLength="1" style="--i:3" cx="132" cy="104" r="44"/>
+                <circle class="draw fine" pathLength="1" style="--i:4" cx="132" cy="104" r="37"/>
+              </svg>
+            </div>
+            <h3 class="vitrine-name"><a href="product.html">Eos Earrings</a></h3>
+            <p class="vitrine-sub">Chevron pavé, recycled platinum</p>
             <div class="vitrine-meta">
-              <span class="vitrine-price">$980</span>
+              <span class="vitrine-price">$1,150</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" style="--i:1" data-category="earrings">
+          <article class="vitrine reveal" style="--i:1" data-tilt data-category="earrings">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-033</span>
               <span class="ref">Earrings</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 200 220" role="img" aria-label="Line drawing of the Thalis Drops">
-              <circle class="dot" cx="70" cy="30" r="2.5"/>
-              <line class="draw" pathLength="1" x1="70" y1="34" x2="70" y2="52"/>
-              <circle class="draw" pathLength="1" style="--i:1" cx="70" cy="61" r="8"/>
-              <path class="draw" pathLength="1" style="--i:2" d="M70 74c18 22 22 46 0 64-22-18-18-42 0-64z"/>
-              <path class="draw fine" pathLength="1" style="--i:3" d="M70 86c11 15 14 32 0 44-14-12-11-29 0-44z"/>
-              <circle class="dot" cx="130" cy="44" r="2.5"/>
-              <line class="draw" pathLength="1" style="--i:1" x1="130" y1="48" x2="130" y2="66"/>
-              <circle class="draw" pathLength="1" style="--i:2" cx="130" cy="75" r="8"/>
-              <path class="draw" pathLength="1" style="--i:3" d="M130 88c18 22 22 46 0 64-22-18-18-42 0-64z"/>
-              <path class="draw fine" pathLength="1" style="--i:4" d="M130 100c11 15 14 32 0 44-14-12-11-29 0-44z"/>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/thalis.jpg" alt="The Thalis Drops — green teardrop earrings in ornate silver settings" width="1200" height="1200" loading="lazy">
+              <svg class="illus" viewBox="0 0 200 220" aria-hidden="true">
+                <circle class="dot" cx="70" cy="30" r="2.5"/>
+                <line class="draw" pathLength="1" x1="70" y1="34" x2="70" y2="52"/>
+                <circle class="draw" pathLength="1" style="--i:1" cx="70" cy="61" r="8"/>
+                <path class="draw" pathLength="1" style="--i:2" d="M70 74c18 22 22 46 0 64-22-18-18-42 0-64z"/>
+                <path class="draw fine" pathLength="1" style="--i:3" d="M70 86c11 15 14 32 0 44-14-12-11-29 0-44z"/>
+                <circle class="dot" cx="130" cy="44" r="2.5"/>
+                <line class="draw" pathLength="1" style="--i:1" x1="130" y1="48" x2="130" y2="66"/>
+                <circle class="draw" pathLength="1" style="--i:2" cx="130" cy="75" r="8"/>
+                <path class="draw" pathLength="1" style="--i:3" d="M130 88c18 22 22 46 0 64-22-18-18-42 0-64z"/>
+                <path class="draw fine" pathLength="1" style="--i:4" d="M130 100c11 15 14 32 0 44-14-12-11-29 0-44z"/>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Thalis Drops</a></h3>
-            <p class="muted" style="font-size:.9375rem">Pear-cut emeralds, articulated</p>
+            <p class="vitrine-sub">Pear-cut emeralds, articulated</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">$1,650</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" style="--i:2" data-category="bracelets">
+          <article class="vitrine reveal" style="--i:2" data-tilt data-category="bracelets">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-041</span>
               <span class="ref">Bracelet</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 200 200" role="img" aria-label="Line drawing of the Sable Cuff">
-              <path class="draw" pathLength="1" d="M48 72C30 150 170 150 152 72"/>
-              <path class="draw fine" pathLength="1" style="--i:1" d="M56 76C42 140 158 140 144 76"/>
-              <circle class="draw" pathLength="1" style="--i:2" cx="48" cy="67" r="5"/>
-              <circle class="draw" pathLength="1" style="--i:2" cx="152" cy="67" r="5"/>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/sable.jpg" alt="The Sable Cuff — an open pavé cuff on a black reflective surface" width="1200" height="800" loading="lazy">
+              <svg class="illus" viewBox="0 0 200 200" aria-hidden="true">
+                <path class="draw" pathLength="1" d="M48 72C30 150 170 150 152 72"/>
+                <path class="draw fine" pathLength="1" style="--i:1" d="M56 76C42 140 158 140 144 76"/>
+                <circle class="draw" pathLength="1" style="--i:2" cx="48" cy="67" r="5"/>
+                <circle class="draw" pathLength="1" style="--i:2" cx="152" cy="67" r="5"/>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Sable Cuff</a></h3>
-            <p class="muted" style="font-size:.9375rem">Open cuff, blackened platinum</p>
+            <p class="vitrine-sub">Pavé open cuff, blackened platinum</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">$2,150</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
-          <article class="vitrine observe reveal" style="--i:3" data-category="bracelets">
+          <article class="vitrine reveal" style="--i:3" data-tilt data-category="bracelets">
             <div class="vitrine-top">
               <span class="ref">Ref. VR-043</span>
               <span class="ref">Bracelet</span>
             </div>
-            <svg class="illus vitrine-art" viewBox="0 0 220 130" role="img" aria-label="Line drawing of the Rill Chain">
-              <path class="draw" pathLength="1" d="M16 24C60 100 160 100 204 24"/>
-              <path class="draw fine" pathLength="1" style="--i:1" d="M24 24C64 92 156 92 196 24"/>
-              <circle class="draw fine" pathLength="1" style="--i:2" cx="52" cy="58" r="3.2"/>
-              <circle class="draw fine" pathLength="1" style="--i:2" cx="81" cy="74" r="3.2"/>
-              <circle class="draw fine" pathLength="1" style="--i:3" cx="110" cy="80" r="3.2"/>
-              <circle class="draw fine" pathLength="1" style="--i:3" cx="139" cy="74" r="3.2"/>
-              <circle class="draw fine" pathLength="1" style="--i:4" cx="168" cy="58" r="3.2"/>
-              <circle class="draw" pathLength="1" style="--i:4" cx="16" cy="20" r="4.5"/>
-            </svg>
+            <div class="vitrine-media">
+              <img src="assets/img/rill.jpg" alt="The Rill Chain — a fine diamond line bracelet on black" width="1200" height="675" loading="lazy">
+              <svg class="illus" viewBox="0 0 220 130" aria-hidden="true">
+                <path class="draw" pathLength="1" d="M16 24C60 100 160 100 204 24"/>
+                <path class="draw fine" pathLength="1" style="--i:1" d="M24 24C64 92 156 92 196 24"/>
+                <circle class="draw fine" pathLength="1" style="--i:2" cx="52" cy="58" r="3.2"/>
+                <circle class="draw fine" pathLength="1" style="--i:2" cx="81" cy="74" r="3.2"/>
+                <circle class="draw fine" pathLength="1" style="--i:3" cx="110" cy="80" r="3.2"/>
+                <circle class="draw fine" pathLength="1" style="--i:3" cx="139" cy="74" r="3.2"/>
+                <circle class="draw fine" pathLength="1" style="--i:4" cx="168" cy="58" r="3.2"/>
+                <circle class="draw" pathLength="1" style="--i:4" cx="16" cy="20" r="4.5"/>
+              </svg>
+            </div>
             <h3 class="vitrine-name"><a href="product.html">Rill Chain</a></h3>
-            <p class="muted" style="font-size:.9375rem">Fine trace chain, five stations</p>
+            <p class="vitrine-sub">Diamond line bracelet, five stations</p>
             <div class="vitrine-meta">
-              <span class="vitrine-price">$890</span>
+              <span class="vitrine-price">$1,890</span>
               <span class="vitrine-cta">View piece</span>
             </div>
           </article>
 
         </div>
 
-        <p class="muted reveal" style="margin-top:2.5rem;font-size:.9375rem">Four further plates — VR-016, VR-026, VR-035, VR-046 — exist as drawings only. Ask about them at your appointment.</p>
+        <p class="muted reveal" style="margin-top:2.5rem;font-size:1rem">Four further plates — VR-016, VR-026, VR-035, VR-046 — exist as drawings only. Ask about them at your appointment.</p>
       </div>
     </section>
 

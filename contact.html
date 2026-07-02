@@ -14,6 +14,8 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <div class="progress" aria-hidden="true"></div>
+
   <header class="site-header">
     <div class="wrap nav">
       <a class="wordmark" href="index.html">Viridian</a>
@@ -32,10 +34,18 @@
 
   <main id="main">
 
-    <section class="wrap page-intro">
-      <span class="eyebrow reveal">Appointments</span>
-      <h1 class="display reveal" style="--i:1">An hour at<br>the <em>bench</em>.</h1>
-      <p class="lede reveal" style="--i:2">Viewings, fittings, and commissions all happen the same way: unhurried, one client at a time, with the ledger open on the table.</p>
+    <section class="page-intro">
+      <div class="page-intro-bg" data-parallax-speed="0.1">
+        <img src="assets/img/atelier.jpg" alt="" width="1600" height="2400" fetchpriority="high">
+      </div>
+      <div class="wrap">
+        <span class="eyebrow reveal">Appointments</span>
+        <h1 class="display masked">
+          <span class="lm"><span>An hour at</span></span>
+          <span class="lm" style="--i:1"><span>the <em>bench</em>.</span></span>
+        </h1>
+        <p class="lede reveal" style="--i:2">Viewings, fittings, and commissions all happen the same way: unhurried, one client at a time, with the ledger open on the table.</p>
+      </div>
     </section>
 
     <section class="section section--dark" style="padding-top:0">
@@ -84,13 +94,8 @@
             <li><span class="k">Call</span><span><a href="tel:+15550104462">+1 (555) 010-4462</a></span></li>
             <li><span class="k">Bring</span><span>Nothing. Sizing tools, tea, and the ledger are here.</span></li>
           </ul>
-          <div class="observe" style="margin-top:3rem;max-width:15rem">
-            <svg class="illus" viewBox="0 0 200 200" role="img" aria-label="Line drawing of the Vipera Ring">
-              <circle class="draw" pathLength="1" cx="100" cy="122" r="54"/>
-              <circle class="draw fine" pathLength="1" style="--i:1" cx="100" cy="122" r="47"/>
-              <path class="draw" pathLength="1" style="--i:2" d="M85 32h30l11 11v18l-11 11H85L74 61V43z"/>
-              <path class="draw" pathLength="1" style="--i:3" d="M91 41h18l6 6v10l-6 6H91l-6-6V47z"/>
-            </svg>
+          <div class="img-frame" style="margin-top:3rem;aspect-ratio:4/3">
+            <img src="assets/img/emeralds.jpg" alt="Loose emeralds being sorted at the atelier desk" width="1920" height="2880" loading="lazy">
           </div>
         </div>
 
