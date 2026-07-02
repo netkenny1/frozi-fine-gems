@@ -218,8 +218,7 @@
           '<article class="vitrine reveal" data-tilt' + (i ? ' style="--i:' + i + '"' : "") + ">" +
           '<div class="vitrine-top"><span class="ref">Ref. ' + q.ref + '</span><span class="ref">' + q.category.replace(/s$/, "") + "</span></div>" +
           '<div class="vitrine-media">' +
-          '<img src="' + q.img + '" alt="' + q.imgAlt + '" width="' + q.imgW + '" height="' + q.imgH + '" loading="lazy">' +
-          '<svg class="illus" viewBox="' + q.plateBox + '" aria-hidden="true">' + PLATES[q.plate] + "</svg>" +
+          '<img src="' + q.img + '" alt="' + q.imgAlt + '" width="' + q.imgW + '" height="' + q.imgH + '" loading="lazy" decoding="async">' +
           "</div>" +
           '<h3 class="vitrine-name"><a href="product.html?ref=' + q.ref + '">' + q.name + "</a></h3>" +
           '<p class="vitrine-sub">' + q.sub + "</p>" +

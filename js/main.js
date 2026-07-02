@@ -180,8 +180,8 @@
           var r = card.getBoundingClientRect();
           var px = (e.clientX - r.left) / r.width - 0.5;
           var py = (e.clientY - r.top) / r.height - 0.5;
-          card.style.setProperty("--ry", (px * 5).toFixed(2) + "deg");
-          card.style.setProperty("--rx", (-py * 5).toFixed(2) + "deg");
+          card.style.setProperty("--ry", (px * 3.5).toFixed(2) + "deg");
+          card.style.setProperty("--rx", (-py * 3.5).toFixed(2) + "deg");
           raf = null;
         });
       });
