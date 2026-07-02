@@ -1,4 +1,4 @@
-/* FRUZI FINE GEMS — shared behaviour. Zero dependencies. */
+/* FROZI FINE GEMS — shared behaviour. Zero dependencies. */
 (function () {
   "use strict";
 
@@ -9,11 +9,11 @@
   var intro = document.querySelector(".intro");
   if (intro) {
     var seen = false;
-    try { seen = sessionStorage.getItem("fruzi-intro") === "1"; } catch (e) {}
+    try { seen = sessionStorage.getItem("frozi-intro") === "1"; } catch (e) {}
     if (seen || reduceMotion) {
       document.body.classList.add("no-intro");
     } else {
-      try { sessionStorage.setItem("fruzi-intro", "1"); } catch (e) {}
+      try { sessionStorage.setItem("frozi-intro", "1"); } catch (e) {}
       intro.classList.add("is-done"); /* transition-delay paces the exit */
     }
   }

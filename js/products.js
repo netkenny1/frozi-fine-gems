@@ -1,4 +1,4 @@
-/* FRUZI FINE GEMS — product registry + product-page hydration.
+/* FROZI FINE GEMS — product registry + product-page hydration.
    One template (product.html) serves every piece via ?ref=FG-0xx.
    Loaded before main.js so reveals and tilt bind to hydrated content. */
 (function () {
@@ -158,7 +158,7 @@
     }
   };
 
-  window.FRUZI = { products: PRODUCTS, plates: PLATES };
+  window.FROZI = { products: PRODUCTS, plates: PLATES };
 
   /* ---- Hydrate the product template ---- */
   var stage = document.querySelector(".product-stage");
@@ -171,7 +171,7 @@
   var ref = (params.get("ref") || "FG-011").toUpperCase();
   var p = PRODUCTS[ref] || PRODUCTS["FG-011"];
 
-  document.title = p.name + " — Ref. " + p.ref + " — Fruzi Fine Gems";
+  document.title = p.name + " — Ref. " + p.ref + " — Frozi Fine Gems";
 
   function setText(sel, text) {
     var el = document.querySelector(sel);
