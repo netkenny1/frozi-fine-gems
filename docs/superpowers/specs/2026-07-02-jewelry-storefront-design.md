@@ -43,12 +43,21 @@ Shared: `css/main.css`, `js/main.js`, inline SVG artwork per page.
 
 ## Art direction
 
-- **Palette:** near-black `#0B0D0C`; warm off-white `#F4F1EA`; deep emerald
-  `#123B2C` (accent), lighter emerald `#1E5C44` for hover states; champagne-gold
-  `#C6A87C` for hairlines only. Contrast-checked for WCAG AA.
-- **Type:** Cormorant Garamond (display serif, weights 300/400/500 + italic) +
-  a geometric sans for UI labels (uppercase, letter-spaced micro-labels). Max two
-  families, Google Fonts with preconnect + `display: swap`.
+- **Palette:** jewel-box black `#0A0C0B` (green undertone, like velvet case
+  lining); warm ivory `#EFEDE6`; deep emerald `#0E3D2B` (signature), jade
+  `#2E6B52` (hover); sage/moss muted text tones. **No gold anywhere** — the
+  all-green metal stance is a deliberate brand choice that separates the site
+  from gold-accented luxury templates. Contrast-checked for WCAG AA.
+- **Type:** Bodoni Moda (extreme-contrast Didone display — hairlines echo fine
+  metalwork) + Jost (Futura-like geometric sans for body and letter-spaced
+  uppercase micro-labels). Max two families, Google Fonts with preconnect +
+  `display: swap`.
+- **Signature element:** every piece is an atelier drawing that draws itself —
+  stroke-dashoffset choreography on scroll (`pathLength="1"` normalization).
+  Products carry reference codes (`Ref. VR-011`) and vitrine framing — real
+  jewelry-catalogue vernacular used structurally. No marquee, no `01/02/03`
+  decoration (numerals only where content is truly sequential, e.g. the
+  three-step craft process).
 - **Imagery:** bespoke fine-line SVG illustrations of jewelry (rings, necklaces,
   earrings, bracelets) drawn for this site. No stock photos, no external image
   requests, no broken links, instant paint.

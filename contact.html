@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Appointments — VIRIDIAN</title>
+  <meta name="description" content="Book an appointment at the VIRIDIAN atelier — commissions, fittings, and viewings, Tuesday to Saturday, by appointment only.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0c0b'/%3E%3Cpath d='M11 7h10l6 6v6l-6 6H11l-6-6v-6z' fill='none' stroke='%232e6b52' stroke-width='1.4'/%3E%3Cpath d='M14 12h4l3 3v2l-3 3h-4l-3-3v-2z' fill='none' stroke='%232e6b52' stroke-width='.8'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="index.html">Viridian</a>
+      <nav aria-label="Main">
+        <button class="nav-toggle" aria-expanded="false" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="nav-links">
+          <li><a class="nav-link" href="collections.html">Collection</a></li>
+          <li><a class="nav-link" href="about.html">The Maison</a></li>
+          <li><a class="nav-link" href="contact.html" aria-current="page">Appointments</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <section class="wrap page-intro">
+      <span class="eyebrow reveal">Appointments</span>
+      <h1 class="display reveal" style="--i:1">An hour at<br>the <em>bench</em>.</h1>
+      <p class="lede reveal" style="--i:2">Viewings, fittings, and commissions all happen the same way: unhurried, one client at a time, with the ledger open on the table.</p>
+    </section>
+
+    <section class="section section--dark" style="padding-top:0">
+      <div class="wrap split" style="align-items:start">
+
+        <div class="reveal">
+          <form class="form-grid" data-appointment novalidate>
+            <div class="field">
+              <label for="f-name">Name</label>
+              <input id="f-name" name="name" type="text" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field field--full">
+              <label for="f-interest">You're writing about</label>
+              <select id="f-interest" name="interest">
+                <option>A piece from the collection</option>
+                <option>A new commission</option>
+                <option>A fitting or resizing</option>
+                <option>Something else</option>
+              </select>
+            </div>
+            <div class="field field--full">
+              <label for="f-message">Your note</label>
+              <textarea id="f-message" name="message" placeholder="A ring for a June wedding. Emerald, if it suits her hand…"></textarea>
+            </div>
+            <div class="form-footer">
+              <p>We reply within two working days. There is no mailing list — we only write back.</p>
+              <button class="btn btn--solid" type="submit">Send your note</button>
+            </div>
+          </form>
+          <div class="form-success" tabindex="-1" role="status">
+            <h2 class="h3">Thank you — your note is with the atelier.</h2>
+            <p class="muted">We reply within two working days, in the order notes arrive.</p>
+          </div>
+        </div>
+
+        <div class="reveal" style="--i:2">
+          <span class="eyebrow" style="display:block;margin-bottom:1.25rem">The atelier</span>
+          <ul class="detail-list">
+            <li><span class="k">Visits</span><span>By appointment only</span></li>
+            <li><span class="k">Hours</span><span>Tue–Sat, 10:00–18:00</span></li>
+            <li><span class="k">Write</span><span><a href="mailto:atelier@viridian.jewelry">atelier@viridian.jewelry</a></span></li>
+            <li><span class="k">Call</span><span><a href="tel:+15550104462">+1 (555) 010-4462</a></span></li>
+            <li><span class="k">Bring</span><span>Nothing. Sizing tools, tea, and the ledger are here.</span></li>
+          </ul>
+          <div class="observe" style="margin-top:3rem;max-width:15rem">
+            <svg class="illus" viewBox="0 0 200 200" role="img" aria-label="Line drawing of the Vipera Ring">
+              <circle class="draw" pathLength="1" cx="100" cy="122" r="54"/>
+              <circle class="draw fine" pathLength="1" style="--i:1" cx="100" cy="122" r="47"/>
+              <path class="draw" pathLength="1" style="--i:2" d="M85 32h30l11 11v18l-11 11H85L74 61V43z"/>
+              <path class="draw" pathLength="1" style="--i:3" d="M91 41h18l6 6v10l-6 6H91l-6-6V47z"/>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <a class="wordmark" href="index.html">Viridian</a>
+          <p class="footer-tag">Fine jewelry, quietly made. Emeralds and recycled platinum, drawn and set in a single atelier.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Visit</h4>
+          <ul>
+            <li><a href="collections.html">Collection</a></li>
+            <li><a href="about.html">The Maison</a></li>
+            <li><a href="contact.html">Appointments</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Pieces</h4>
+          <ul>
+            <li><a href="collections.html">Rings</a></li>
+            <li><a href="collections.html">Necklaces</a></li>
+            <li><a href="collections.html">Earrings</a></li>
+            <li><a href="collections.html">Bracelets</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Atelier</h4>
+          <ul>
+            <li>By appointment only</li>
+            <li>Tue–Sat, 10:00–18:00</li>
+            <li><a href="mailto:atelier@viridian.jewelry">atelier@viridian.jewelry</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-legal">
+        <span>© MMXXVI Viridian. Every piece made to order.</span>
+        <span>Site hand-built. No trackers, no cookies.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js" defer></script>
+</body>
+</html>
