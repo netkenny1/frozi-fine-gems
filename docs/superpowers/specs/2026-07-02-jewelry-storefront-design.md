@@ -48,10 +48,11 @@ Shared: `css/main.css`, `js/main.js`, inline SVG artwork per page.
   `#2E6B52` (hover); sage/moss muted text tones. **No gold anywhere** — the
   all-green metal stance is a deliberate brand choice that separates the site
   from gold-accented luxury templates. Contrast-checked for WCAG AA.
-- **Type:** Bodoni Moda (extreme-contrast Didone display — hairlines echo fine
-  metalwork) + Jost (Futura-like geometric sans for body and letter-spaced
-  uppercase micro-labels). Max two families, Google Fonts with preconnect +
-  `display: swap`.
+- **Type:** DM Serif Display (didone character with hairlines sturdy enough
+  for light grounds — Bodoni Moda proved unreadable on ivory and survives only
+  as a tiny `text=VIRIDAN` subset for the wordmark) + Jost (Futura-like
+  geometric sans for body and letter-spaced uppercase micro-labels). Google
+  Fonts with preconnect + `display: swap`.
 - **Signature element:** every piece is an atelier drawing that draws itself —
   stroke-dashoffset choreography on scroll (`pathLength="1"` normalization).
   Products carry reference codes (`Ref. VR-011`) and vitrine framing — real

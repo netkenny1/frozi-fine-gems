@@ -157,11 +157,15 @@
       document.body.classList.toggle("cursor-on-link", !!e.target.closest(HOT));
     }, { passive: true });
 
+    /* translate3d keeps both layers on the compositor; snap the ring to
+       its target when close so it doesn't shimmer on sub-pixel deltas */
     (function loop() {
-      rx += (mx - rx) * 0.16;
-      ry += (my - ry) * 0.16;
-      dot.style.transform = "translate(" + mx + "px," + my + "px)";
-      ring.style.transform = "translate(" + rx + "px," + ry + "px)";
+      rx += (mx - rx) * 0.18;
+      ry += (my - ry) * 0.18;
+      if (Math.abs(mx - rx) < 0.1) rx = mx;
+      if (Math.abs(my - ry) < 0.1) ry = my;
+      dot.style.transform = "translate3d(" + mx + "px," + my + "px,0)";
+      ring.style.transform = "translate3d(" + rx + "px," + ry + "px,0)";
       requestAnimationFrame(loop);
     })();
   }
@@ -218,6 +222,29 @@
         ? "View the photograph"
         : "View the plate";
       stageToggle.setAttribute("aria-pressed", plate ? "true" : "false");
+    });
+  }
+
+  /* ---- Lightbox: click the product photograph to enlarge ---- */
+  var lightbox = document.querySelector(".lightbox");
+  var stagePhoto = document.querySelector(".stage-photo");
+  if (lightbox && stagePhoto) {
+    var lbImg = lightbox.querySelector("img");
+    var closeBtn = lightbox.querySelector(".lightbox-close");
+    var openLightbox = function () {
+      var img = stagePhoto.querySelector("img");
+      lbImg.src = img.currentSrc || img.src;
+      lbImg.alt = img.alt;
+      lightbox.classList.add("is-open");
+      if (closeBtn) closeBtn.focus();
+    };
+    var closeLightbox = function () {
+      lightbox.classList.remove("is-open");
+    };
+    stagePhoto.addEventListener("click", openLightbox);
+    lightbox.addEventListener("click", closeLightbox);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeLightbox();
     });
   }
 
