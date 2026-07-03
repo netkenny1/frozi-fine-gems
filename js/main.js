@@ -24,31 +24,133 @@
   /* ---- Scroll progress hairline ---- */
   var progress = document.querySelector(".progress");
 
-  /* ---- Parallax layers: [data-parallax-speed] drift against scroll ---- */
+  /* ---- Scroll choreography ----------------------------------------------
+     One rAF frame drives every scroll-linked layer: parallax drift,
+     deep-zoom settles, the hero's cinematic exit, photographs drifting
+     inside their frames, the scroll-scrubbed ledger plate, the ref-code
+     ticker, and a velocity shear on the vitrines. Everything writes
+     transform / translate / scale / opacity only — no layout work. The
+     independent translate/scale properties are used wherever a class
+     already owns transform (hover zooms, reveal settles), so the two
+     compose instead of fighting. */
   var layers = [];
+  var pxImgs = [];
+  var shearEls = [];
+  var scrub = null;
+  var ticker = null;
+  var heroGrid = null, heroCue = null, heroBg = null;
+  var hasParts = "scale" in document.documentElement.style;
+
   if (!reduceMotion) {
     document.querySelectorAll("[data-parallax-speed]").forEach(function (el) {
-      layers.push({ el: el, speed: parseFloat(el.getAttribute("data-parallax-speed")) || 0.1 });
+      layers.push({
+        el: el,
+        speed: parseFloat(el.getAttribute("data-parallax-speed")) || 0.1,
+        zoom: hasParts && el.hasAttribute("data-parallax-zoom")
+      });
     });
+    if (hasParts) {
+      /* photographs drift inside their clipped frames; the slight
+         over-scale provides the bleed the drift moves through */
+      document.querySelectorAll(".img-frame:not(.stage-photo) img, .category-tile img")
+        .forEach(function (img) {
+          img.style.scale = "1.12";
+          pxImgs.push({ img: img, frame: img.parentElement });
+        });
+      heroGrid = document.querySelector(".hero-grid");
+      heroCue = document.querySelector(".scroll-cue");
+      heroBg = document.querySelector(".hero-bg");
+    }
+    var plate = document.querySelector(".scrub-plate");
+    if (plate) scrub = { section: plate.closest("section"), paths: plate.querySelectorAll(".sd") };
+    ticker = document.querySelector("[data-ticker]");
+    if (finePointer) shearEls = document.querySelectorAll(".vitrine-media");
   }
 
   var vh = window.innerHeight;
   window.addEventListener("resize", function () { vh = window.innerHeight; }, { passive: true });
 
+  var lastY = window.scrollY;
+  var shear = 0;
+  var shearOn = false;
+
   var ticking = false;
   function onScrollFrame() {
     var y = window.scrollY;
+    var velocity = y - lastY;
+    lastY = y;
+
     if (header) header.classList.toggle("is-scrolled", y > 24);
     if (progress) {
       var max = document.documentElement.scrollHeight - vh;
       progress.style.transform = "scaleX(" + (max > 0 ? Math.min(y / max, 1) : 0) + ")";
     }
-    for (var i = 0; i < layers.length; i++) {
-      var r = layers[i].el.getBoundingClientRect();
+
+    var i, r, t;
+    for (i = 0; i < layers.length; i++) {
+      r = layers[i].el.getBoundingClientRect();
       var mid = r.top + r.height / 2 - vh / 2;
       layers[i].el.style.transform = "translateY(" + (-mid * layers[i].speed).toFixed(1) + "px)";
+      if (layers[i].zoom) {
+        t = Math.min(Math.max((vh - r.top) / (vh + r.height), 0), 1);
+        layers[i].el.style.scale = (1.12 - 0.12 * t).toFixed(4);
+      }
     }
+
+    for (i = 0; i < pxImgs.length; i++) {
+      r = pxImgs[i].frame.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > vh) continue;
+      t = (vh - r.top) / (vh + r.height);
+      pxImgs[i].img.style.translate = "0 " + ((0.5 - t) * r.height * 0.1).toFixed(1) + "px";
+    }
+
+    /* hero: the copy rises and dissolves, the photograph leans in */
+    if (heroGrid && y < vh * 1.2) {
+      var hp = Math.min(y / (vh * 0.72), 1);
+      heroGrid.style.translate = "0 " + (y * 0.38).toFixed(1) + "px";
+      heroGrid.style.opacity = (1 - hp * hp).toFixed(3);
+      if (heroCue) heroCue.style.opacity = (1 - Math.min(y / (vh * 0.22), 1)).toFixed(3);
+      if (heroBg) heroBg.style.scale = (1 + hp * 0.1).toFixed(4);
+    }
+
+    /* the ledger plate draws at the pace of the reader's own scroll */
+    if (scrub) {
+      r = scrub.section.getBoundingClientRect();
+      if (r.bottom >= 0 && r.top <= vh) {
+        var sp = Math.min(Math.max(((vh - r.top) / (vh + r.height) - 0.1) / 0.55, 0), 1);
+        for (i = 0; i < scrub.paths.length; i++) {
+          scrub.paths[i].style.strokeDashoffset =
+            1 - Math.min(Math.max(sp * 1.7 - i * 0.09, 0), 1);
+        }
+      }
+    }
+
+    if (ticker) ticker.style.transform = "translate3d(" + (-y * 0.3).toFixed(1) + "px,0,0)";
+
+    /* velocity shear: fast scrolling shears the vitrine glass by a
+       fraction of a degree; it settles over the following frames */
+    var settling = false;
+    if (shearEls.length) {
+      var target = Math.min(Math.max(velocity * 0.045, -1.8), 1.8);
+      shear += (target - shear) * 0.14;
+      if (Math.abs(shear) < 0.02 && Math.abs(target) < 0.02) {
+        if (shearOn) {
+          for (i = 0; i < shearEls.length; i++) shearEls[i].style.transform = "";
+          shearOn = false;
+        }
+      } else {
+        var sk = "skewY(" + shear.toFixed(3) + "deg)";
+        for (i = 0; i < shearEls.length; i++) shearEls[i].style.transform = sk;
+        shearOn = true;
+        settling = true;
+      }
+    }
+
     ticking = false;
+    if (settling) {
+      ticking = true;
+      requestAnimationFrame(onScrollFrame);
+    }
   }
   window.addEventListener("scroll", function () {
     if (!ticking) {

@@ -112,3 +112,29 @@ The storefront is now a complete system rather than a brochure:
   automatically).
 - Gotcha for posterity: the `hidden` attribute loses to any class-set
   `display`; a global `[hidden]{display:none!important}` guard now exists.
+
+## Addendum — scroll choreography (2026-07-03, v6)
+
+One rAF scroll frame in main.js drives every scroll-linked layer; all writes
+are transform/translate/scale/opacity. Independent `translate`/`scale` CSS
+properties are used wherever a class already owns `transform` (hover zooms,
+reveal settles) so effects compose instead of fighting.
+
+- Hero cinematic exit: copy rises at 0.38x and dissolves (quadratic), photo
+  container scales to 1.10, scroll cue fades first.
+- Inner-image parallax: `.img-frame` (except `.stage-photo`) and
+  `.category-tile` photos drift inside their crops; `style.scale = 1.12`
+  provides the bleed.
+- Scroll-scrubbed ledger plate (signature): `.scrub-plate .sd` paths in the
+  method section draw stroke-by-stroke with section progress, staggered by
+  index, scrubbing both directions. Reduced motion forces them drawn.
+- Ghost ref ticker (collections intro): giant hairline-stroked ref codes
+  drift against scroll; `.page-intro--ledger` reserves a bottom band so the
+  strokes never cross the lede.
+- Deep-zoom settle: `data-parallax-zoom` layers scale 1.12 -> 1 across their
+  viewport travel (quote bg + all page intros).
+- Velocity shear: `.vitrine-media` skews up to 1.8deg with smoothed scroll
+  velocity, settling via self-scheduled rAF frames (fine pointers only).
+- Headless-testing note: anchor-fragment URLs screenshot as unpainted black
+  in this Chrome headless setup — extract sections to a standalone page to
+  verify instead.

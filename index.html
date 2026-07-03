@@ -149,7 +149,21 @@
     </section>
 
     <!-- ================= Method (a true sequence) ================= -->
-    <section class="section section--light" aria-labelledby="method-title">
+    <section class="section section--light has-scrub" aria-labelledby="method-title">
+      <!-- Ledger plate, drawn by the reader's own scroll — scrubbed both ways -->
+      <svg class="illus scrub-plate" viewBox="0 0 240 240" aria-hidden="true">
+        <g class="fine" opacity=".5">
+          <line class="sd" pathLength="1" x1="120" y1="4" x2="120" y2="236"/>
+          <line class="sd" pathLength="1" x1="4" y1="140" x2="236" y2="140"/>
+        </g>
+        <circle class="sd" pathLength="1" cx="120" cy="140" r="58"/>
+        <circle class="sd fine" pathLength="1" cx="120" cy="140" r="50"/>
+        <path class="sd" pathLength="1" d="M104 46h32l12 12v18l-12 12h-32l-12-12V58z"/>
+        <path class="sd fine" pathLength="1" d="M110 56h20l7 7v10l-7 7h-20l-7-7V63z"/>
+        <line class="sd" pathLength="1" x1="104" y1="88" x2="108" y2="96"/>
+        <line class="sd" pathLength="1" x1="136" y1="88" x2="132" y2="96"/>
+        <circle class="sd fine" pathLength="1" cx="120" cy="140" r="66"/>
+      </svg>
       <div class="wrap">
         <div class="section-head reveal">
           <div>
@@ -218,7 +232,7 @@
 
     <!-- ================= Quote ================= -->
     <section class="section bg-section">
-      <div class="bg-media" data-parallax-speed="0.1">
+      <div class="bg-media" data-parallax-speed="0.1" data-parallax-zoom>
         <img src="assets/img/glove.jpg" alt="" width="1920" height="2880" loading="lazy" decoding="async">
       </div>
       <div class="wrap quote reveal">
