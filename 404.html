@@ -34,6 +34,9 @@
 
   <main id="main">
     <section class="notfound observe">
+      <!-- the loose stone: a live 3D emerald where WebGL allows; the
+           drawn plate below is the fallback -->
+      <div class="gem-mount reveal" data-gem aria-hidden="true"></div>
       <svg class="illus" viewBox="0 0 200 200" aria-hidden="true">
         <path class="draw" pathLength="1" d="M70 30h60l40 40v60l-40 40H70l-40-40V70z"/>
         <path class="draw fine" pathLength="1" style="--i:2" d="M85 60h30l25 25v30l-25 25H85l-25-25V85z"/>
@@ -47,10 +50,12 @@
         <a class="btn btn--solid" href="collections.html">View the collection</a>
         <a class="btn" href="index.html">Return home</a>
       </div>
+      <p class="gem-hint reveal" style="--i:4">This one, at least, is real — drag it, or click and the light will walk its facets.</p>
     </section>
   </main>
 
   <script src="js/store.js" defer></script>
   <script src="js/main.js" defer></script>
+  <script src="js/gem.js" defer></script>
 </body>
 </html>

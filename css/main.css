@@ -2253,3 +2253,50 @@ form.is-hidden {
 .bag-count.is-pulsing {
   animation: badge-pulse 0.7s var(--ease-out);
 }
+
+/* ---- The loose stone (404) -----------------------------------------------------
+   js/gem.js mounts a live WebGL emerald into [data-gem] and marks the
+   section .has-gem; without WebGL the drawn plate stays. */
+
+.gem-mount {
+  display: none;
+  position: relative;
+  width: min(26rem, 82vw);
+  height: clamp(14rem, 34vh, 20rem);
+  margin-inline: auto;
+  margin-bottom: 1rem;
+}
+
+/* the stone rests on a pool of its own light */
+.gem-mount::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  width: 60%;
+  height: 10%;
+  translate: -50% 0;
+  background: radial-gradient(50% 100% at 50% 50%, rgba(46, 107, 82, 0.4), transparent 70%);
+  filter: blur(10px);
+}
+
+.gem-hint {
+  display: none;
+  margin-top: 2.25rem;
+  font-size: var(--size-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+.notfound.has-gem .gem-mount {
+  display: block;
+}
+
+.notfound.has-gem .illus {
+  display: none;
+}
+
+.notfound.has-gem .gem-hint {
+  display: block;
+}
