@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not in the Ledger — Frozi Fine Gems</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0c0b'/%3E%3Cpath d='M11 7h10l6 6v6l-6 6H11l-6-6v-6z' fill='none' stroke='%232e6b52' stroke-width='1.4'/%3E%3Cpath d='M14 12h4l3 3v2l-3 3h-4l-3-3v-2z' fill='none' stroke='%232e6b52' stroke-width='.8'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz@6..96&text=FROZI&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap nav">
+      <a class="wordmark" href="index.html">Frozi <span>Fine Gems</span></a>
+      <nav aria-label="Main">
+        <button class="nav-toggle" aria-expanded="false" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <ul class="nav-links">
+          <li><a class="nav-link" href="collections.html">Collection</a></li>
+          <li><a class="nav-link" href="about.html">The Maison</a></li>
+          <li><a class="nav-link" href="contact.html">Appointments</a></li>
+          <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="notfound observe">
+      <!-- the loose stone: a live 3D emerald where WebGL allows; the
+           drawn plate below is the fallback -->
+      <div class="gem-mount reveal" data-gem aria-hidden="true"></div>
+      <svg class="illus" viewBox="0 0 200 200" aria-hidden="true">
+        <path class="draw" pathLength="1" d="M70 30h60l40 40v60l-40 40H70l-40-40V70z"/>
+        <path class="draw fine" pathLength="1" style="--i:2" d="M85 60h30l25 25v30l-25 25H85l-25-25V85z"/>
+        <line class="draw fine" pathLength="1" style="--i:4" x1="30" y1="100" x2="60" y2="100"/>
+        <line class="draw fine" pathLength="1" style="--i:4" x1="140" y1="100" x2="170" y2="100"/>
+      </svg>
+      <span class="eyebrow reveal">Ref. not found</span>
+      <h1 class="display reveal" style="--i:1">Not in the <em>ledger</em>.</h1>
+      <p class="lede reveal" style="--i:2">Whatever was drawn at this address has been renumbered, melted down, or never existed. The collection, however, is exactly where it should be.</p>
+      <div class="notfound-actions reveal" style="--i:3">
+        <a class="btn btn--solid" href="collections.html">View the collection</a>
+        <a class="btn" href="index.html">Return home</a>
+      </div>
+      <p class="gem-hint reveal" style="--i:4">This one, at least, is real — drag it, or click and the light will walk its facets.</p>
+    </section>
+  </main>
+
+  <script src="js/store.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/gem.js" defer></script>
+</body>
+</html>
