@@ -21,7 +21,12 @@ import * as THREE from "../vendor/three.module.min.js";
 // color pipeline: no automatic sRGB encode on output, no texture decode.
 THREE.ColorManagement.enabled = false;
 
-const DPR_CAP = 1.75;
+// Touch devices get a slightly lower pixel-ratio cap than desktop: phone DPRs
+// run to 3+, and the full-res scene target + MSAA would triple the fill cost
+// for detail a 6" screen can't show. 2 is retina-crisp; desktop gets 2.25 so
+// facet edges stay clean on 4K/5K monitors.
+const IS_TOUCH = navigator.maxTouchPoints > 0;
+const DPR_CAP = IS_TOUCH ? 2 : 2.25;
 const LERP_K = 0.07;
 
 // Fog color 0x07130d (deep viridian black) as display-space RGB — the shaders
@@ -37,14 +42,20 @@ const FOG_DENSITY_MAX = 0.3;
 // Control points are tuned by eye against the six verification screenshots (see
 // task-5-report.md); getPointAt is arc-length parameterized so speed is even.
 // ---------------------------------------------------------------------------
+// Retimed after review: the old path spent p ~.06-.22 with the camera 0.5-1.5
+// units from the stone — a fifth of the scroll staring at giant flat facets.
+// Now the approach is gradual (three points spread over z 6.2 -> 0.9, with a
+// small lateral sweep for parallax), and the short close-in leg is fully covered
+// by the crossing veil (see uVeil in COMP_FS / tick()).
 const CAM_PATH_POINTS = [
-  [0, 0.30, 6.0],   // ch1: far + high, stone small in the dark
-  [0, 0.20, 1.5],   // ch2: rushed in, a crown facet fills the frame
-  [0, 0.10, 0.55],  // through the surface (z~0.72) — the crossing
-  [0, 0.00, -1.2],  // ch3/4: inside the green
-  [0, -0.08, -3.0], // ch4: interior wall
-  [0, -0.16, -4.8], // ch5: deeper interior
-  [0, 0.05, -6.6],  // ch6: descending the pavilion, walls receding behind
+  [-0.35, 0.34, 6.2],  // ch1: far, slightly off-axis — stone small in the dark
+  [-0.18, 0.26, 4.3],  // ch2 approach: drifting onto the axis
+  [0, 0.15, 2.3],      // ch2: the stone large but whole in frame
+  [0, 0.05, 0.9],      // the dive — veil takes over here
+  [0, 0.00, -1.3],     // ch3/4: inside the green
+  [0, -0.08, -3.2],    // ch4: interior wall
+  [0, -0.16, -5.0],    // ch5: deeper interior
+  [0, 0.05, -6.8],     // ch6: descending the pavilion, walls receding behind
 ];
 
 // NOTE ON THE EASE: the brief suggested smootherstep, but the journey needs a
@@ -82,43 +93,126 @@ const GEM_VS = [
   "}",
 ].join("\n");
 
+// A physically-plausible stone, single pass, fully procedural (no textures):
+//  - Schlick fresnel with emerald's real F0 (~0.05 at IOR 1.57) splits the
+//    light into surface reflection and body transmission.
+//  - Transmission traces each RGB channel separately (dispersion): refract at
+//    the entry facet, march to the exit of an analytic bounding ellipsoid,
+//    refract out (or take one total-internal-reflection bounce — the "fire"
+//    of a real step cut), and sample the studio environment along the exit.
+//  - Beer–Lambert absorption over the traversed path length gives the body
+//    its depth: green survives, red dies, thin edges glow lighter than the
+//    thick heart of the stone — real transparency, not a flat tint.
+//  - ACES tonemap keeps the ivory softbox glints crisp without clipping to
+//    the flat white rectangles the old soft tonemap produced.
 const GEM_FS = [
   "varying vec3 vN; varying vec3 vP;",
   "uniform vec3 uKey; uniform float uOrbit; uniform float uAmp;",
   "uniform vec3 uFogColor; uniform float uFogDensity;",
-  "const vec3 IVORY = vec3(0.945, 0.937, 0.91);",
+  "uniform mat3 uNormalMat; uniform mat3 uInvRot; uniform vec3 uCenter;",
+  "const vec3 IVORY = vec3(0.985, 0.972, 0.94);",
   "const vec3 JADE  = vec3(0.29, 0.57, 0.455);",
-  "vec3 env(vec3 d){", // procedural studio
+  // bounding-ellipsoid semi-axes^2 of the cut (x 1.03, y 0.72, z 0.74)
+  "const vec3 EL2 = vec3(1.0609, 0.5184, 0.5476);",
+  // per-channel absorption (per world unit): emerald transmits green,
+  // swallows red, dims blue. Red keeps a survivable floor — total red kill
+  // reads as neon-candy RGB green, not a mineral.
+  "const vec3 SIGMA = vec3(2.0, 0.45, 1.1);",
+  // per-channel entry eta (1/n): n_R 1.556, n_G 1.571, n_B 1.588
+  "const vec3 ETA = vec3(0.6427, 0.6365, 0.6297);",
+  "vec3 env(vec3 d){", // procedural studio: key softbox, ivory fill, cool rim
   "  float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);",
-  "  vec3 base = mix(vec3(0.006, 0.009, 0.008), vec3(0.03, 0.07, 0.055), up * up);",
-  "  float box = smoothstep(0.32, 0.03, abs(d.y - 0.42)) * smoothstep(-0.4, 0.6, d.x);",
-  "  float glow = smoothstep(0.2, 1.0, -d.y);",
-  "  return base + IVORY * box * 0.7 + vec3(0.05, 0.16, 0.11) * glow * 0.3;",
+  "  vec3 base = mix(vec3(0.012, 0.017, 0.014), vec3(0.05, 0.10, 0.078), up * up);",
+  // key softbox with a hot core — a flat-intensity box mirrored in a flat
+  // facet reads as a grey sticker; the core-to-edge falloff is what makes a
+  // reflection read as a lit panel.
+  "  float ck = dot(d, normalize(vec3(-0.42, 0.60, 0.55)));",
+  "  float key = smoothstep(0.58, 0.90, ck) * (0.55 + 0.9 * smoothstep(0.84, 0.985, ck));",
+  "  float fill = smoothstep(0.45, 0.95, dot(d, normalize(vec3(0.72, 0.10, 0.30))));",
+  "  float rim = smoothstep(0.78, 0.985, dot(d, normalize(vec3(0.10, -0.25, -0.94))));",
+  "  return base + IVORY * key * 1.5 + vec3(0.42, 0.50, 0.44) * fill * 0.3",
+  "       + vec3(0.34, 0.62, 0.50) * rim * 0.5;",
+  "}",
+  // pseudo-random unit-ish vector per lattice cell — used to break the smooth
+  // analytic exit surface into virtual pavilion facets (see gemPath).
+  "vec3 hash3(vec3 q){",
+  "  return fract(sin(vec3(dot(q, vec3(127.1, 311.7, 74.7)),",
+  "                        dot(q, vec3(269.5, 183.3, 246.1)),",
+  "                        dot(q, vec3(113.5, 271.9, 124.6)))) * 43758.5453) * 2.0 - 1.0;",
+  "}",
+  // distance from a point inside the bounding ellipsoid to its surface along d
+  "float exitDist(vec3 o, vec3 d){",
+  "  vec3 oo = o * inversesqrt(EL2); vec3 dd = d * inversesqrt(EL2);",
+  "  float A = dot(dd, dd); float B = dot(oo, dd); float C = dot(oo, oo) - 1.0;",
+  "  float h = B * B - A * C;",
+  "  if (h <= 0.0) return 0.5;", // grazing ray: fall back to a mean chord
+  "  return max((-B + sqrt(h)) / A, 0.02);",
+  "}",
+  // one channel's path through the stone: entry refraction -> exit (with one
+  // TIR bounce if the exit facet reflects it back in). Returns the world-space
+  // exit direction (xyz) and the traversed path length (w).
+  "vec4 gemPath(float eta, vec3 V, vec3 N, vec3 oL){",
+  "  vec3 T = refract(-V, N, eta);",
+  "  if (dot(T, T) < 1e-4) T = reflect(-V, N);",
+  "  vec3 tL = normalize(uInvRot * T);",
+  "  float dist = exitDist(oL, tL);",
+  "  vec3 pE = oL + tL * dist;",
+  // the smooth analytic exit gives smooth curved bands — snap it to virtual
+  // pavilion facets (a hashed lattice jitter) so the transmitted light breaks
+  // into the discrete patches a step cut actually shows
+  "  vec3 n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 4.0)));",
+  "  vec3 T2 = refract(tL, -n2, 1.0 / eta);",
+  "  if (dot(T2, T2) < 1e-4) {", // total internal reflection: one bounce, out
+  "    vec3 rB = reflect(tL, n2);",
+  "    float d2 = exitDist(pE, rB);",
+  "    dist += d2;",
+  "    pE += rB * d2;",
+  "    n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 11.0)));",
+  "    T2 = refract(rB, -n2, 1.0 / eta);",
+  "    if (dot(T2, T2) < 1e-4) T2 = rB;",
+  "  }",
+  "  return vec4(uNormalMat * normalize(T2), dist);",
+  "}",
+  "vec3 aces(vec3 x){",
+  "  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);",
   "}",
   "void main(){",
   "  vec3 N = normalize(vN);",
   "  vec3 V = normalize(cameraPosition - vP);",
   "  if (dot(N, V) < 0.0) N = -N;",
   "  vec3 R = reflect(-V, N);",
-  "  vec3 T = refract(-V, N, 0.66);",
-  "  if (dot(T, T) < 0.001) T = R;",
-  "  float fres = 0.05 + 0.95 * pow(1.0 - max(dot(N, V), 0.0), 3.0);",
-  "  vec3 deep = mix(vec3(0.008, 0.075, 0.045), vec3(0.035, 0.34, 0.20), clamp(T.y * 0.6 + 0.55, 0.0, 1.0));",
-  "  vec3 body = deep * (0.35 + 2.2 * env(T).g);", // light seen through the stone
+  // entry point in the cut's local frame, relative to the ellipsoid centre
+  // (the cut spans local y 0.42..-0.98, so its volumetric centre sits at -0.28)
+  "  vec3 oL = uInvRot * (vP - uCenter);",
+  "  oL.y += 0.28;",
+  // dispersion: each channel refracts on its own eta and marches its own path
+  "  vec4 pr = gemPath(ETA.r, V, N, oL);",
+  "  vec4 pg = gemPath(ETA.g, V, N, oL);",
+  "  vec4 pb = gemPath(ETA.b, V, N, oL);",
+  "  vec3 body;",
+  "  body.r = env(pr.xyz).r * exp(-SIGMA.r * pr.w * 1.35);",
+  "  body.g = env(pg.xyz).g * exp(-SIGMA.g * pg.w * 1.35);",
+  "  body.b = env(pb.xyz).b * exp(-SIGMA.b * pb.w * 1.35);",
+  // the deep body floor: even where no light exits toward a softbox, the stone
+  // reads as material, not a hole — thin edges lighter than the thick heart.
+  "  body += vec3(0.004, 0.055, 0.028) * exp(-0.9 * pg.w);",
+  "  body += vec3(0.002, 0.018, 0.010);",
   "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-  "  body *= 0.7 + 0.6 * fid;", // per-facet fire
-  "  vec3 col = mix(body, env(R) * 1.5, fres);",
+  "  body *= 0.86 + 0.28 * fid;", // subtle per-facet variation, not banding
+  "  float fres = 0.05 + 0.95 * pow(1.0 - max(dot(N, V), 0.0), 5.0);",
+  "  vec3 col = mix(body * 1.15, env(R) * 1.2, fres);",
   "  vec3 H1 = normalize(uKey + V);", // ivory key light
-  "  float s1 = pow(max(dot(N, H1), 0.0), 140.0);",
+  "  float s1 = pow(max(dot(N, H1), 0.0), 260.0);",
   "  vec3 H2 = normalize(normalize(vec3(-0.65, -0.15, -0.5)) + V);",
-  "  float s2 = pow(max(dot(N, H2), 0.0), 36.0);", // jade rim
+  "  float s2 = pow(max(dot(N, H2), 0.0), 48.0);", // jade rim
   "  float a = uOrbit * 6.28318;",
   "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
-  "  float s3 = pow(max(dot(N, H3), 0.0), 90.0) * uAmp;", // the walking light
-  "  col += IVORY * (s1 * 1.1 + smoothstep(0.6, 1.0, s1) * 0.6);",
-  "  col += JADE * s2 * 0.5 + IVORY * s3 * 2.6;",
-  "  col = col / (col + vec3(1.0));", // soft tonemap
-  "  vec3 outc = pow(col, vec3(0.4545));",
+  "  float s3 = pow(max(dot(N, H3), 0.0), 120.0) * uAmp;", // the walking light
+  "  col += IVORY * (s1 * 1.5 + smoothstep(0.5, 1.0, s1) * 0.8);",
+  "  col += JADE * s2 * 0.35 + IVORY * s3 * 2.2;",
+  // a whisper of desaturation — pure-primary green reads as plastic
+  "  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))), 0.08);",
+  "  vec3 outc = pow(aces(col), vec3(0.4545));",
   // FogExp2, applied in output (gamma) space so it matches the interior shell
   // and the noir page behind. Scene.fog is inert for ShaderMaterial, so we do
   // it by hand: as the stone recedes past the camera it dissolves into the
@@ -135,23 +229,37 @@ const GEM_FS = [
 // reads as dim green facet walls that shimmer as the walking light sweeps,
 // dissolving into fog toward the deep interior. Simpler than the gem: no
 // refraction/dispersion, just a faceted wall + fresnel edge glow + the fog mix.
+// The old wall shaded each facet a single flat colour; the shell's facets are
+// huge (scale 3.6, 3.6, 10), so one facet could fill the whole viewport as a
+// flat bright-green card — the "unwanted texture" behind the vitrines. The
+// rework darkens the palette two stops, breaks every facet up with slow
+// position-based light bands (caustics drifting through the crystal), and
+// tonemaps with the same ACES curve as the stone so the layers match.
 const SHELL_FS = [
   "varying vec3 vN; varying vec3 vP;",
   "uniform vec3 uKey; uniform float uOrbit; uniform float uAmp; uniform float uFade;",
-  "uniform vec3 uFogColor; uniform float uFogDensity;",
+  "uniform vec3 uFogColor; uniform float uFogDensity; uniform float uTime;",
+  "vec3 aces(vec3 x){",
+  "  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);",
+  "}",
   "void main(){",
   "  vec3 N = normalize(vN);",
   "  vec3 V = normalize(cameraPosition - vP);",
   "  if (dot(N, V) < 0.0) N = -N;",
-  "  float fres = pow(1.0 - max(dot(N, V), 0.0), 2.0);",
+  "  float fres = pow(1.0 - max(dot(N, V), 0.0), 2.5);",
   "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-  "  vec3 wall = mix(vec3(0.010, 0.055, 0.033), vec3(0.028, 0.20, 0.12), fid);",
-  "  wall += vec3(0.045, 0.20, 0.125) * fres;", // luminous facet edges
+  "  vec3 wall = mix(vec3(0.003, 0.014, 0.009), vec3(0.007, 0.042, 0.025), fid);",
+  // caustic light bands — slow interference drifting along the tunnel, so a
+  // facet is never one flat colour even when it fills the frame
+  "  float band = sin(vP.z * 1.7 + uTime * 0.00045)",
+  "             * sin(vP.x * 2.3 + vP.y * 1.1 - uTime * 0.00032);",
+  "  wall += vec3(0.010, 0.062, 0.038) * smoothstep(0.1, 0.95, band);",
+  "  wall += vec3(0.035, 0.15, 0.095) * fres;", // luminous facet edges
   "  float a = uOrbit * 6.28318;",
   "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
   "  float s3 = pow(max(dot(N, H3), 0.0), 60.0) * uAmp;", // walking light on the walls
-  "  wall += vec3(0.6, 0.95, 0.78) * s3 * 0.7;",
-  "  vec3 outc = pow(wall, vec3(0.4545));",
+  "  wall += vec3(0.6, 0.95, 0.78) * s3 * 0.45;",
+  "  vec3 outc = pow(aces(wall), vec3(0.4545));",
   "  float fdist = length(cameraPosition - vP);",
   "  float fogF = 1.0 - exp(-uFogDensity * uFogDensity * fdist * fdist);",
   "  outc = mix(outc, uFogColor, clamp(fogF, 0.0, 1.0));",
@@ -167,11 +275,14 @@ const QUAD_VS = [
   "void main(){ vUV = position.xy * 0.5 + 0.5; gl_Position = vec4(position.xy, 0.0, 1.0); }",
 ].join("\n");
 
+// Threshold 0.7: with ACES in the materials, only genuine glints (softbox
+// speculars, TIR fire) cross it — body colour and the vitrine photographs
+// stay out of the bloom entirely, so nothing washes into white rectangles.
 const BRIGHT_FS = [
   "varying vec2 vUV; uniform sampler2D uTex;",
   "void main(){",
   "  vec4 c = texture2D(uTex, vUV);",
-  "  gl_FragColor = vec4(max(c.rgb - 0.55, 0.0) * 1.9 * c.a, 1.0);",
+  "  gl_FragColor = vec4(max(c.rgb - 0.7, 0.0) * 1.6 * c.a, 1.0);",
   "}",
 ].join("\n");
 
@@ -188,23 +299,33 @@ const BLUR_FS = [
 // bloom re-enters with the red channel spread wider than the blue — the
 // fringe reads as dispersion, the fire of a real stone. Alpha carries the
 // bloom luminance so the halo shows through the transparent page background.
+//
+// uVeil replaces the old uFlash whiteout. The flash added up to 0.9 of pure
+// white to the whole frame across ~9% of the scroll range — parking the
+// scroll there left the page a blank white sheet that read as a rendering
+// failure. The veil is the moment the camera passes through the crown: a
+// luminous emerald caustic, ivory-green at the centre falling to deep green
+// at the edges, gently shimmering, and hard-capped at 0.88 mix so the frame
+// underneath always survives. Parked mid-crossing, the page now holds a
+// designed glow instead of a blowout.
 const COMP_FS = [
   "varying vec2 vUV;",
-  "uniform sampler2D uScene; uniform sampler2D uBloom; uniform float uFlash;",
+  "uniform sampler2D uScene; uniform sampler2D uBloom;",
+  "uniform float uVeil; uniform float uTime;",
   "void main(){",
   "  vec4 s = texture2D(uScene, vUV);",
   "  vec2 d = vUV - 0.5;",
   "  vec3 b;",
-  "  b.r = texture2D(uBloom, 0.5 + d * 1.014).r;",
+  "  b.r = texture2D(uBloom, 0.5 + d * 1.012).r;",
   "  b.g = texture2D(uBloom, vUV).g;",
-  "  b.b = texture2D(uBloom, 0.5 + d * 0.986).b;",
-  "  vec3 col = s.rgb + b * 1.35;",
-  // The pass-through flash: a brief ivory refraction bloom that peaks as the
-  // camera crosses the crown facet, brightest at the center of frame. Sells the
-  // moment of breaking the surface instead of a hard geometric clip.
-  "  float flashV = uFlash * (1.0 - 0.6 * dot(d, d));",
-  "  col += flashV * vec3(0.96, 0.99, 1.0);",
-  "  float a = clamp(s.a + dot(b, vec3(0.299, 0.587, 0.114)) * 1.7 + flashV, 0.0, 1.0);",
+  "  b.b = texture2D(uBloom, 0.5 + d * 0.988).b;",
+  "  vec3 col = s.rgb + b * 0.95;",
+  "  float r = length(d) * 2.0;",
+  "  float shimmer = 0.88 + 0.12 * sin(uTime * 0.0011 + r * 7.0);",
+  "  vec3 veilC = mix(vec3(0.93, 1.0, 0.97), vec3(0.30, 0.72, 0.53), clamp(r, 0.0, 1.0));",
+  "  float v = clamp(uVeil * (1.0 - 0.35 * r * r) * shimmer, 0.0, 0.88);",
+  "  col = mix(col, veilC, v);",
+  "  float a = clamp(s.a + dot(b, vec3(0.299, 0.587, 0.114)) * 1.7 + v, 0.0, 1.0);",
   "  gl_FragColor = vec4(col, a);",
   "}",
 ].join("\n");
@@ -270,6 +391,12 @@ function buildEmerald() {
       // emerald rotates every frame (pure rotation, no scale), so tick()
       // refreshes this from the current matrixWorld each frame.
       uNormalMat: { value: new THREE.Matrix3() },
+      // world->local rotation (transpose of uNormalMat — valid because the
+      // emerald's transform is pure rotation) and the stone's world centre;
+      // the transmission path in GEM_FS marches the bounding ellipsoid in the
+      // cut's local frame. Both refreshed alongside uNormalMat in tick().
+      uInvRot: { value: new THREE.Matrix3() },
+      uCenter: { value: new THREE.Vector3() },
     },
     // gem.js never enables CULL_FACE and its shader flips back-facing normals
     // (`if (dot(N,V) < 0.0) N = -N;`); Three's default FrontSide would cull the
@@ -293,6 +420,7 @@ function buildShell(geometry) {
       uOrbit: { value: 0 },
       uAmp: { value: 0 },
       uFade: { value: 0 },
+      uTime: { value: 0 },
       uFogColor: { value: new THREE.Vector3(FOG_RGB[0], FOG_RGB[1], FOG_RGB[2]) },
       uFogDensity: { value: 0 },
       // world-space normal matrix; the shell's transform (scale only, never
@@ -327,7 +455,14 @@ function buildPost(renderer) {
     type: THREE.UnsignedByteType,
     depthBuffer: false,
   };
-  const rtScene = new THREE.WebGLRenderTarget(2, 2, { ...rtOpts, depthBuffer: true });
+  // 4x MSAA on the scene target under WebGL2 — the old target had no
+  // multisampling at all (canvas antialias only applies to the default
+  // framebuffer), which left every facet edge a hard jaggy line.
+  const rtScene = new THREE.WebGLRenderTarget(2, 2, {
+    ...rtOpts,
+    depthBuffer: true,
+    samples: renderer.capabilities.isWebGL2 ? 4 : 0,
+  });
   const rtA = new THREE.WebGLRenderTarget(2, 2, rtOpts);
   const rtB = new THREE.WebGLRenderTarget(2, 2, rtOpts);
 
@@ -356,7 +491,8 @@ function buildPost(renderer) {
   const mComp = passMat(COMP_FS, {
     uScene: { value: null },
     uBloom: { value: null },
-    uFlash: { value: 0 },
+    uVeil: { value: 0 },
+    uTime: { value: 0 },
   });
 
   function draw(mat) {
@@ -374,8 +510,9 @@ function buildPost(renderer) {
       rtA.setSize(qw, qh);
       rtB.setSize(qw, qh);
     },
-    render(worldScene, worldCamera, flash) {
-      mComp.uniforms.uFlash.value = flash || 0;
+    render(worldScene, worldCamera, veil, now) {
+      mComp.uniforms.uVeil.value = veil || 0;
+      mComp.uniforms.uTime.value = now || 0;
       // pass 1: the stone into the full-res scene target
       renderer.setRenderTarget(rtScene);
       renderer.render(worldScene, worldCamera);
@@ -461,15 +598,18 @@ function buildMoteTexture() {
 // front of the lens. tick() rewrites all instance matrices every frame from
 // one shared camera-facing quaternion; nothing here is re-derived per frame.
 function buildMotes() {
-  const isMobile = navigator.maxTouchPoints > 0;
-  const count = isMobile ? 150 : 400;
+  const count = IS_TOUCH ? 150 : 400;
 
   const texture = buildMoteTexture();
   const geometry = new THREE.PlaneGeometry(1, 1);
   const material = new THREE.MeshBasicMaterial({
     map: texture,
-    color: new THREE.Color(0x6fb896),
+    // white base — each instance carries its own colour (jade..ivory mix,
+    // see instanceColor below) so the field reads as suspended mineral dust
+    // rather than a uniform sheet of green blobs.
+    color: new THREE.Color(0xffffff),
     transparent: true,
+    opacity: 0,
     depthWrite: false,
     // depthTest off + a renderOrder after the shell: the tunnel shell is a
     // faceted BackSide surface that, once fully faded in (uFade -> 1 through
@@ -529,7 +669,12 @@ function buildMotes() {
       Math.random() - 0.5
     ).normalize();
     phases[i] = Math.random() * Math.PI * 2;
-    sizes[i] = 0.018 + Math.random() * 0.03;
+    // smaller than the first pass (0.018-0.048 read as fist-sized bokeh blobs
+    // whenever one drifted near the lens); a wide size spread with a small
+    // ceiling reads as dust catching the light instead.
+    sizes[i] = 0.008 + Math.random() * 0.022;
+    _moteColor.lerpColors(MOTE_JADE, MOTE_IVORY, Math.random() * Math.random());
+    mesh.setColorAt(i, _moteColor);
   }
 
   return {
@@ -547,6 +692,9 @@ function buildMotes() {
   };
 }
 
+const MOTE_JADE = new THREE.Color(0x63b58e);
+const MOTE_IVORY = new THREE.Color(0xf2eedd);
+const _moteColor = new THREE.Color();
 const _moteMatrix = new THREE.Matrix4();
 const _motePos = new THREE.Vector3();
 const _moteScale = new THREE.Vector3();
@@ -560,7 +708,13 @@ const _moteZAxis = new THREE.Vector3(0, 0, 1);
 // has it in _tangent — passed in so this isn't recomputed here).
 function updateMotes(now, p, travelTangent) {
   if (!motes) return;
-  motes.mesh.visible = p > 0.2 && p < 0.95;
+  // Fade with actual camera depth rather than popping at a scroll fraction:
+  // in over the first unit past the crown (behind the crossing veil), out
+  // across the emergence turn. Opacity carries the ramp so there's no pop.
+  const cz = camera.position.z;
+  const fade = clamp01((-cz - 0.35) / 0.9) * (1 - clamp01((p - 0.86) / 0.08));
+  motes.mesh.visible = fade > 0.01;
+  motes.mesh.material.opacity = 0.85 * fade;
   if (!motes.mesh.visible) return;
 
   // Every mote billboards to face the camera (shares one quaternion, computed
@@ -661,13 +815,13 @@ const PLATE_DEFS = [
   },
 ];
 
-// Brighter than the printed-page jade (#2e6b52) — against the fogged interior
-// the darker ink read as nearly invisible in early passes, so this plate
-// draws with the lifted tone the brief flags as the fallback to reach for.
-const PLATE_STROKE = "#4a9174";
+// A step down from the first pass's #4a9174 — additive blending over the
+// darkened interior walls made that read as neon wireframe; this sits between
+// the printed-page jade and the old value, an engraved line rather than Tron.
+const PLATE_STROKE = "#3f7f66";
 
 function drawPlateCanvas(def, strokeColor) {
-  const size = 512;
+  const size = 1024; // crisp at 4K/retina — the old 512 blurred on any zoom
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const cx = canvas.getContext("2d");
@@ -678,7 +832,7 @@ function drawPlateCanvas(def, strokeColor) {
   cx.scale(scale, scale);
   cx.lineCap = "round";
   cx.lineJoin = "round";
-  cx.lineWidth = 2.6 / scale;
+  cx.lineWidth = 2.2 / scale;
   cx.strokeStyle = strokeColor;
   for (const cmd of def.cmds) {
     if (cmd.type === "path") {
@@ -724,6 +878,7 @@ function buildPlates() {
       map: texture,
       color: new THREE.Color(0xd8f3e4),
       transparent: true,
+      opacity: 0.7,
       side: THREE.DoubleSide,
       depthWrite: false,
       // see the matching comment in buildMotes(): the faceted shell can read
@@ -795,15 +950,15 @@ const VITRINE_LABEL_DROP = VITRINE_H * 0.34;
 
 // Idle-state target for a plate's brightest (q90) texel once the shared base
 // tint is applied: q90Texel * effectiveBase ≈ VITRINE_BASE_TARGET, kept a
-// healthy margin under the bloom bright-pass threshold (0.55) so a
+// healthy margin under the bloom bright-pass threshold (0.7) so a
 // white-ground photograph doesn't bloom at rest. 0.5 was the first value
 // tried and held — see task-7-report.md fix round 2 for the visual check.
 const VITRINE_BASE_TARGET = 0.5;
 
 // Bright-quantile luminance (~q90, 0..1) of a loaded same-origin image,
 // sampled through a small canvas. Used to make the hover lift luminance-aware:
-// the post chain's bright pass fires at 0.55, so a plate's hover multiplier is
-// capped so its bright texels stay under ~0.66 — a white-ground studio shot
+// the post chain's bright pass fires at 0.7, so a plate's hover multiplier is
+// capped so its bright texels stay under ~0.8 — a white-ground studio shot
 // gets a whisper of a lift while a dark-ground one keeps the pronounced glow.
 // Returns null on any failure (tainted canvas, zero size), leaving the caller's
 // conservative default in place.
@@ -887,7 +1042,7 @@ function buildVitrines() {
     // hover target — provisional; re-derived per plate from the photograph's
     // own brightness once its texture loads (see setHotFromImage below). A
     // flat 1.28x lift blew white-ground shots (texels ~0.94) far past the
-    // bloom bright-pass threshold (0.55), bleaching the whole plate into a
+    // bloom bright-pass threshold (0.7), bleaching the whole plate into a
     // white rectangle with a dispersion fringe. Dark-ground shots need the
     // pronounced lift to read at all.
     const hotColor = baseColor.clone().multiplyScalar(1.12);
@@ -964,7 +1119,7 @@ function buildVitrines() {
           photoMat.needsUpdate = true;
           // luminance-aware BASE exposure: the shared 0xf0f0ea tint (luminance
           // ~0.941) times a white-ground photo's own bright texels (q90~0.94)
-          // lands at ~0.88 — far past the bloom bright-pass threshold (0.55),
+          // lands at ~0.88 — far past the bloom bright-pass threshold (0.7),
           // so a white-ground plate blooms permanently at idle, washing the
           // photograph into a halo. Scale the base DOWN per-plate so
           // q90Texel * base ≈ VITRINE_BASE_TARGET, but clamp the factor to
@@ -984,7 +1139,7 @@ function buildVitrines() {
           // overshooting now that the base itself sits lower for that plate.
           if (q90 !== null) {
             const effBaseLum = baseColor.r * 0.299 + baseColor.g * 0.587 + baseColor.b * 0.114;
-            const lift = Math.min(Math.max(0.66 / Math.max(q90 * effBaseLum, 1e-3), 1.04), 1.3);
+            const lift = Math.min(Math.max(0.8 / Math.max(q90 * effBaseLum, 1e-3), 1.04), 1.3);
             entry.hotColor.copy(baseColor).multiplyScalar(lift);
           }
           entry.loaded = true;
@@ -1457,12 +1612,20 @@ function tick() {
   // surround genuinely opens to black rather than the fogged interior.
   camera.position.z -= emerge * 5.0;
 
-  // lookAt blends from the stone (origin, chapters 1-2) to the direction of
-  // travel (chapters 3-6) so once inside we look where we're going.
+  // lookAt blends from the stone (chapters 1-2) to the direction of travel
+  // (chapters 3-6) so once inside we look where we're going. The chapter-1
+  // gaze aims left of the stone, which frames the emerald in the RIGHT half
+  // of the viewport — clear of the left-anchored headline instead of muddying
+  // it from behind (the first pass centred the stone under the copy).
   camPath.getTangentAt(t, _tangent);
   const look = chapterWindow(p, 0.18, 0.3);
   _lookAhead.copy(camera.position).add(_tangent);
-  _lookTarget.set(0, 0, 0).lerp(_lookAhead, look);
+  // The lateral offset is calibrated against a ~1.6 desktop aspect; a phone
+  // in portrait has a far narrower horizontal FOV, and the full -0.78 pushes
+  // the stone clean off the right edge. Scale it with aspect so the stone
+  // stays framed beside/below the copy on any viewport.
+  const lookX = -0.78 * Math.min(1, camera.aspect / 1.6);
+  _lookTarget.set(lookX, 0.1, 0).lerp(_lookAhead, look);
   // forward-look orientation — identical to camera.lookAt(_lookTarget).
   _lookMat.lookAt(camera.position, _lookTarget, _up);
   _qLook.setFromRotationMatrix(_lookMat);
@@ -1489,11 +1652,18 @@ function tick() {
   const fogOut = chapterWindow(p, 0.82, 1.0);
   const density = FOG_DENSITY_MAX * fogIn * (1 - 0.85 * fogOut) * (1 - 0.75 * emerge);
 
-  // --- pass-through flash: an ivory refraction pulse at the crown crossing --
-  // the camera crosses the surface (z~0.72) near p=0.24 with this ease/spline.
-  const crossing = 0.24;
-  const fd = Math.max(0, 1 - Math.abs(p - crossing) / 0.045);
-  const flash = fd * fd * 0.9;
+  // --- crossing veil: the luminous emerald sheet that carries the camera
+  // through the crown. Driven by actual camera depth (not a scroll fraction,
+  // so retiming the spline can never desynchronize it): rises over z
+  // 1.55->0.55, holds through the surface, clears over z -0.45->-1.45. The
+  // stone itself is hidden while the camera is inside its extent — up close
+  // its facets are viewport-sized flat polygons — and the veil covers both
+  // toggles completely.
+  const cz = camera.position.z;
+  const veil =
+    smootherstep(clamp01((2.9 - cz) / 1.7)) *
+    smootherstep(clamp01((cz + 1.45) / 1.0)) * 0.95;
+  emerald.visible = cz > 1.05 || cz < -0.95;
 
   // --- interior shell: fades in behind the flash, holds lit through the deep,
   // then dissolves across the emergence turn (1 - emerge) so the tunnel walls
@@ -1510,7 +1680,7 @@ function tick() {
   // plates are a chapter-4 motif (windowed .4-.6); retire them before the
   // emergence turn so a stray line-art plate doesn't drift back into the
   // near-black close as the camera swings around.
-  if (plates) plates.visible = p > 0.2 && p < 0.8;
+  if (plates) plates.visible = p > 0.27 && p < 0.8;
   updateVitrines(p);
 
   // idle orientation drift + easing back toward the resting tilt (gem.js)
@@ -1547,6 +1717,11 @@ function tick() {
   u.uKey.value.set(stone.keyX, stone.keyY, 0.5);
   u.uFogDensity.value = density;
   u.uNormalMat.value.getNormalMatrix(emerald.matrixWorld);
+  // world->local rotation for the transmission march: the transform is pure
+  // rotation, so the normal matrix IS the rotation and its transpose is the
+  // inverse. uCenter tracks the idle bob.
+  u.uInvRot.value.copy(u.uNormalMat.value).transpose();
+  u.uCenter.value.copy(emerald.position);
 
   const su = shell.material.uniforms;
   su.uOrbit.value = orbitVal;
@@ -1554,8 +1729,9 @@ function tick() {
   su.uKey.value.set(stone.keyX, stone.keyY, 0.5);
   su.uFogDensity.value = density;
   su.uFade.value = shellFade;
+  su.uTime.value = now;
 
-  post.render(scene, camera, flash);
+  post.render(scene, camera, veil, now);
   rafId = requestAnimationFrame(tick);
 }
 

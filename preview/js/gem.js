@@ -21,43 +21,98 @@
     "}"
   ].join("\n");
 
+  /* The same physically-plausible material as the immersive homepage stone
+     (js/immersive.js GEM_FS): per-channel refraction marched through an
+     analytic bounding ellipsoid broken into virtual facets, Beer-Lambert
+     emerald absorption, TIR fire, Schlick fresnel over a structured studio
+     environment, ACES tonemap. The model transform is pure rotation +
+     y-translation, so world->local is `v * rot` (row-vector = transpose). */
   var GEM_FS = [
     "precision highp float;",
     "varying vec3 vN; varying vec3 vP;",
+    "uniform mat4 uModel;",
     "uniform vec3 uEye; uniform vec3 uKey; uniform float uOrbit; uniform float uAmp;",
-    "const vec3 IVORY = vec3(0.945, 0.937, 0.91);",
+    "const vec3 IVORY = vec3(0.985, 0.972, 0.94);",
     "const vec3 JADE  = vec3(0.29, 0.57, 0.455);",
+    "const vec3 EL2 = vec3(1.0609, 0.5184, 0.5476);",       /* ellipsoid semi-axes^2 */
+    "const vec3 SIGMA = vec3(2.0, 0.45, 1.1);",             /* absorption per unit */
+    "const vec3 ETA = vec3(0.6427, 0.6365, 0.6297);",       /* 1/n per channel */
     "vec3 env(vec3 d){",                                    /* procedural studio */
     "  float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);",
-    "  vec3 base = mix(vec3(0.006, 0.009, 0.008), vec3(0.03, 0.07, 0.055), up * up);",
-    "  float box = smoothstep(0.32, 0.03, abs(d.y - 0.42)) * smoothstep(-0.4, 0.6, d.x);",
-    "  float glow = smoothstep(0.2, 1.0, -d.y);",
-    "  return base + IVORY * box * 0.7 + vec3(0.05, 0.16, 0.11) * glow * 0.3;",
+    "  vec3 base = mix(vec3(0.012, 0.017, 0.014), vec3(0.05, 0.10, 0.078), up * up);",
+    "  float ck = dot(d, normalize(vec3(-0.42, 0.60, 0.55)));",
+    "  float key = smoothstep(0.58, 0.90, ck) * (0.55 + 0.9 * smoothstep(0.84, 0.985, ck));",
+    "  float fill = smoothstep(0.45, 0.95, dot(d, normalize(vec3(0.72, 0.10, 0.30))));",
+    "  float rim = smoothstep(0.78, 0.985, dot(d, normalize(vec3(0.10, -0.25, -0.94))));",
+    "  return base + IVORY * key * 1.5 + vec3(0.42, 0.50, 0.44) * fill * 0.3",
+    "       + vec3(0.34, 0.62, 0.50) * rim * 0.5;",
+    "}",
+    "vec3 hash3(vec3 q){",                                  /* virtual facet jitter */
+    "  return fract(sin(vec3(dot(q, vec3(127.1, 311.7, 74.7)),",
+    "                        dot(q, vec3(269.5, 183.3, 246.1)),",
+    "                        dot(q, vec3(113.5, 271.9, 124.6)))) * 43758.5453) * 2.0 - 1.0;",
+    "}",
+    "float exitDist(vec3 o, vec3 d){",                      /* to the ellipsoid wall */
+    "  vec3 oo = o * inversesqrt(EL2); vec3 dd = d * inversesqrt(EL2);",
+    "  float A = dot(dd, dd); float B = dot(oo, dd); float C = dot(oo, oo) - 1.0;",
+    "  float h = B * B - A * C;",
+    "  if (h <= 0.0) return 0.5;",
+    "  return max((-B + sqrt(h)) / A, 0.02);",
+    "}",
+    "vec4 gemPath(float eta, vec3 V, vec3 N, vec3 oL, mat3 rot){",
+    "  vec3 T = refract(-V, N, eta);",
+    "  if (dot(T, T) < 1e-4) T = reflect(-V, N);",
+    "  vec3 tL = normalize(T * rot);",                      /* world -> local */
+    "  float dist = exitDist(oL, tL);",
+    "  vec3 pE = oL + tL * dist;",
+    "  vec3 n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 4.0)));",
+    "  vec3 T2 = refract(tL, -n2, 1.0 / eta);",
+    "  if (dot(T2, T2) < 1e-4) {",                          /* TIR: bounce once, out */
+    "    vec3 rB = reflect(tL, n2);",
+    "    float d2 = exitDist(pE, rB);",
+    "    dist += d2;",
+    "    pE += rB * d2;",
+    "    n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 11.0)));",
+    "    T2 = refract(rB, -n2, 1.0 / eta);",
+    "    if (dot(T2, T2) < 1e-4) T2 = rB;",
+    "  }",
+    "  return vec4(rot * normalize(T2), dist);",            /* local -> world */
+    "}",
+    "vec3 aces(vec3 x){",
+    "  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);",
     "}",
     "void main(){",
     "  vec3 N = normalize(vN);",
     "  vec3 V = normalize(uEye - vP);",
     "  if (dot(N, V) < 0.0) N = -N;",
     "  vec3 R = reflect(-V, N);",
-    "  vec3 T = refract(-V, N, 0.66);",
-    "  if (dot(T, T) < 0.001) T = R;",
-    "  float fres = 0.05 + 0.95 * pow(1.0 - max(dot(N, V), 0.0), 3.0);",
-    "  vec3 deep = mix(vec3(0.008, 0.075, 0.045), vec3(0.035, 0.34, 0.20), clamp(T.y * 0.6 + 0.55, 0.0, 1.0));",
-    "  vec3 body = deep * (0.35 + 2.2 * env(T).g);",        /* light seen through the stone */
+    "  mat3 rot = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz);",
+    "  vec3 oL = (vP - uModel[3].xyz) * rot;",              /* world -> local */
+    "  oL.y += 0.28;",                                      /* ellipsoid centre offset */
+    "  vec4 pr = gemPath(ETA.r, V, N, oL, rot);",
+    "  vec4 pg = gemPath(ETA.g, V, N, oL, rot);",
+    "  vec4 pb = gemPath(ETA.b, V, N, oL, rot);",
+    "  vec3 body;",
+    "  body.r = env(pr.xyz).r * exp(-SIGMA.r * pr.w * 1.35);",
+    "  body.g = env(pg.xyz).g * exp(-SIGMA.g * pg.w * 1.35);",
+    "  body.b = env(pb.xyz).b * exp(-SIGMA.b * pb.w * 1.35);",
+    "  body += vec3(0.004, 0.055, 0.028) * exp(-0.9 * pg.w);",
+    "  body += vec3(0.002, 0.018, 0.010);",
     "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-    "  body *= 0.7 + 0.6 * fid;",                           /* per-facet fire */
-    "  vec3 col = mix(body, env(R) * 1.5, fres);",
+    "  body *= 0.86 + 0.28 * fid;",
+    "  float fres = 0.05 + 0.95 * pow(1.0 - max(dot(N, V), 0.0), 5.0);",
+    "  vec3 col = mix(body * 1.15, env(R) * 1.2, fres);",
     "  vec3 H1 = normalize(uKey + V);",                     /* ivory key light */
-    "  float s1 = pow(max(dot(N, H1), 0.0), 140.0);",
+    "  float s1 = pow(max(dot(N, H1), 0.0), 260.0);",
     "  vec3 H2 = normalize(normalize(vec3(-0.65, -0.15, -0.5)) + V);",
-    "  float s2 = pow(max(dot(N, H2), 0.0), 36.0);",        /* jade rim */
+    "  float s2 = pow(max(dot(N, H2), 0.0), 48.0);",        /* jade rim */
     "  float a = uOrbit * 6.28318;",
     "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
-    "  float s3 = pow(max(dot(N, H3), 0.0), 90.0) * uAmp;", /* the walking light */
-    "  col += IVORY * (s1 * 1.1 + smoothstep(0.6, 1.0, s1) * 0.6);",
-    "  col += JADE * s2 * 0.5 + IVORY * s3 * 2.6;",
-    "  col = col / (col + vec3(1.0));",                     /* soft tonemap */
-    "  gl_FragColor = vec4(pow(col, vec3(0.4545)), 1.0);",
+    "  float s3 = pow(max(dot(N, H3), 0.0), 120.0) * uAmp;", /* the walking light */
+    "  col += IVORY * (s1 * 1.5 + smoothstep(0.5, 1.0, s1) * 0.8);",
+    "  col += JADE * s2 * 0.35 + IVORY * s3 * 2.2;",
+    "  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))), 0.08);",
+    "  gl_FragColor = vec4(pow(aces(col), vec3(0.4545)), 1.0);",
     "}"
   ].join("\n");
 
@@ -70,7 +125,7 @@
     "precision mediump float; varying vec2 vUV; uniform sampler2D uTex;",
     "void main(){",
     "  vec4 c = texture2D(uTex, vUV);",
-    "  gl_FragColor = vec4(max(c.rgb - 0.55, 0.0) * 1.9 * c.a, 1.0);",
+    "  gl_FragColor = vec4(max(c.rgb - 0.7, 0.0) * 1.6 * c.a, 1.0);",
     "}"
   ].join("\n");
 
@@ -93,10 +148,10 @@
     "  vec4 s = texture2D(uScene, vUV);",
     "  vec2 d = vUV - 0.5;",
     "  vec3 b;",
-    "  b.r = texture2D(uBloom, 0.5 + d * 1.014).r;",
+    "  b.r = texture2D(uBloom, 0.5 + d * 1.012).r;",
     "  b.g = texture2D(uBloom, vUV).g;",
-    "  b.b = texture2D(uBloom, 0.5 + d * 0.986).b;",
-    "  vec3 col = s.rgb + b * 1.35;",
+    "  b.b = texture2D(uBloom, 0.5 + d * 0.988).b;",
+    "  vec3 col = s.rgb + b * 0.95;",
     "  float a = clamp(s.a + dot(b, vec3(0.299, 0.587, 0.114)) * 1.7, 0.0, 1.0);",
     "  gl_FragColor = vec4(col, a);",
     "}"
