@@ -2289,7 +2289,7 @@ form.is-hidden {
   color: var(--sage);
 }
 
-.notfound.has-gem .gem-mount {
+.has-gem .gem-mount {
   display: block;
 }
 
@@ -2297,6 +2297,30 @@ form.is-hidden {
   display: none;
 }
 
-.notfound.has-gem .gem-hint {
+.has-gem .gem-hint {
   display: block;
+}
+
+/* maison intro: the stone sits beside "…until the light finds it" */
+.page-intro-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+}
+
+.gem-mount--intro {
+  width: 100%;
+  height: clamp(16rem, 38vh, 24rem);
+  margin: 0;
+}
+
+@media (max-width: 60em) {
+  .page-intro-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gem-mount--intro {
+    display: none !important;
+  }
 }
