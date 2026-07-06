@@ -93,125 +93,158 @@ const GEM_VS = [
   "}",
 ].join("\n");
 
-// A physically-plausible stone, single pass, fully procedural (no textures):
+// A physically-plausible stone, single pass, traced against the REAL cut:
+//  - The mesh (js/gem-model.js, a round brilliant) is convex, and its exact
+//    convex-hull facet planes ride along as uPlanes. A refracted ray is traced
+//    to its true exit facet analytically (nearest plane ahead), so the
+//    interior shows the actual pavilion facets of the cut — not a hashed
+//    approximation of one.
 //  - Schlick fresnel with emerald's real F0 (~0.05 at IOR 1.57) splits the
 //    light into surface reflection and body transmission.
 //  - Transmission traces each RGB channel separately (dispersion): refract at
-//    the entry facet, march to the exit of an analytic bounding ellipsoid,
-//    refract out (or take one total-internal-reflection bounce — the "fire"
-//    of a real step cut), and sample the studio environment along the exit.
+//    the entry facet, exit through a real facet (with up to two total-
+//    internal-reflection bounces — the "fire"), sample the studio environment
+//    along the exit direction.
 //  - Beer–Lambert absorption over the traversed path length gives the body
 //    its depth: green survives, red dies, thin edges glow lighter than the
 //    thick heart of the stone — real transparency, not a flat tint.
-//  - ACES tonemap keeps the ivory softbox glints crisp without clipping to
-//    the flat white rectangles the old soft tonemap produced.
+//  - ACES tonemap keeps the ivory softbox glints crisp without clipping.
+// GEM_PLANE_COUNT must match gem-model.js's planeCount; buildEmerald asserts.
+const GEM_PLANE_COUNT = 90;
 const GEM_FS = [
   "varying vec3 vN; varying vec3 vP;",
   "uniform vec3 uKey; uniform float uOrbit; uniform float uAmp;",
   "uniform vec3 uFogColor; uniform float uFogDensity;",
   "uniform mat3 uNormalMat; uniform mat3 uInvRot; uniform vec3 uCenter;",
+  "uniform vec4 uPlanes[" + GEM_PLANE_COUNT + "];",
   "const vec3 IVORY = vec3(0.985, 0.972, 0.94);",
   "const vec3 JADE  = vec3(0.29, 0.57, 0.455);",
-  // bounding-ellipsoid semi-axes^2 of the cut (x 1.03, y 0.72, z 0.74)
-  "const vec3 EL2 = vec3(1.0609, 0.5184, 0.5476);",
-  // per-channel absorption (per world unit): emerald transmits green,
-  // swallows red, dims blue. Red keeps a survivable floor — total red kill
-  // reads as neon-candy RGB green, not a mineral.
-  "const vec3 SIGMA = vec3(2.0, 0.45, 1.1);",
-  // per-channel entry eta (1/n): n_R 1.556, n_G 1.571, n_B 1.588
-  "const vec3 ETA = vec3(0.6427, 0.6365, 0.6297);",
-  "vec3 env(vec3 d){", // procedural studio: key softbox, ivory fill, cool rim
+  // per-channel absorption (per local unit): emerald transmits green,
+  // swallows red, dims blue toward teal. Red keeps a survivable floor — total
+  // red kill reads as neon-candy RGB green, not a mineral. Tuned so a mid
+  // chord lands in the site's own deep-emerald family (#0e3d2b / #4a9174).
+  "const vec3 SIGMA = vec3(3.2, 0.60, 1.30);",
+  // per-channel entry eta (1/n) — spread a touch wider than beryl's true
+  // dispersion so the TIR fire separates visibly at screen scale
+  "const vec3 ETA = vec3(0.6460, 0.6365, 0.6270);",
+  // Procedural jewelry-studio environment. Real facets are discrete mirrors:
+  // each one shows ONE direction of this map, so the map needs structure —
+  // several distinct panels at different angles and intensities, a bright
+  // ceiling strip, and a dark floor — or every downward facet shades the same
+  // flat green and the cut reads as CAD plastic. Panel edges are steep
+  // smoothsteps so reflections read as lit softboxes, not radial blobs.
+  "vec3 env(vec3 d){",
   "  float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);",
-  "  vec3 base = mix(vec3(0.012, 0.017, 0.014), vec3(0.05, 0.10, 0.078), up * up);",
-  // key softbox with a hot core — a flat-intensity box mirrored in a flat
-  // facet reads as a grey sticker; the core-to-edge falloff is what makes a
-  // reflection read as a lit panel.
+  "  vec3 base = mix(vec3(0.004, 0.007, 0.006), vec3(0.035, 0.075, 0.058), up * up);",
+  // key softbox, high left-front, hot core
   "  float ck = dot(d, normalize(vec3(-0.42, 0.60, 0.55)));",
-  "  float key = smoothstep(0.58, 0.90, ck) * (0.55 + 0.9 * smoothstep(0.84, 0.985, ck));",
+  "  float key = smoothstep(0.50, 0.86, ck) * (0.6 + 1.1 * smoothstep(0.84, 0.985, ck));",
+  // second panel, high right-rear, cooler and dimmer — crown facets opposite
+  // the key still catch a distinct shape
+  "  float ck2 = dot(d, normalize(vec3(0.55, 0.52, -0.42)));",
+  "  float key2 = smoothstep(0.72, 0.93, ck2) * (0.5 + 0.8 * smoothstep(0.90, 0.99, ck2));",
+  // thin horizontal strip light just above the horizon — the classic jewelry
+  // girdle glint; narrow in elevation, wide in azimuth
+  "  float strip = smoothstep(0.10, 0.16, d.y) * (1.0 - smoothstep(0.20, 0.27, d.y))",
+  "              * smoothstep(-0.2, 0.45, d.z);",
   "  float fill = smoothstep(0.45, 0.95, dot(d, normalize(vec3(0.72, 0.10, 0.30))));",
   "  float rim = smoothstep(0.78, 0.985, dot(d, normalize(vec3(0.10, -0.25, -0.94))));",
-  "  return base + IVORY * key * 1.5 + vec3(0.42, 0.50, 0.44) * fill * 0.3",
-  "       + vec3(0.34, 0.62, 0.50) * rim * 0.5;",
+  // broad reflector card under the stone — pavilion TIR paths that exit
+  // downward pick up a soft ivory-green bounce instead of dead black
+  "  float under = smoothstep(-0.05, -0.75, d.y) * (0.5 + 0.5 * smoothstep(-0.4, 0.6, d.z));",
+  "  return base + IVORY * key * 2.2 + vec3(0.80, 0.86, 0.90) * key2 * 1.1",
+  "       + IVORY * strip * 0.4 + vec3(0.42, 0.50, 0.44) * fill * 0.3",
+  "       + vec3(0.30, 0.58, 0.47) * rim * 0.5 + vec3(0.05, 0.10, 0.08) * under;",
   "}",
-  // pseudo-random unit-ish vector per lattice cell — used to break the smooth
-  // analytic exit surface into virtual pavilion facets (see gemPath).
-  "vec3 hash3(vec3 q){",
-  "  return fract(sin(vec3(dot(q, vec3(127.1, 311.7, 74.7)),",
-  "                        dot(q, vec3(269.5, 183.3, 246.1)),",
-  "                        dot(q, vec3(113.5, 271.9, 124.6)))) * 43758.5453) * 2.0 - 1.0;",
+  // exit of a ray travelling INSIDE the convex stone: the nearest facet plane
+  // ahead of it. Returns the distance; writes the exit facet's outward normal.
+  // (Planes are n.p = d with outward n, in the cut's local frame.)
+  "float planeExit(vec3 o, vec3 d, out vec3 n){",
+  "  float tMin = 4.0; n = vec3(0.0, 1.0, 0.0);",
+  "  for (int i = 0; i < " + GEM_PLANE_COUNT + "; i++) {",
+  "    float dn = dot(uPlanes[i].xyz, d);",
+  "    if (dn > 1e-5) {",
+  "      float t = (uPlanes[i].w - dot(uPlanes[i].xyz, o)) / dn;",
+  "      if (t > 1e-4 && t < tMin) { tMin = t; n = uPlanes[i].xyz; }",
+  "    }",
+  "  }",
+  "  return tMin;",
   "}",
-  // distance from a point inside the bounding ellipsoid to its surface along d
-  "float exitDist(vec3 o, vec3 d){",
-  "  vec3 oo = o * inversesqrt(EL2); vec3 dd = d * inversesqrt(EL2);",
-  "  float A = dot(dd, dd); float B = dot(oo, dd); float C = dot(oo, oo) - 1.0;",
-  "  float h = B * B - A * C;",
-  "  if (h <= 0.0) return 0.5;", // grazing ray: fall back to a mean chord
-  "  return max((-B + sqrt(h)) / A, 0.02);",
-  "}",
-  // one channel's path through the stone: entry refraction -> exit (with one
-  // TIR bounce if the exit facet reflects it back in). Returns the world-space
-  // exit direction (xyz) and the traversed path length (w).
-  "vec4 gemPath(float eta, vec3 V, vec3 N, vec3 oL){",
-  "  vec3 T = refract(-V, N, eta);",
+  // The path through the stone, traced ONCE at the green eta: entry
+  // refraction -> true exit facet, one total-internal-reflection bounce (the
+  // fire). Writes the internal ray and exit facet normal (both local) so
+  // main() can split R/G/B at the exit — per-channel exit refraction carries
+  // the dispersion at a third of the cost of tracing three full paths, which
+  // is the difference between 12fps and 60fps when the stone fills a phone
+  // screen. Returns traversed path length.
+  "float gemPath(vec3 V, vec3 N, vec3 oL, out vec3 rayL, out vec3 exitN){",
+  "  vec3 T = refract(-V, N, ETA.g);",
   "  if (dot(T, T) < 1e-4) T = reflect(-V, N);",
   "  vec3 tL = normalize(uInvRot * T);",
-  "  float dist = exitDist(oL, tL);",
-  "  vec3 pE = oL + tL * dist;",
-  // the smooth analytic exit gives smooth curved bands — snap it to virtual
-  // pavilion facets (a hashed lattice jitter) so the transmitted light breaks
-  // into the discrete patches a step cut actually shows
-  "  vec3 n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 4.0)));",
-  "  vec3 T2 = refract(tL, -n2, 1.0 / eta);",
-  "  if (dot(T2, T2) < 1e-4) {", // total internal reflection: one bounce, out
-  "    vec3 rB = reflect(tL, n2);",
-  "    float d2 = exitDist(pE, rB);",
-  "    dist += d2;",
-  "    pE += rB * d2;",
-  "    n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 11.0)));",
-  "    T2 = refract(rB, -n2, 1.0 / eta);",
-  "    if (dot(T2, T2) < 1e-4) T2 = rB;",
+  "  vec3 n2;",
+  "  float dist = planeExit(oL, tL, n2);",
+  "  vec3 T2 = refract(tL, -n2, 1.0 / ETA.g);",
+  "  if (dot(T2, T2) < 1e-4) {",
+  "    vec3 pE = oL + tL * dist;",
+  "    tL = reflect(tL, n2);",
+  "    dist += planeExit(pE, tL, n2);",
   "  }",
-  "  return vec4(uNormalMat * normalize(T2), dist);",
+  "  rayL = tL; exitN = n2;",
+  "  return max(dist, 0.32);",
   "}",
   "vec3 aces(vec3 x){",
   "  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);",
   "}",
-  "void main(){",
-  "  vec3 N = normalize(vN);",
-  "  vec3 V = normalize(cameraPosition - vP);",
+  "vec3 hash3(vec3 q){",
+"  return fract(sin(vec3(dot(q, vec3(127.1, 311.7, 74.7)),",
+"                        dot(q, vec3(269.5, 183.3, 246.1)),",
+"                        dot(q, vec3(113.5, 271.9, 124.6)))) * 43758.5453) * 2.0 - 1.0;",
+"}",
+"void main(){",
+"  vec3 N = normalize(vN);",
+  // a whisper of polish waviness — kills the dead-flat CAD tone inside a
+  // big facet while staying far below "frosted"
+"  N = normalize(N + hash3(floor(vP * 90.0)) * 0.002);",
+"  vec3 V = normalize(cameraPosition - vP);",
   "  if (dot(N, V) < 0.0) N = -N;",
   "  vec3 R = reflect(-V, N);",
-  // entry point in the cut's local frame, relative to the ellipsoid centre
-  // (the cut spans local y 0.42..-0.98, so its volumetric centre sits at -0.28)
+  // entry point in the cut's local frame (the baked model is centred)
   "  vec3 oL = uInvRot * (vP - uCenter);",
-  "  oL.y += 0.28;",
-  // dispersion: each channel refracts on its own eta and marches its own path
-  "  vec4 pr = gemPath(ETA.r, V, N, oL);",
-  "  vec4 pg = gemPath(ETA.g, V, N, oL);",
-  "  vec4 pb = gemPath(ETA.b, V, N, oL);",
+  // nudge the origin just inside the entry facet so planeExit's t>0 guard
+  // can't re-hit the entry plane on a grazing ray
+  "  oL -= normalize(uInvRot * N) * 0.002;",
+  // one traced path; dispersion split at the exit facet per channel
+  "  vec3 rayL, exitN;",
+  "  float plen = gemPath(V, N, oL, rayL, exitN);",
+  "  vec3 er = refract(rayL, -exitN, 1.0 / ETA.r);",
+  "  vec3 eg = refract(rayL, -exitN, 1.0 / ETA.g);",
+  "  vec3 eb = refract(rayL, -exitN, 1.0 / ETA.b);",
+  "  if (dot(eg, eg) < 1e-4) eg = reflect(rayL, exitN);",
+  "  if (dot(er, er) < 1e-4) er = eg;",
+  "  if (dot(eb, eb) < 1e-4) eb = eg;",
   "  vec3 body;",
-  "  body.r = env(pr.xyz).r * exp(-SIGMA.r * pr.w * 1.35);",
-  "  body.g = env(pg.xyz).g * exp(-SIGMA.g * pg.w * 1.35);",
-  "  body.b = env(pb.xyz).b * exp(-SIGMA.b * pb.w * 1.35);",
+  "  body.r = env(uNormalMat * normalize(er)).r * exp(-SIGMA.r * plen * 1.8);",
+  "  body.g = env(uNormalMat * normalize(eg)).g * exp(-SIGMA.g * plen * 1.8);",
+  "  body.b = env(uNormalMat * normalize(eb)).b * exp(-SIGMA.b * plen * 1.8);",
   // the deep body floor: even where no light exits toward a softbox, the stone
   // reads as material, not a hole — thin edges lighter than the thick heart.
-  "  body += vec3(0.004, 0.055, 0.028) * exp(-0.9 * pg.w);",
-  "  body += vec3(0.002, 0.018, 0.010);",
+  "  body += vec3(0.003, 0.042, 0.026) * exp(-0.9 * plen);",
+  "  body += vec3(0.002, 0.016, 0.010);",
   "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-  "  body *= 0.86 + 0.28 * fid;", // subtle per-facet variation, not banding
+  "  body *= 0.92 + 0.16 * fid;", // real facets vary on their own; keep this subtle
   "  float fres = 0.05 + 0.95 * pow(1.0 - max(dot(N, V), 0.0), 5.0);",
   "  vec3 col = mix(body * 1.15, env(R) * 1.2, fres);",
   "  vec3 H1 = normalize(uKey + V);", // ivory key light
-  "  float s1 = pow(max(dot(N, H1), 0.0), 260.0);",
+  "  float s1 = pow(max(dot(N, H1), 0.0), 120.0);",
   "  vec3 H2 = normalize(normalize(vec3(-0.65, -0.15, -0.5)) + V);",
   "  float s2 = pow(max(dot(N, H2), 0.0), 48.0);", // jade rim
   "  float a = uOrbit * 6.28318;",
   "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
-  "  float s3 = pow(max(dot(N, H3), 0.0), 120.0) * uAmp;", // the walking light
+  "  float s3 = pow(max(dot(N, H3), 0.0), 70.0) * uAmp;", // the walking light
   "  col += IVORY * (s1 * 1.5 + smoothstep(0.5, 1.0, s1) * 0.8);",
-  "  col += JADE * s2 * 0.35 + IVORY * s3 * 2.2;",
+  "  col += JADE * s2 * 0.35 + IVORY * s3 * 3.4;",
   // a whisper of desaturation — pure-primary green reads as plastic
-  "  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))), 0.08);",
+  "  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))), 0.04);",
   "  vec3 outc = pow(aces(col), vec3(0.4545));",
   // FogExp2, applied in output (gamma) space so it matches the interior shell
   // and the noir page behind. Scene.fog is inert for ShaderMaterial, so we do
@@ -253,12 +286,12 @@ const SHELL_FS = [
   // facet is never one flat colour even when it fills the frame
   "  float band = sin(vP.z * 1.7 + uTime * 0.00045)",
   "             * sin(vP.x * 2.3 + vP.y * 1.1 - uTime * 0.00032);",
-  "  wall += vec3(0.006, 0.038, 0.024) * smoothstep(0.1, 0.95, band);",
-  "  wall += vec3(0.022, 0.095, 0.060) * fres;", // luminous facet edges
+  "  wall += vec3(0.004, 0.020, 0.013) * smoothstep(0.1, 0.95, band);",
+  "  wall += vec3(0.010, 0.042, 0.028) * fres;", // luminous facet edges
   "  float a = uOrbit * 6.28318;",
   "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
   "  float s3 = pow(max(dot(N, H3), 0.0), 60.0) * uAmp;", // walking light on the walls
-  "  wall += vec3(0.6, 0.95, 0.78) * s3 * 0.45;",
+  "  wall += vec3(0.6, 0.95, 0.78) * s3 * 0.3;",
   "  vec3 outc = pow(aces(wall), vec3(0.4545));",
   "  float fdist = length(cameraPosition - vP);",
   "  float fogF = 1.0 - exp(-uFogDensity * uFogDensity * fdist * fdist);",
@@ -322,61 +355,34 @@ const COMP_FS = [
   "  vec3 col = s.rgb + b * 0.95;",
   "  float r = length(d) * 2.0;",
   "  float shimmer = 0.88 + 0.12 * sin(uTime * 0.0011 + r * 7.0);",
-  "  vec3 veilC = mix(vec3(0.93, 1.0, 0.97), vec3(0.30, 0.72, 0.53), clamp(r, 0.0, 1.0));",
-  "  float v = clamp(uVeil * (1.0 - 0.35 * r * r) * shimmer, 0.0, 0.88);",
+  "  vec3 veilC = mix(vec3(0.16, 0.40, 0.29), vec3(0.006, 0.028, 0.018), clamp(r, 0.0, 1.0));",
+  "  float v = clamp(uVeil * (1.0 - 0.25 * r * r) * shimmer, 0.0, 0.93);",
   "  col = mix(col, veilC, v);",
   "  float a = clamp(s.a + dot(b, vec3(0.299, 0.587, 0.114)) * 1.7 + v, 0.0, 1.0);",
   "  gl_FragColor = vec4(col, a);",
   "}",
 ].join("\n");
 
-// Build the elongated octagonal step-cut emerald as a non-indexed
-// BufferGeometry with per-face flat normals — the exact ring/tri generator
-// from js/gem.js:116-147.
+// Build the stone from the baked round-brilliant model (js/gem-model.js —
+// a real cut, CC-BY, see vendor/LICENSE-diamond.md) as a non-indexed
+// BufferGeometry with per-face flat normals. The model's convex-hull facet
+// planes feed the shader's exact interior trace (uPlanes).
 function buildEmerald() {
-  function ring(s, y) {
-    const W = 1.02 * s, D = 0.72 * s, C = 0.36 * s;
-    return [
-      [W, y, D - C], [W, y, -(D - C)], [W - C, y, -D], [-(W - C), y, -D],
-      [-W, y, -(D - C)], [-W, y, D - C], [-(W - C), y, D], [W - C, y, D],
-    ];
+  const model = window.FROZI_GEM_MODEL;
+  if (!model) throw new Error("js/gem-model.js must load before immersive.js");
+  if (model.planeCount !== GEM_PLANE_COUNT) {
+    throw new Error("gem-model planeCount " + model.planeCount + " != shader " + GEM_PLANE_COUNT);
   }
-  const rings = [
-    ring(0.6, 0.42), ring(0.85, 0.28), ring(1.0, 0.0),
-    ring(0.97, -0.08), ring(0.6, -0.52), ring(0.3, -0.82), ring(0.1, -0.98),
-  ];
-  const pos = [], nrm = [];
-  function tri(a, b, c) {
-    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-    const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
-    const cx = (a[0] + b[0] + c[0]) / 3,
-      cy = (a[1] + b[1] + c[1]) / 3 + 0.15,
-      cz = (a[2] + b[2] + c[2]) / 3;
-    if (nx * cx + ny * cy + nz * cz < 0) {
-      const t = b; b = c; c = t;
-      nx = -nx; ny = -ny; nz = -nz;
-    }
-    const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-    [a, b, c].forEach(function (p) {
-      pos.push(p[0], p[1], p[2]);
-      nrm.push(nx / l, ny / l, nz / l);
-    });
-  }
-  for (let i = 0; i < rings.length - 1; i++) {
-    for (let j = 0; j < 8; j++) {
-      const k = (j + 1) % 8;
-      tri(rings[i][j], rings[i][k], rings[i + 1][k]);
-      tri(rings[i][j], rings[i + 1][k], rings[i + 1][j]);
-    }
-  }
-  for (let j = 1; j < 7; j++) tri(rings[0][0], rings[0][j], rings[0][j + 1]);
-  const last = rings.length - 1;
-  for (let j = 1; j < 7; j++) tri(rings[last][0], rings[last][j + 1], rings[last][j]);
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+  const indexed = new THREE.BufferGeometry();
+  indexed.setAttribute("position", new THREE.BufferAttribute(model.positions, 3));
+  indexed.setIndex(new THREE.BufferAttribute(model.indices, 1));
+  // non-indexed + computeVertexNormals = true per-face flat normals, which is
+  // what makes each facet a discrete mirror (smooth normals would melt the
+  // cut into a blob).
+  const geometry = indexed.toNonIndexed();
+  indexed.dispose();
+  geometry.computeVertexNormals();
 
   const material = new THREE.ShaderMaterial({
     vertexShader: GEM_VS,
@@ -393,15 +399,17 @@ function buildEmerald() {
       uNormalMat: { value: new THREE.Matrix3() },
       // world->local rotation (transpose of uNormalMat — valid because the
       // emerald's transform is pure rotation) and the stone's world centre;
-      // the transmission path in GEM_FS marches the bounding ellipsoid in the
-      // cut's local frame. Both refreshed alongside uNormalMat in tick().
+      // the transmission trace in GEM_FS works in the cut's local frame.
+      // Both refreshed alongside uNormalMat in tick().
       uInvRot: { value: new THREE.Matrix3() },
       uCenter: { value: new THREE.Vector3() },
+      // the cut's convex-hull facet planes (local frame, n.p = d) — a flat
+      // Float32Array uploads directly as the vec4 array. Never changes.
+      uPlanes: { value: model.planes },
     },
-    // gem.js never enables CULL_FACE and its shader flips back-facing normals
-    // (`if (dot(N,V) < 0.0) N = -N;`); Three's default FrontSide would cull the
-    // facets whose winding the generator corrected, punching holes in the stone.
-    side: THREE.DoubleSide,
+    // the baked mesh has consistent outward winding, so back-face culling is
+    // safe — and halves the fragment work when the stone fills the viewport.
+    side: THREE.FrontSide,
   });
 
   return new THREE.Mesh(geometry, material);
@@ -692,7 +700,7 @@ function buildMotes() {
   };
 }
 
-const MOTE_JADE = new THREE.Color(0x63b58e);
+const MOTE_JADE = new THREE.Color(0x4a9174);
 const MOTE_IVORY = new THREE.Color(0xf2eedd);
 const _moteColor = new THREE.Color();
 const _moteMatrix = new THREE.Matrix4();
@@ -1011,6 +1019,10 @@ function buildVitrines() {
   // viewport while the left/right stagger still reads. Clamped [0.2, 1].
   const aspect = window.innerWidth / window.innerHeight;
   const lateral = Math.min(1, Math.max(0.2, aspect * 0.7 - 0.122));
+  // portrait phones: the horizontal FOV is so narrow that a full-size card a
+  // few units out already spans the screen — shrink the plates so they read
+  // as framed photographs there too.
+  const cardScale = aspect < 1 ? 0.62 : 1;
 
   const cards = Array.from(
     document.querySelectorAll('.chapter[data-chapter="5"] .vitrine')
@@ -1081,6 +1093,7 @@ function buildVitrines() {
     // angled back toward the camera's approach — a fixed, tasteful lean.
     lookTarget.copy(p0).addScaledVector(tan, -4);
     sub.lookAt(lookTarget);
+    sub.scale.setScalar(cardScale);
     sub.visible = false; // revealed once its texture loads (or stays hidden)
 
     group.add(sub);
@@ -1092,6 +1105,7 @@ function buildVitrines() {
       focusable: true, // tracks the tabindex/aria-hidden gate (see updateVitrines)
       sub,
       photoMat,
+      backMat,
       baseColor,
       hotColor,
       baseQuat: sub.quaternion.clone(),
@@ -1284,6 +1298,8 @@ const PARALLAX_MAX = 0.15;
 // its js/main.js fade is dead on this page (no .hero-grid), so tick() fades it
 // out over p 0-0.06. Cached at mount, style cleared at teardown.
 let scrollCue = null;
+// last value written to canvas.style.opacity by the end-of-journey fade
+let lastCanvasFade = -1;
 // Latches once the cue has fully faded (p >= 0.06) so tick() stops writing
 // "0.000" to its opacity every single frame for the rest of the page's life —
 // un-latches if the reader scrolls back above the fade window so the cue can
@@ -1317,7 +1333,9 @@ function smootherstep(x) {
 // pointer-driven key light, and the "walking light" orbit timeline.
 // ---------------------------------------------------------------------------
 const stone = {
-  rx: -0.16,
+  // resting tilt: crown toward the camera — a brilliant is shot from above
+  // its table, never edge-on at the girdle
+  rx: 0.45,
   ry: 0.65,
   keyX: 0.55,
   keyY: 0.75,
@@ -1480,11 +1498,13 @@ function updateVitrines(p) {
   if (!vitrines) return;
   const entries = vitrines.userData.entries;
 
-  // chapter-5 envelope: in .55-.6, hold to .78, out to .78-.84 — fully gone
-  // before the chapter-6 emergence turn (starts ~.82) so a lingering plate
-  // doesn't swing into the near-black close as the camera comes about.
-  const env = clamp01((p - 0.55) / 0.05) * (1 - clamp01((p - 0.78) / 0.06));
-  vitrines.visible = p > 0.53 && p < 0.85;
+  // chapter-5 envelope: in .585-.63 (after chapter 4's copy has largely
+  // faded — starting at .55 parked the cards behind the ch4 column), hold
+  // to .74, out by .80 — gone before the camera passes them, so a card is
+  // never parked half-off the screen edge, and well clear of the
+  // chapter-6 emergence turn (~.82).
+  const env = clamp01((p - 0.585) / 0.045) * (1 - clamp01((p - 0.74) / 0.06));
+  vitrines.visible = p > 0.57 && p < 0.82;
 
   // project against the camera as it stands this frame (position + lookAt were
   // written at the top of tick; matrixWorldInverse is refreshed here because the
@@ -1511,7 +1531,15 @@ function updateVitrines(p) {
       _vColor.copy(e.baseColor).lerp(e.hotColor, e.hot);
       e.photoMat.color.copy(_vColor);
     }
-    e.sub.visible = e.loaded && !e.failed;
+    // distance fade: a card dissolves as the camera closes on it, instead of
+    // swelling into a screen-filling photograph — on a portrait phone the
+    // narrow horizontal FOV made a passing plate fill the whole frame.
+    const camDist = camera.position.distanceTo(e.worldCenter);
+    const fadeAt = camera.aspect < 1 ? 2.6 : 1.5; // portrait: fade sooner
+    const nearFade = smootherstep(clamp01((camDist - fadeAt) / 1.3));
+    e.photoMat.opacity = nearFade;
+    e.backMat.opacity = nearFade;
+    e.sub.visible = e.loaded && !e.failed && nearFade > 0.01;
     e.sub.updateMatrixWorld(true);
 
     // .is-hot on the DOM caption (both hover directions land here)
@@ -1531,7 +1559,8 @@ function updateVitrines(p) {
       !behind &&
       _vProj.x > -1.3 && _vProj.x < 1.3 &&
       _vProj.y > -1.4 && _vProj.y < 1.4;
-    const op = e.failed ? (behind ? 0 : env) : e.loaded && onScreen ? env : 0;
+    const op =
+      (e.failed ? (behind ? 0 : env) : e.loaded && onScreen ? env : 0) * nearFade;
 
     const st = e.card.style;
     if (!behind) {
@@ -1692,7 +1721,7 @@ function tick() {
 
   // idle orientation drift + easing back toward the resting tilt (gem.js)
   if (now - stone.lastTouch > 2500) stone.ry += 0.0032;
-  stone.rx += (-0.16 - stone.rx) * 0.005;
+  stone.rx += (0.45 - stone.rx) * 0.005;
   stone.rx = Math.max(-0.9, Math.min(0.9, stone.rx));
   const bob = Math.sin(now * 0.0007) * 0.04;
   emerald.rotation.set(stone.rx, stone.ry, 0);
@@ -1739,6 +1768,16 @@ function tick() {
   su.uTime.value = now;
 
   post.render(scene, camera, veil, now);
+
+  // The journey ends before the document does: the footer scrolls up over
+  // the fixed canvas, and the receding stone was landing right on its link
+  // columns. Fade the whole 3D layer to nothing across the last stretch so
+  // the close hands the page back to the DOM.
+  const canvasFade = 1 - smootherstep(chapterWindow(p, 0.94, 0.985));
+  if (canvasFade !== lastCanvasFade) {
+    canvas.style.opacity = canvasFade.toFixed(3);
+    lastCanvasFade = canvasFade;
+  }
   rafId = requestAnimationFrame(tick);
 }
 
@@ -1799,7 +1838,11 @@ function teardown() {
   }
   scrollCueFaded = false;
   parallax.x = parallax.y = parallax.tx = parallax.ty = 0;
-  if (canvas) canvas.hidden = true;
+  if (canvas) {
+    canvas.style.opacity = "";
+    canvas.hidden = true;
+  }
+  lastCanvasFade = -1;
   document.body.classList.remove("is-immersive");
 }
 

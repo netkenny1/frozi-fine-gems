@@ -34,84 +34,96 @@
     "uniform vec3 uEye; uniform vec3 uKey; uniform float uOrbit; uniform float uAmp;",
     "const vec3 IVORY = vec3(0.985, 0.972, 0.94);",
     "const vec3 JADE  = vec3(0.29, 0.57, 0.455);",
-    "const vec3 EL2 = vec3(1.0609, 0.5184, 0.5476);",       /* ellipsoid semi-axes^2 */
-    "const vec3 SIGMA = vec3(2.0, 0.45, 1.1);",             /* absorption per unit */
-    "const vec3 ETA = vec3(0.6427, 0.6365, 0.6297);",       /* 1/n per channel */
+    "uniform vec4 uPlanes[90];",                            /* the cut's hull facets */
+    "const vec3 SIGMA = vec3(3.2, 0.60, 1.30);",            /* absorption per unit */
+    "const vec3 ETA = vec3(0.6460, 0.6365, 0.6270);",       /* 1/n per channel */
     "vec3 env(vec3 d){",                                    /* procedural studio */
     "  float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);",
-    "  vec3 base = mix(vec3(0.012, 0.017, 0.014), vec3(0.05, 0.10, 0.078), up * up);",
+    "  vec3 base = mix(vec3(0.004, 0.007, 0.006), vec3(0.035, 0.075, 0.058), up * up);",
     "  float ck = dot(d, normalize(vec3(-0.42, 0.60, 0.55)));",
-    "  float key = smoothstep(0.58, 0.90, ck) * (0.55 + 0.9 * smoothstep(0.84, 0.985, ck));",
+    "  float key = smoothstep(0.50, 0.86, ck) * (0.6 + 1.1 * smoothstep(0.84, 0.985, ck));",
+    "  float ck2 = dot(d, normalize(vec3(0.55, 0.52, -0.42)));",
+    "  float key2 = smoothstep(0.72, 0.93, ck2) * (0.5 + 0.8 * smoothstep(0.90, 0.99, ck2));",
+    "  float strip = smoothstep(0.10, 0.16, d.y) * (1.0 - smoothstep(0.20, 0.27, d.y))",
+    "              * smoothstep(-0.2, 0.45, d.z);",
     "  float fill = smoothstep(0.45, 0.95, dot(d, normalize(vec3(0.72, 0.10, 0.30))));",
     "  float rim = smoothstep(0.78, 0.985, dot(d, normalize(vec3(0.10, -0.25, -0.94))));",
-    "  return base + IVORY * key * 1.5 + vec3(0.42, 0.50, 0.44) * fill * 0.3",
-    "       + vec3(0.34, 0.62, 0.50) * rim * 0.5;",
+    "  float under = smoothstep(-0.05, -0.75, d.y) * (0.5 + 0.5 * smoothstep(-0.4, 0.6, d.z));",
+    "  return base + IVORY * key * 2.2 + vec3(0.80, 0.86, 0.90) * key2 * 1.1",
+    "       + IVORY * strip * 0.4 + vec3(0.42, 0.50, 0.44) * fill * 0.3",
+    "       + vec3(0.30, 0.58, 0.47) * rim * 0.5 + vec3(0.05, 0.10, 0.08) * under;",
     "}",
-    "vec3 hash3(vec3 q){",                                  /* virtual facet jitter */
+    "vec3 hash3(vec3 q){",                                  /* polish micro-waviness */
     "  return fract(sin(vec3(dot(q, vec3(127.1, 311.7, 74.7)),",
     "                        dot(q, vec3(269.5, 183.3, 246.1)),",
     "                        dot(q, vec3(113.5, 271.9, 124.6)))) * 43758.5453) * 2.0 - 1.0;",
     "}",
-    "float exitDist(vec3 o, vec3 d){",                      /* to the ellipsoid wall */
-    "  vec3 oo = o * inversesqrt(EL2); vec3 dd = d * inversesqrt(EL2);",
-    "  float A = dot(dd, dd); float B = dot(oo, dd); float C = dot(oo, oo) - 1.0;",
-    "  float h = B * B - A * C;",
-    "  if (h <= 0.0) return 0.5;",
-    "  return max((-B + sqrt(h)) / A, 0.02);",
+    "float planeExit(vec3 o, vec3 d, out vec3 n){",         /* true exit facet */
+    "  float tMin = 4.0; n = vec3(0.0, 1.0, 0.0);",
+    "  for (int i = 0; i < 90; i++) {",
+    "    float dn = dot(uPlanes[i].xyz, d);",
+    "    if (dn > 1e-5) {",
+    "      float t = (uPlanes[i].w - dot(uPlanes[i].xyz, o)) / dn;",
+    "      if (t > 1e-4 && t < tMin) { tMin = t; n = uPlanes[i].xyz; }",
+    "    }",
+    "  }",
+    "  return tMin;",
     "}",
-    "vec4 gemPath(float eta, vec3 V, vec3 N, vec3 oL, mat3 rot){",
-    "  vec3 T = refract(-V, N, eta);",
+    "float gemPath(vec3 V, vec3 N, vec3 oL, mat3 rot, out vec3 rayL, out vec3 exitN){",
+    "  vec3 T = refract(-V, N, ETA.g);",
     "  if (dot(T, T) < 1e-4) T = reflect(-V, N);",
     "  vec3 tL = normalize(T * rot);",                      /* world -> local */
-    "  float dist = exitDist(oL, tL);",
-    "  vec3 pE = oL + tL * dist;",
-    "  vec3 n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 4.0)));",
-    "  vec3 T2 = refract(tL, -n2, 1.0 / eta);",
-    "  if (dot(T2, T2) < 1e-4) {",                          /* TIR: bounce once, out */
-    "    vec3 rB = reflect(tL, n2);",
-    "    float d2 = exitDist(pE, rB);",
-    "    dist += d2;",
-    "    pE += rB * d2;",
-    "    n2 = normalize(normalize(pE / EL2) + 0.5 * hash3(floor(pE * 3.6 + 11.0)));",
-    "    T2 = refract(rB, -n2, 1.0 / eta);",
-    "    if (dot(T2, T2) < 1e-4) T2 = rB;",
+    "  vec3 n2;",
+    "  float dist = planeExit(oL, tL, n2);",
+    "  vec3 T2 = refract(tL, -n2, 1.0 / ETA.g);",
+    "  if (dot(T2, T2) < 1e-4) {",                          /* TIR: one bounce */
+    "    vec3 pE = oL + tL * dist;",
+    "    tL = reflect(tL, n2);",
+    "    dist += planeExit(pE, tL, n2);",
     "  }",
-    "  return vec4(rot * normalize(T2), dist);",            /* local -> world */
+    "  rayL = tL; exitN = n2;",
+    "  return max(dist, 0.32);",
     "}",
     "vec3 aces(vec3 x){",
     "  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);",
     "}",
     "void main(){",
     "  vec3 N = normalize(vN);",
+    "  N = normalize(N + hash3(floor(vP * 90.0)) * 0.002);",
     "  vec3 V = normalize(uEye - vP);",
     "  if (dot(N, V) < 0.0) N = -N;",
     "  vec3 R = reflect(-V, N);",
     "  mat3 rot = mat3(uModel[0].xyz, uModel[1].xyz, uModel[2].xyz);",
     "  vec3 oL = (vP - uModel[3].xyz) * rot;",              /* world -> local */
-    "  oL.y += 0.28;",                                      /* ellipsoid centre offset */
-    "  vec4 pr = gemPath(ETA.r, V, N, oL, rot);",
-    "  vec4 pg = gemPath(ETA.g, V, N, oL, rot);",
-    "  vec4 pb = gemPath(ETA.b, V, N, oL, rot);",
+    "  oL -= normalize(N * rot) * 0.002;",                  /* just inside the facet */
+    "  vec3 rayL, exitN;",
+    "  float plen = gemPath(V, N, oL, rot, rayL, exitN);",
+    "  vec3 er = refract(rayL, -exitN, 1.0 / ETA.r);",
+    "  vec3 eg = refract(rayL, -exitN, 1.0 / ETA.g);",
+    "  vec3 eb = refract(rayL, -exitN, 1.0 / ETA.b);",
+    "  if (dot(eg, eg) < 1e-4) eg = reflect(rayL, exitN);",
+    "  if (dot(er, er) < 1e-4) er = eg;",
+    "  if (dot(eb, eb) < 1e-4) eb = eg;",
     "  vec3 body;",
-    "  body.r = env(pr.xyz).r * exp(-SIGMA.r * pr.w * 1.35);",
-    "  body.g = env(pg.xyz).g * exp(-SIGMA.g * pg.w * 1.35);",
-    "  body.b = env(pb.xyz).b * exp(-SIGMA.b * pb.w * 1.35);",
-    "  body += vec3(0.004, 0.055, 0.028) * exp(-0.9 * pg.w);",
-    "  body += vec3(0.002, 0.018, 0.010);",
+    "  body.r = env(rot * normalize(er)).r * exp(-SIGMA.r * plen * 1.8);",
+    "  body.g = env(rot * normalize(eg)).g * exp(-SIGMA.g * plen * 1.8);",
+    "  body.b = env(rot * normalize(eb)).b * exp(-SIGMA.b * plen * 1.8);",
+    "  body += vec3(0.003, 0.042, 0.026) * exp(-0.9 * plen);",
+    "  body += vec3(0.002, 0.016, 0.010);",
     "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-    "  body *= 0.86 + 0.28 * fid;",
+    "  body *= 0.92 + 0.16 * fid;",
     "  float fres = 0.05 + 0.95 * pow(1.0 - max(dot(N, V), 0.0), 5.0);",
     "  vec3 col = mix(body * 1.15, env(R) * 1.2, fres);",
     "  vec3 H1 = normalize(uKey + V);",                     /* ivory key light */
-    "  float s1 = pow(max(dot(N, H1), 0.0), 260.0);",
+    "  float s1 = pow(max(dot(N, H1), 0.0), 120.0);",
     "  vec3 H2 = normalize(normalize(vec3(-0.65, -0.15, -0.5)) + V);",
     "  float s2 = pow(max(dot(N, H2), 0.0), 48.0);",        /* jade rim */
     "  float a = uOrbit * 6.28318;",
     "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
-    "  float s3 = pow(max(dot(N, H3), 0.0), 120.0) * uAmp;", /* the walking light */
+    "  float s3 = pow(max(dot(N, H3), 0.0), 70.0) * uAmp;", /* the walking light */
     "  col += IVORY * (s1 * 1.5 + smoothstep(0.5, 1.0, s1) * 0.8);",
-    "  col += JADE * s2 * 0.35 + IVORY * s3 * 2.2;",
-    "  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))), 0.08);",
+    "  col += JADE * s2 * 0.35 + IVORY * s3 * 3.4;",
+    "  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))), 0.04);",
     "  gl_FragColor = vec4(pow(aces(col), vec3(0.4545)), 1.0);",
     "}"
   ].join("\n");
@@ -167,39 +179,23 @@
              canvas.getContext("experimental-webgl", { antialias: false, alpha: true });
     if (!gl) { host.removeChild(canvas); return false; }
 
-    /* ---- geometry: elongated octagonal step cut, flat-shaded ---- */
-    function ring(s, y) {
-      var W = 1.02 * s, D = 0.72 * s, C = 0.36 * s;
-      return [
-        [ W, y,  D - C], [ W, y, -(D - C)], [ W - C, y, -D], [-(W - C), y, -D],
-        [-W, y, -(D - C)], [-W, y,  D - C], [-(W - C), y,  D], [ W - C, y,  D]
-      ];
-    }
-    var rings = [
-      ring(0.60,  0.42), ring(0.85,  0.28), ring(1.00,  0.00),
-      ring(0.97, -0.08), ring(0.60, -0.52), ring(0.30, -0.82), ring(0.10, -0.98)
-    ];
+    /* ---- geometry: the baked round-brilliant cut (js/gem-model.js),
+       expanded to non-indexed triangles with flat per-face normals. The same
+       model's hull planes drive the shader's exact interior trace. ---- */
+    var MODEL = window.FROZI_GEM_MODEL;
+    if (!MODEL) { host.removeChild(canvas); return false; }
     var pos = [], nrm = [];
-    function tri(a, b, c) {
+    var mp = MODEL.positions, mi = MODEL.indices;
+    for (var f = 0; f < mi.length; f += 3) {
+      var a = [mp[mi[f]*3], mp[mi[f]*3+1], mp[mi[f]*3+2]];
+      var b = [mp[mi[f+1]*3], mp[mi[f+1]*3+1], mp[mi[f+1]*3+2]];
+      var c = [mp[mi[f+2]*3], mp[mi[f+2]*3+1], mp[mi[f+2]*3+2]];
       var ux = b[0]-a[0], uy = b[1]-a[1], uz = b[2]-a[2];
       var vx = c[0]-a[0], vy = c[1]-a[1], vz = c[2]-a[2];
       var nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
-      var cx = (a[0]+b[0]+c[0])/3, cy = (a[1]+b[1]+c[1])/3 + 0.15, cz = (a[2]+b[2]+c[2])/3;
-      if (nx*cx + ny*cy + nz*cz < 0) { var t = b; b = c; c = t; nx = -nx; ny = -ny; nz = -nz; }
       var l = Math.sqrt(nx*nx+ny*ny+nz*nz) || 1;
       [a, b, c].forEach(function (p) { pos.push(p[0], p[1], p[2]); nrm.push(nx/l, ny/l, nz/l); });
     }
-    var i, j;
-    for (i = 0; i < rings.length - 1; i++) {
-      for (j = 0; j < 8; j++) {
-        var k = (j + 1) % 8;
-        tri(rings[i][j], rings[i][k], rings[i+1][k]);
-        tri(rings[i][j], rings[i+1][k], rings[i+1][j]);
-      }
-    }
-    for (j = 1; j < 7; j++) tri(rings[0][0], rings[0][j], rings[0][j+1]);
-    var last = rings.length - 1;
-    for (j = 1; j < 7; j++) tri(rings[last][0], rings[last][j+1], rings[last][j]);
     var vertCount = pos.length / 3;
 
     /* ---- programs ---- */
@@ -221,7 +217,9 @@
       return o;
     }
     var P3D = program(GEM_VS, GEM_FS, ["aP", "aN"],
-      ["uProj", "uView", "uModel", "uEye", "uKey", "uOrbit", "uAmp"]);
+      ["uProj", "uView", "uModel", "uEye", "uKey", "uOrbit", "uAmp", "uPlanes"]);
+    gl.useProgram(P3D.p);
+    gl.uniform4fv(P3D.u.uPlanes, MODEL.planes);
     var PBRIGHT = program(QUAD_VS, BRIGHT_FS, ["aQ"], ["uTex"]);
     var PBLUR = program(QUAD_VS, BLUR_FS, ["aQ"], ["uTex", "uDir"]);
     var PCOMP = program(QUAD_VS, COMP_FS, ["aQ"], ["uScene", "uBloom"]);
@@ -285,7 +283,7 @@
     }
 
     /* ---- interaction: drag with inertia, idle drift, the walking light ---- */
-    var rx = -0.16, ry = 0.65, vx = 0, vy = 0;
+    var rx = 0.45, ry = 0.65, vx = 0, vy = 0;
     var dragging = false, lastX = 0, lastY = 0, lastTouch = 0;
     var keyX = 0.55, keyY = 0.75;
     var orbitT = -1e9;
@@ -353,7 +351,7 @@
       if (!dragging && !reduce) {
         rx += vx; ry += vy; vx *= 0.94; vy *= 0.94;         /* inertia */
         if (now - lastTouch > 2500) ry += 0.0032;           /* idle drift */
-        rx += (-0.16 - rx) * 0.005;
+        rx += (0.45 - rx) * 0.005;
       }
       rx = Math.max(-0.9, Math.min(0.9, rx));
       var o = (now - orbitT) / 1400;
