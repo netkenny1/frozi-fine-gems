@@ -362,10 +362,21 @@
         c.setAttribute("aria-pressed", c === chip ? "true" : "false");
       });
       var want = chip.getAttribute("data-value");
+      var shown = 0;
       items.forEach(function (item) {
         var hide = want !== "all" && item.getAttribute("data-category") !== want;
         item.classList.toggle("is-filtered", hide);
+        item.classList.remove("is-dealt");
+        if (!hide) item.style.setProperty("--d", shown++);
       });
+      if (!reduceMotion) {
+        void chipRow.offsetWidth; /* flush styles so the deal restarts */
+        items.forEach(function (item) {
+          if (!item.classList.contains("is-filtered")) {
+            item.classList.add("is-dealt");
+          }
+        });
+      }
     });
   }
 
@@ -378,6 +389,35 @@
       sizeRow.querySelectorAll(".size").forEach(function (s) {
         s.setAttribute("aria-pressed", s === size ? "true" : "false");
       });
+    });
+  }
+
+  /* ---- Page-to-page morph ----
+     Cross-document view transitions carry the clicked vitrine photograph
+     onto the product stage. Only one element per page may hold the name,
+     so it is assigned at click time and cleared on bfcache restores. */
+  if (!reduceMotion && "startViewTransition" in document) {
+    document.addEventListener("click", function (e) {
+      var link = e.target.closest(".vitrine-name a");
+      if (!link) return;
+      var vitrine = link.closest(".vitrine");
+      var img = vitrine && vitrine.querySelector(".vitrine-media img");
+      if (img) img.style.viewTransitionName = "piece";
+    });
+
+    window.addEventListener("pageshow", function (e) {
+      if (!e.persisted) return;
+      document.querySelectorAll(".vitrine-media img").forEach(function (img) {
+        img.style.viewTransitionName = "";
+      });
+    });
+
+    /* arriving mid-transition, the stage photograph skips its own
+       clip-wipe entrance — the travelling image is the only motion */
+    window.addEventListener("pagereveal", function (e) {
+      if (!e.viewTransition) return;
+      var frame = document.querySelector(".stage-photo");
+      if (frame) frame.classList.add("vt-arrival", "is-visible");
     });
   }
 

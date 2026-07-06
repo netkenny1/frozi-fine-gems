@@ -1185,7 +1185,9 @@ body.no-intro .intro {
   display: grid;
   place-items: center;
   padding: 4vmin;
-  background: rgba(10, 12, 11, 0.96);
+  background: rgba(10, 12, 11, 0.88);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   opacity: 0;
   visibility: hidden;
   cursor: zoom-out;
@@ -1778,6 +1780,7 @@ form.is-hidden {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
   }
@@ -2143,4 +2146,110 @@ form.is-hidden {
    so the giant strokes never run behind the lede copy */
 .page-intro--ledger {
   padding-bottom: clamp(8rem, 16vh, 12rem);
+}
+
+/* ---- Page-to-page choreography (v7) ------------------------------------------
+   Cross-document view transitions: pages hand over with a soft crossfade
+   under a stationary header, and a clicked vitrine photograph travels
+   onto the product stage. Progressive — browsers without the API keep
+   instant navigation, reduced-motion keeps everything out. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  .site-header {
+    view-transition-name: site-header;
+  }
+
+  /* the stage photograph is the morph target; its twin on the departing
+     page is named at click time, in main.js */
+  .product-stage .stage-photo img {
+    view-transition-name: piece;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.45s;
+  }
+
+  ::view-transition-group(piece) {
+    animation-duration: 0.65s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.3, 1);
+  }
+
+  /* keep the travelling photograph cropped, never squashed, while the
+     group animates between the two frames' aspect ratios */
+  ::view-transition-old(piece),
+  ::view-transition-new(piece) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation-duration: 0.65s;
+  }
+
+  /* arriving via the morph, the stage skips its own clip-wipe entrance —
+     the travelling photograph is the only motion */
+  .stage-photo.vt-arrival {
+    clip-path: none;
+    transition: none;
+  }
+
+  .stage-photo.vt-arrival img {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---- Filter re-deal ------------------------------------------------------------
+   Choosing a chip re-deals the remaining vitrines: each rises back into the
+   case in order. Runs on `translate` so it composes with the tilt transform. */
+
+@keyframes vitrine-deal {
+  from {
+    opacity: 0;
+    translate: 0 1.4rem;
+  }
+}
+
+.vitrine.is-dealt {
+  animation: vitrine-deal 0.6s var(--ease-out) backwards;
+  animation-delay: calc(var(--d, 0) * 60ms);
+}
+
+/* ---- Accordion breathing ---------------------------------------------------------
+   Where supported, the details body unfolds and settles instead of popping
+   (interpolate-size + ::details-content). Older browsers keep the pop. */
+
+:root {
+  interpolate-size: allow-keywords;
+}
+
+.acc::details-content {
+  block-size: 0;
+  overflow: clip;
+  opacity: 0;
+  transition: block-size 0.5s var(--ease-out), opacity 0.45s var(--ease-out),
+    content-visibility 0.5s allow-discrete;
+}
+
+.acc[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+
+/* ---- Bag badge pulse ---------------------------------------------------------------
+   The badge takes one breath when a piece lands in the bag. */
+
+@keyframes badge-pulse {
+  30% {
+    scale: 1.4;
+    background: var(--emerald);
+    color: var(--ivory);
+  }
+}
+
+.bag-count.is-pulsing {
+  animation: badge-pulse 0.7s var(--ease-out);
 }

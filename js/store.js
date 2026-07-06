@@ -114,6 +114,12 @@
       }
       addBtn.classList.add("is-added");
       addBtn.querySelector("span").textContent = "Added — add another";
+      var badge = document.querySelector("[data-bag-count]");
+      if (badge) {
+        badge.classList.remove("is-pulsing");
+        void badge.offsetWidth; /* flush styles so the pulse restarts */
+        badge.classList.add("is-pulsing");
+      }
     });
   }
 
