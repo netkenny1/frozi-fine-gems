@@ -248,13 +248,13 @@ const SHELL_FS = [
   "  if (dot(N, V) < 0.0) N = -N;",
   "  float fres = pow(1.0 - max(dot(N, V), 0.0), 2.5);",
   "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-  "  vec3 wall = mix(vec3(0.003, 0.014, 0.009), vec3(0.007, 0.042, 0.025), fid);",
+  "  vec3 wall = mix(vec3(0.002, 0.009, 0.006), vec3(0.004, 0.026, 0.016), fid);",
   // caustic light bands — slow interference drifting along the tunnel, so a
   // facet is never one flat colour even when it fills the frame
   "  float band = sin(vP.z * 1.7 + uTime * 0.00045)",
   "             * sin(vP.x * 2.3 + vP.y * 1.1 - uTime * 0.00032);",
-  "  wall += vec3(0.010, 0.062, 0.038) * smoothstep(0.1, 0.95, band);",
-  "  wall += vec3(0.035, 0.15, 0.095) * fres;", // luminous facet edges
+  "  wall += vec3(0.006, 0.038, 0.024) * smoothstep(0.1, 0.95, band);",
+  "  wall += vec3(0.022, 0.095, 0.060) * fres;", // luminous facet edges
   "  float a = uOrbit * 6.28318;",
   "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
   "  float s3 = pow(max(dot(N, H3), 0.0), 60.0) * uAmp;", // walking light on the walls
@@ -714,7 +714,7 @@ function updateMotes(now, p, travelTangent) {
   const cz = camera.position.z;
   const fade = clamp01((-cz - 0.35) / 0.9) * (1 - clamp01((p - 0.86) / 0.08));
   motes.mesh.visible = fade > 0.01;
-  motes.mesh.material.opacity = 0.85 * fade;
+  motes.mesh.material.opacity = 0.6 * fade;
   if (!motes.mesh.visible) return;
 
   // Every mote billboards to face the camera (shares one quaternion, computed
@@ -872,13 +872,16 @@ function buildPlates() {
   PLATE_DEFS.forEach((def, i) => {
     const canvas = drawPlateCanvas(def, PLATE_STROKE);
     const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
     texture.needsUpdate = true;
 
     const material = new THREE.MeshBasicMaterial({
       map: texture,
       color: new THREE.Color(0xd8f3e4),
       transparent: true,
-      opacity: 0.7,
+      // 0.7 sat right at the legibility floor once the walls darkened —
+      // 0.85 keeps the engraved (not neon) tone but reads reliably.
+      opacity: 0.85,
       side: THREE.DoubleSide,
       depthWrite: false,
       // see the matching comment in buildMotes(): the faceted shell can read
@@ -953,7 +956,7 @@ const VITRINE_LABEL_DROP = VITRINE_H * 0.34;
 // healthy margin under the bloom bright-pass threshold (0.7) so a
 // white-ground photograph doesn't bloom at rest. 0.5 was the first value
 // tried and held — see task-7-report.md fix round 2 for the visual check.
-const VITRINE_BASE_TARGET = 0.5;
+const VITRINE_BASE_TARGET = 0.62;
 
 // Bright-quantile luminance (~q90, 0..1) of a loaded same-origin image,
 // sampled through a small canvas. Used to make the hover lift luminance-aware:
@@ -1115,6 +1118,10 @@ function buildVitrines() {
             return;
           }
           entry.tex = tex;
+          // anisotropic filtering: the plates sit at an oblique lean, and
+          // default trilinear sampling smears them — this is most of the
+          // "pictures aren't clear" complaint.
+          tex.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
           photoMat.map = tex;
           photoMat.needsUpdate = true;
           // luminance-aware BASE exposure: the shared 0xf0f0ea tint (luminance

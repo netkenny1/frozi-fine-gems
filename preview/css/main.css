@@ -2342,6 +2342,27 @@ body.is-immersive { background: var(--noir); }
 body.is-immersive .chapter { background: transparent; }
 body.is-immersive .section--light { color: var(--ivory); }
 
+/* .section--light descendants re-assert light-ground inks (moss body text,
+   near-black emerald eyebrows/numerals) that vanish on the noir world —
+   the "text matches the background" complaint. Re-ink them for the dark
+   ground, and give all chapter copy a soft noir halo so it stays legible
+   when a glowing mote or plate drifts behind the letters. */
+body.is-immersive .chapter-copy {
+  text-shadow: 0 1px 22px rgba(7, 19, 13, 0.95), 0 0 6px rgba(7, 19, 13, 0.7);
+}
+body.is-immersive .section--light .eyebrow,
+body.is-immersive .section--light .process-numeral {
+  color: var(--jade-bright);
+}
+body.is-immersive .section--light .lede,
+body.is-immersive .section--light .muted,
+body.is-immersive .section--light .process-step p {
+  color: var(--ivory-dim);
+}
+body.is-immersive .section--light .process-step {
+  border-top-color: rgba(170, 189, 178, 0.28);
+}
+
 /* fallback layout glue: chapters need a positioning context for the
    absolutely-positioned scroll cue, and the hero/CTA chapters (which don't
    use .section-head) need the same copy rhythm the rest of the site uses */
