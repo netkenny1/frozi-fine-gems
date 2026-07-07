@@ -2709,3 +2709,139 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
     transform: none;
   }
 }
+
+
+/* ---- Manifesto interlude (scroll-inked sentence) ------------------------- */
+/* Static by default: the sentence sits fully lit on one quiet screen. With
+   js/cinema.js live (.mf-live) the section grows a runway and each word's
+   opacity is scrubbed from dim sage to ivory, 1:1 with scroll. */
+
+.manifesto {
+  background: var(--noir);
+  color: var(--ivory);
+}
+
+.manifesto.mf-live {
+  height: 240vh;
+}
+
+.mf-sticky {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  align-content: center;
+}
+
+.mf-line {
+  max-width: 22ch;
+  font-size: clamp(2rem, 4.6vw, 4.2rem);
+  line-height: 1.22;
+  letter-spacing: 0.005em;
+  margin: 0;
+}
+
+.mf-line em {
+  font-style: italic;
+  color: var(--jade-bright);
+}
+
+.mf-w {
+  display: inline-block;
+  will-change: opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manifesto.mf-live {
+    height: auto;
+  }
+  .mf-w {
+    opacity: 1 !important;
+  }
+}
+
+
+/* ---- The stone (scroll-turned 360) --------------------------------------- */
+/* Static by default: one still of the emerald on a quiet screen. With
+   js/cinema.js live (.rt-live) the section grows a runway and the canvas
+   scrubs through 72 pre-rendered frames, one turn per runway. */
+
+.rotator {
+  background: var(--noir);
+  color: var(--ivory);
+}
+
+.rotator.rt-live {
+  height: 300vh;
+}
+
+.rt-sticky {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+}
+
+.rt-stage {
+  position: relative;
+  width: min(74vh, 88vw);
+  aspect-ratio: 1;
+  margin: 0;
+}
+
+.rt-stage img,
+.rt-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rt-canvas {
+  display: none;
+}
+
+.rt-ready .rt-canvas {
+  display: block;
+}
+
+.rt-ready .rt-fallback {
+  visibility: hidden;
+}
+
+.rt-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(2.5rem, 7vh, 5rem);
+  display: grid;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.rt-copy .h2 {
+  margin: 0;
+}
+
+.rt-note {
+  font-size: var(--size-small);
+  color: var(--ivory-dim);
+  max-width: 34rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotator.rt-live {
+    height: auto;
+  }
+  .rt-canvas {
+    display: none !important;
+  }
+  .rt-ready .rt-fallback {
+    visibility: visible;
+  }
+}
