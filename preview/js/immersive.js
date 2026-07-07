@@ -259,7 +259,7 @@ const GEM_FS = [
 
 // The interior shell — a scaled, inverted-normal (BackSide) clone of the
 // emerald that surrounds the camera once it has passed through the crown. It
-// reads as dim green facet walls that shimmer as the walking light sweeps,
+// reads as clean near-black depth with a faint emerald fresnel lift,
 // dissolving into fog toward the deep interior. Simpler than the gem: no
 // refraction/dispersion, just a faceted wall + fresnel edge glow + the fog mix.
 // The old wall shaded each facet a single flat colour; the shell's facets are
@@ -280,18 +280,15 @@ const SHELL_FS = [
   "  vec3 V = normalize(cameraPosition - vP);",
   "  if (dot(N, V) < 0.0) N = -N;",
   "  float fres = pow(1.0 - max(dot(N, V), 0.0), 2.5);",
-  "  float fid = fract(sin(dot(N, vec3(12.9898, 78.233, 37.719))) * 43758.5453);",
-  "  vec3 wall = mix(vec3(0.002, 0.009, 0.006), vec3(0.004, 0.026, 0.016), fid);",
-  // caustic light bands — slow interference drifting along the tunnel, so a
-  // facet is never one flat colour even when it fills the frame
-  "  float band = sin(vP.z * 1.7 + uTime * 0.00045)",
-  "             * sin(vP.x * 2.3 + vP.y * 1.1 - uTime * 0.00032);",
-  "  wall += vec3(0.004, 0.020, 0.013) * smoothstep(0.1, 0.95, band);",
-  "  wall += vec3(0.010, 0.042, 0.028) * fres;", // luminous facet edges
+  // clean darkness: a near-black emerald gradient with the faintest fresnel
+  // lift toward the walls — no facet texture, no light bands. The depth cue
+  // is the motes and the fog, not the surface.
+  "  vec3 wall = vec3(0.002, 0.008, 0.005);",
+  "  wall += vec3(0.005, 0.022, 0.014) * fres;",
   "  float a = uOrbit * 6.28318;",
   "  vec3 H3 = normalize(normalize(vec3(cos(a), 0.35, sin(a))) + V);",
-  "  float s3 = pow(max(dot(N, H3), 0.0), 60.0) * uAmp;", // walking light on the walls
-  "  wall += vec3(0.6, 0.95, 0.78) * s3 * 0.3;",
+  "  float s3 = pow(max(dot(N, H3), 0.0), 60.0) * uAmp;", // walking light, subtle
+  "  wall += vec3(0.6, 0.95, 0.78) * s3 * 0.15;",
   "  vec3 outc = pow(aces(wall), vec3(0.4545));",
   "  float fdist = length(cameraPosition - vP);",
   "  float fogF = 1.0 - exp(-uFogDensity * uFogDensity * fdist * fdist);",
@@ -606,7 +603,7 @@ function buildMoteTexture() {
 // front of the lens. tick() rewrites all instance matrices every frame from
 // one shared camera-facing quaternion; nothing here is re-derived per frame.
 function buildMotes() {
-  const count = IS_TOUCH ? 150 : 400;
+  const count = IS_TOUCH ? 90 : 220;
 
   const texture = buildMoteTexture();
   const geometry = new THREE.PlaneGeometry(1, 1);
@@ -621,10 +618,10 @@ function buildMotes() {
     depthWrite: false,
     // depthTest off + a renderOrder after the shell: the tunnel shell is a
     // faceted BackSide surface that, once fully faded in (uFade -> 1 through
-    // most of the chapters motes/plates occupy), reads as opaque and can sit
+    // most of the chapters motes occupy), reads as opaque and can sit
     // nearer than expected at some view angles because its facets aren't a
     // smooth cylinder — without this the shell silently paints over motes
-    // and plates that are geometrically well inside it.
+    // that are geometrically well inside it.
     depthTest: false,
     blending: THREE.AdditiveBlending,
     side: THREE.DoubleSide,
@@ -722,7 +719,7 @@ function updateMotes(now, p, travelTangent) {
   const cz = camera.position.z;
   const fade = clamp01((-cz - 0.35) / 0.9) * (1 - clamp01((p - 0.86) / 0.08));
   motes.mesh.visible = fade > 0.01;
-  motes.mesh.material.opacity = 0.6 * fade;
+  motes.mesh.material.opacity = 0.42 * fade;
   if (!motes.mesh.visible) return;
 
   // Every mote billboards to face the camera (shares one quaternion, computed
@@ -756,185 +753,6 @@ function updateMotes(now, p, travelTangent) {
 }
 
 // ---------------------------------------------------------------------------
-// Ledger plates — three line-art planes suspended in the depths, drawn from
-// the same SVG path data used for the drawn plates elsewhere on the site
-// (404.html / about.html plate no.1 / product.html), so the motif carries
-// through into the 3D interior. Canvas-drawn once at build time into
-// THREE.CanvasTexture, never touched again.
-// ---------------------------------------------------------------------------
-const PLATE_DEFS = [
-  // 404.html: the simple two-nested-octagon mark
-  {
-    vbw: 200,
-    vbh: 200,
-    cmds: [
-      { type: "path", d: "M70 30h60l40 40v60l-40 40H70l-40-40V70z" },
-      { type: "path", d: "M85 60h30l25 25v30l-25 25H85l-25-25V85z" },
-      { type: "line", x1: 30, y1: 100, x2: 60, y2: 100 },
-      { type: "line", x1: 140, y1: 100, x2: 170, y2: 100 },
-    ],
-  },
-  // about.html: plate no. 1 — three nested octagons, facet ticks, baseline
-  {
-    vbw: 260,
-    vbh: 240,
-    cmds: [
-      { type: "path", d: "M96 56h68l30 30v68l-30 30H96l-30-30V86z" },
-      { type: "path", d: "M108 76h44l20 20v48l-20 20h-44l-20-20V96z" },
-      { type: "path", d: "M118 92h24l12 12v32l-12 12h-24l-12-12v-32z" },
-      { type: "line", x1: 88, y1: 76, x2: 98, y2: 92 },
-      { type: "line", x1: 172, y1: 76, x2: 162, y2: 92 },
-      { type: "line", x1: 192, y1: 96, x2: 174, y2: 104 },
-      { type: "line", x1: 192, y1: 144, x2: 174, y2: 136 },
-      { type: "line", x1: 172, y1: 164, x2: 162, y2: 148 },
-      { type: "line", x1: 88, y1: 164, x2: 98, y2: 148 },
-      { type: "line", x1: 68, y1: 144, x2: 86, y2: 136 },
-      { type: "line", x1: 68, y1: 96, x2: 86, y2: 104 },
-      { type: "line", x1: 68, y1: 204, x2: 192, y2: 204 },
-      { type: "line", x1: 68, y1: 198, x2: 68, y2: 210 },
-      { type: "line", x1: 192, y1: 198, x2: 192, y2: 210 },
-    ],
-  },
-  // product.html: the Vipera plate — draftsman crosshair, halo circles, octagon
-  {
-    vbw: 240,
-    vbh: 240,
-    cmds: [
-      { type: "line", x1: 120, y1: 4, x2: 120, y2: 236 },
-      { type: "line", x1: 4, y1: 140, x2: 236, y2: 140 },
-      { type: "line", x1: 86, y1: 46, x2: 66, y2: 46 },
-      { type: "line", x1: 86, y1: 88, x2: 66, y2: 88 },
-      { type: "line", x1: 70, y1: 46, x2: 70, y2: 88 },
-      { type: "circle", cx: 120, cy: 140, r: 58 },
-      { type: "circle", cx: 120, cy: 140, r: 50 },
-      { type: "path", d: "M104 46h32l12 12v18l-12 12h-32l-12-12V58z" },
-      { type: "path", d: "M110 56h20l7 7v10l-7 7h-20l-7-7V63z" },
-      { type: "line", x1: 104, y1: 46, x2: 110, y2: 56 },
-      { type: "line", x1: 136, y1: 46, x2: 130, y2: 56 },
-      { type: "line", x1: 148, y1: 58, x2: 137, y2: 63 },
-      { type: "line", x1: 148, y1: 76, x2: 137, y2: 73 },
-      { type: "line", x1: 136, y1: 88, x2: 130, y2: 80 },
-      { type: "line", x1: 104, y1: 88, x2: 110, y2: 80 },
-      { type: "line", x1: 92, y1: 76, x2: 103, y2: 73 },
-      { type: "line", x1: 92, y1: 58, x2: 103, y2: 63 },
-      { type: "line", x1: 104, y1: 88, x2: 108, y2: 96 },
-      { type: "line", x1: 136, y1: 88, x2: 132, y2: 96 },
-    ],
-  },
-];
-
-// A step down from the first pass's #4a9174 — additive blending over the
-// darkened interior walls made that read as neon wireframe; this sits between
-// the printed-page jade and the old value, an engraved line rather than Tron.
-const PLATE_STROKE = "#3f7f66";
-
-function drawPlateCanvas(def, strokeColor) {
-  const size = 1024; // crisp at 4K/retina — the old 512 blurred on any zoom
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const cx = canvas.getContext("2d");
-  const pad = size * 0.08;
-  const scale = (size - pad * 2) / Math.max(def.vbw, def.vbh);
-  cx.save();
-  cx.translate((size - def.vbw * scale) / 2, (size - def.vbh * scale) / 2);
-  cx.scale(scale, scale);
-  cx.lineCap = "round";
-  cx.lineJoin = "round";
-  cx.lineWidth = 2.2 / scale;
-  cx.strokeStyle = strokeColor;
-  for (const cmd of def.cmds) {
-    if (cmd.type === "path") {
-      cx.stroke(new Path2D(cmd.d));
-    } else if (cmd.type === "line") {
-      cx.beginPath();
-      cx.moveTo(cmd.x1, cmd.y1);
-      cx.lineTo(cmd.x2, cmd.y2);
-      cx.stroke();
-    } else if (cmd.type === "circle") {
-      cx.beginPath();
-      cx.arc(cmd.cx, cmd.cy, cmd.r, 0, Math.PI * 2);
-      cx.stroke();
-    }
-  }
-  cx.restore();
-  return canvas;
-}
-
-// Path parameters + alternating left/right offsets — chapter 4's window is
-// .40-.60, so all three plates are encountered while its copy is on screen.
-const PLATE_P = [0.45, 0.5, 0.55];
-const PLATE_SIDE = [-1, 1, -1];
-
-function buildPlates() {
-  const group = new THREE.Group();
-  group.visible = false;
-
-  const disposables = [];
-  const up = new THREE.Vector3(0, 1, 0);
-  const altUp = new THREE.Vector3(1, 0, 0);
-  const p0 = new THREE.Vector3();
-  const tan = new THREE.Vector3();
-  const perp = new THREE.Vector3();
-  const lookTarget = new THREE.Vector3();
-
-  PLATE_DEFS.forEach((def, i) => {
-    const canvas = drawPlateCanvas(def, PLATE_STROKE);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = renderer ? renderer.capabilities.getMaxAnisotropy() : 4;
-    texture.needsUpdate = true;
-
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      color: new THREE.Color(0xd8f3e4),
-      transparent: true,
-      // 0.7 sat right at the legibility floor once the walls darkened —
-      // 0.85 keeps the engraved (not neon) tone but reads reliably.
-      opacity: 0.85,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      // see the matching comment in buildMotes(): the faceted shell can read
-      // as nearer than a plate that's geometrically well inside it, silently
-      // painting over it. depthTest off + renderOrder after the shell fixes it.
-      depthTest: false,
-      blending: THREE.AdditiveBlending,
-      fog: true,
-    });
-
-    const geometry = new THREE.PlaneGeometry(1.05, 1.05);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = 10;
-
-    const p = PLATE_P[i];
-    const t = easeOut(p);
-    camPath.getPointAt(t, p0);
-    camPath.getTangentAt(t, tan);
-    const arbitrary = Math.abs(tan.y) < 0.9 ? up : altUp;
-    perp.crossVectors(tan, arbitrary).normalize();
-
-    // sits a little ahead of (and beside) the path point the camera reaches
-    // at progress p, so it reads as passing beside the camera rather than
-    // sitting dead abeam of it (which would swing out of the frustum right
-    // at the moment the copy for chapter 4 is on screen).
-    mesh.position
-      .copy(p0)
-      .addScaledVector(tan, 2.1)
-      .addScaledVector(perp, PLATE_SIDE[i] * 0.8);
-    mesh.position.y += (i - 1) * 0.12;
-
-    // angled back toward the direction the camera approaches from — a fixed,
-    // tasteful angle rather than true billboarding.
-    lookTarget.copy(p0).addScaledVector(tan, -4);
-    mesh.lookAt(lookTarget);
-
-    group.add(mesh);
-    disposables.push(geometry, material, texture);
-  });
-
-  group.userData.dispose = () => disposables.forEach((d) => d.dispose());
-  return group;
-}
-
-// ---------------------------------------------------------------------------
 // The vitrines — chapter 5's four featured pieces, suspended in the interior
 // as lit photograph plates. Each DOM .vitrine card (index.html) contributes
 // its <img> src as a texture on a plane; the DOM card itself is restyled by
@@ -942,7 +760,7 @@ function buildPlates() {
 // its plate's projected screen position, so the real <a> the reader clicks is
 // plain DOM navigation and js/main.js's view-transition naming fires unchanged.
 //
-// Placement mirrors the ledger plates: p values are scroll progress, eased to
+// Placement: p values are scroll progress, eased to
 // arc-length along the spline, alternating sides. The window (p ~.55-.9) brackets
 // chapter 5 (.6-.8) with a little lead-in/out.
 // ---------------------------------------------------------------------------
@@ -1079,7 +897,7 @@ function buildVitrines() {
     sub.add(back);
     sub.add(photo);
 
-    // placement along the path (same idiom as the ledger plates)
+    // placement along the path
     const t = easeOut(VITRINE_P[i]);
     camPath.getPointAt(t, p0);
     camPath.getTangentAt(t, tan);
@@ -1273,7 +1091,6 @@ let shell = null;
 let camPath = null;
 let post = null;
 let motes = null;
-let plates = null;
 let vitrines = null;
 let rafId = null;
 
@@ -1389,7 +1206,7 @@ function buildScene() {
   // FogExp2 in deep viridian. THREE.ShaderMaterial does NOT read scene.fog —
   // the gem and shell materials each carry their own uFogDensity uniform
   // (scrubbed by hand in tick(), see `density` below) and mix fog in-shader
-  // (GEM_FS/SHELL_FS). The motes/plates materials ARE built-in
+  // (GEM_FS/SHELL_FS). The motes material IS a built-in
   // MeshBasicMaterial though, so they DO pick this up automatically; tick()
   // writes the same `density` value here each frame to keep every layer of
   // the interior dissolving into the fog together.
@@ -1425,9 +1242,6 @@ function buildScene() {
 
   motes = buildMotes();
   scene.add(motes.mesh);
-
-  plates = buildPlates();
-  scene.add(plates);
 
   vitrines = buildVitrines();
   scene.add(vitrines);
@@ -1707,16 +1521,12 @@ function tick() {
   const shellFade = chapterWindow(p, 0.19, 0.3) * (1 - emerge);
   shell.visible = shellFade > 0.002;
 
-  // motes + plates: built-in MeshBasicMaterial does read scene.fog (unlike
-  // the hand-rolled gem/shell ShaderMaterials), so driving it with the same
+  // motes: built-in MeshBasicMaterial does read scene.fog (unlike the
+  // hand-rolled gem/shell ShaderMaterials), so driving it with the same
   // density keeps their glow dissolving into the deep in lockstep with the
   // stone and tunnel walls.
   scene.fog.density = density;
   updateMotes(now, p, _tangent);
-  // plates are a chapter-4 motif (windowed .4-.6); retire them before the
-  // emergence turn so a stray line-art plate doesn't drift back into the
-  // near-black close as the camera swings around.
-  if (plates) plates.visible = p > 0.27 && p < 0.8;
   updateVitrines(p);
 
   // idle orientation drift + easing back toward the resting tilt (gem.js)
@@ -1798,11 +1608,6 @@ function teardown() {
     motes.dispose();
   }
   motes = null;
-  if (plates) {
-    if (scene) scene.remove(plates);
-    plates.userData.dispose();
-  }
-  plates = null;
   if (vitrines) {
     vitrines.userData.entries.forEach((e) => {
       if (e.onEnter) e.card.removeEventListener("mouseenter", e.onEnter);
