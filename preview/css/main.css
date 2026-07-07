@@ -2538,3 +2538,174 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   text-decoration-color: #4a9174;
   text-underline-offset: 3px;
 }
+
+
+/* ---- The method cinema (scroll-scrubbed editorial triptych) -------------- */
+/* Default (no JS / reduced motion): one full-bleed photograph, steps stacked.
+   With js/cinema.js live, the section grows into a 340vh runway; frames wipe
+   open bottom-up on --mc-f1/--mc-f2 and the steps crossfade. Everything is
+   transform / clip-path / opacity — no layout, no paint. */
+
+.method-cinema {
+  position: relative;
+  background: var(--noir);
+  color: var(--ivory);
+}
+
+.method-cinema.mc-live {
+  height: 340vh;
+}
+
+.mc-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+}
+
+.mc-frame {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+
+.mc-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateY(var(--mc-drift, 0%)) scale(1.04);
+}
+
+/* static fallback: first photograph only */
+.mc-frame + .mc-frame {
+  opacity: 0;
+}
+
+/* live: the later frames become rising curtains */
+.mc-live .mc-frame + .mc-frame {
+  opacity: 1;
+}
+
+.mc-live .mc-frame[data-mc-frame="1"] {
+  clip-path: inset(calc((1 - var(--mc-f1, 0)) * 100%) 0 0 0);
+}
+
+.mc-live .mc-frame[data-mc-frame="1"] img {
+  transform: translateY(var(--mc-drift, 0%)) scale(calc(1.1 - 0.06 * var(--mc-f1, 0)));
+}
+
+.mc-live .mc-frame[data-mc-frame="2"] {
+  clip-path: inset(calc((1 - var(--mc-f2, 0)) * 100%) 0 0 0);
+}
+
+.mc-live .mc-frame[data-mc-frame="2"] img {
+  transform: translateY(var(--mc-drift, 0%)) scale(calc(1.1 - 0.06 * var(--mc-f2, 0)));
+}
+
+/* legibility scrim under the copy column */
+.mc-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(7, 12, 10, 0.82), rgba(7, 12, 10, 0.35) 42%, rgba(7, 12, 10, 0) 68%),
+    linear-gradient(0deg, rgba(7, 12, 10, 0.75), rgba(7, 12, 10, 0) 38%);
+}
+
+.mc-copy {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  width: 100%;
+  padding-bottom: clamp(3rem, 9vh, 6rem);
+  display: grid;
+  gap: 1.6rem;
+}
+
+.mc-head .h2 {
+  margin-top: 0.4rem;
+}
+
+/* steps: stacked in the static fallback, crossfading in live mode */
+.mc-steps {
+  position: relative;
+  max-width: 34rem;
+  display: grid;
+  gap: 1.4rem;
+}
+
+.mc-step .process-numeral {
+  display: inline-block;
+  font-size: 1.4rem;
+  margin: 0 0.6rem 0 0;
+  color: var(--jade-bright);
+}
+
+.mc-step .h3 {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.mc-step p {
+  font-size: var(--size-small);
+  line-height: 1.7;
+  color: var(--ivory-dim);
+  max-width: 32rem;
+}
+
+.mc-live .mc-steps {
+  min-height: 11.5rem;
+}
+
+.mc-live .mc-step {
+  position: absolute;
+  inset: 0 0 auto 0;
+  opacity: 0;
+  transform: translateY(0.9rem);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+  pointer-events: none;
+}
+
+.mc-live .mc-step.is-current {
+  opacity: 1;
+  transform: none;
+}
+
+.mc-counter {
+  display: none;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: var(--size-micro);
+  letter-spacing: 0.14em;
+  color: var(--sage);
+}
+
+.mc-live .mc-counter {
+  display: inline-flex;
+}
+
+.mc-counter-sep {
+  width: 3.2rem;
+  height: 1px;
+  background: rgba(170, 189, 178, 0.4);
+}
+
+@media (max-width: 760px) {
+  .mc-scrim {
+    background:
+      linear-gradient(0deg, rgba(7, 12, 10, 0.88), rgba(7, 12, 10, 0.2) 55%, rgba(7, 12, 10, 0) 75%);
+  }
+  .mc-live .mc-steps {
+    min-height: 14rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .method-cinema.mc-live {
+    height: auto;
+  }
+  .mc-frame img {
+    transform: none;
+  }
+}
