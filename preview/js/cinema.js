@@ -1,8 +1,11 @@
 /* FROZI FINE GEMS — scroll choreography (scrubbed, native scroll only).
    Three pinned moments, all driven 1:1 by scroll position and fully
    reversible:
-     0. The stone: a 72-frame pre-rendered turntable of the maison emerald,
-        scrubbed by scroll (frames lazy-load as the section approaches).
+     0. The stone: a 120-frame pre-rendered turntable of the maison emerald
+        spinning on a diagonal, globe-tilted axis, scrubbed by scroll. A
+        critically-damped follower chases the scroll target so fast flicks
+        settle smoothly instead of snapping frame to frame; frames lazy-load
+        and pre-decode as the section approaches.
      1. The manifesto: one serif sentence whose words ink in from dim sage
         to ivory as the reader scrolls its runway.
      2. The method cinema: three full-bleed photographs wipe open in
@@ -75,10 +78,14 @@
   /* ---- the stone: scroll-turned 360 ---- */
   var rotator = document.querySelector("[data-rotator]");
   var rtFrames = [];
-  var RT_N = 72;
+  var RT_N = 120;
   var rtLoaded = false;
   var rtLoadStarted = false;
-  var rtLast = -1;
+  var rtLast = -1;   /* frame index currently on the canvas */
+  var rtPos = -1;    /* eased frame position (float) */
+  var rtTarget = 0;  /* frame position the scroll is asking for */
+  var rtAnimating = false;
+  var rtPrev = 0;
   var rtCanvas = null;
   var rtCtx = null;
   if (rotator) {
@@ -99,6 +106,9 @@
     if (rtCanvas.width !== w) {
       rtCanvas.width = w;
       rtCanvas.height = w;
+      /* resizing resets context state */
+      rtCtx.imageSmoothingEnabled = true;
+      rtCtx.imageSmoothingQuality = "high";
       rtLast = -1; /* force a redraw at the new backing size */
     }
   }
@@ -112,16 +122,22 @@
         var im = new Image();
         im.decoding = "async";
         im.src = "assets/rotation/emerald-" + ("00" + i).slice(-3) + ".webp";
-        im.onload = function () {
+        /* decode ahead of time so first drawImage of each frame never janks */
+        var ready = function () {
           rtFrames[i] = im;
           if (++done === RT_N) {
             rtLoaded = true;
             rotator.classList.add("rt-ready");
             rtSize();
             rtLast = -1;
-            updateRotator();
+            updateRotator(true);
           }
         };
+        if (im.decode) {
+          im.decode().then(ready, ready);
+        } else {
+          im.onload = ready;
+        }
       })(i);
     }
   }
@@ -141,16 +157,45 @@
     rtLoad();
   }
 
-  function updateRotator() {
+  function rtDraw(idx) {
+    if (idx === rtLast || !rtFrames[idx]) return;
+    rtLast = idx;
+    rtCtx.drawImage(rtFrames[idx], 0, 0, rtCanvas.width, rtCanvas.height);
+  }
+
+  /* critically-damped chase toward the scroll target — frame-rate
+     independent, so a fast flick glides to rest instead of snapping */
+  function rtTick(now) {
+    var dt = Math.min(64, now - rtPrev) / 1000;
+    rtPrev = now;
+    rtPos += (rtTarget - rtPos) * (1 - Math.exp(-dt * 11));
+    if (Math.abs(rtTarget - rtPos) < 0.1) {
+      rtPos = rtTarget;
+      rtAnimating = false;
+    } else {
+      requestAnimationFrame(rtTick);
+    }
+    rtDraw(Math.round(rtPos));
+  }
+
+  function updateRotator(snap) {
     if (!rotator || !rtLoaded) return;
     var rect = rotator.getBoundingClientRect();
     var span = rect.height - window.innerHeight;
     if (span <= 0) return;
     var p = clamp01(-rect.top / span);
-    var idx = Math.min(RT_N - 1, Math.floor(p * RT_N));
-    if (idx === rtLast || !rtFrames[idx]) return;
-    rtLast = idx;
-    rtCtx.drawImage(rtFrames[idx], 0, 0, rtCanvas.width, rtCanvas.height);
+    rtTarget = p * (RT_N - 1);
+    /* tiny deltas (slow scrub) draw 1:1; big jumps ease in */
+    if (snap || rtPos < 0 || Math.abs(rtTarget - rtPos) < 1.5) {
+      rtPos = rtTarget;
+      rtDraw(Math.round(rtPos));
+      return;
+    }
+    if (!rtAnimating) {
+      rtAnimating = true;
+      rtPrev = performance.now();
+      requestAnimationFrame(rtTick);
+    }
   }
 
   /* ---- the method cinema ---- */
