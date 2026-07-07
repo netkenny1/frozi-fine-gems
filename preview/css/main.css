@@ -2363,6 +2363,39 @@ body.is-immersive .section--light .process-step {
   border-top-color: rgba(170, 189, 178, 0.28);
 }
 
+/* chapter 4 must fit a single viewport in immersive mode — at the static
+   page's spacing the three steps + figure overran the screen, so the copy
+   was still scrolling in while its fade window passed. Numeral joins the
+   heading line, spacing tightens, the figure caps at 56vh. */
+body.is-immersive .chapter[data-chapter="4"] .section-head {
+  margin-bottom: 1.6rem;
+}
+body.is-immersive .chapter[data-chapter="4"] .process {
+  gap: 1.1rem;
+}
+body.is-immersive .chapter[data-chapter="4"] .process-step {
+  padding-top: 1rem;
+}
+body.is-immersive .chapter[data-chapter="4"] .process-numeral {
+  display: inline-block;
+  font-size: 1.4rem;
+  margin: 0 0.6rem 0 0;
+  vertical-align: baseline;
+}
+body.is-immersive .chapter[data-chapter="4"] .process-step h3 {
+  display: inline-block;
+  margin-bottom: 0.45rem;
+}
+body.is-immersive .chapter[data-chapter="4"] .method-figure {
+  max-height: 56vh;
+  overflow: hidden;
+}
+body.is-immersive .chapter[data-chapter="4"] .method-figure img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
 /* fallback layout glue: chapters need a positioning context for the
    absolutely-positioned scroll cue, and the hero/CTA chapters (which don't
    use .section-head) need the same copy rhythm the rest of the site uses */

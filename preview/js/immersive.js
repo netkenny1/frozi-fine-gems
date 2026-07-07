@@ -769,7 +769,7 @@ const VITRINE_SIDE = [-1, 1, -1, 1];
 // same-side plates share a screen column, so stagger them in height: the two
 // left pieces (Vipera, Eos) go low/high, the two right (Lumen, Sable) high/low,
 // so all four read as separate framed photographs rather than a stack.
-const VITRINE_Y = [-0.52, 0.54, 0.54, -0.52];
+const VITRINE_Y = [-0.36, 0.54, 0.54, -0.36];
 const VITRINE_W = 1.2;
 const VITRINE_H = 1.5;
 // caption anchor sits this far below the plate centre (local units), so it
@@ -854,9 +854,9 @@ function buildVitrines() {
 
     // matte backing — a slightly larger plane in a dim ivory so a hair of it
     // shows around the photograph as a lit frame edge (the vitrine's mount).
-    const backGeo = new THREE.PlaneGeometry(VITRINE_W + 0.11, VITRINE_H + 0.11);
+    const backGeo = new THREE.PlaneGeometry(VITRINE_W + 0.05, VITRINE_H + 0.05);
     const backMat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0x39392f),
+      color: new THREE.Color(0x11130f),
       transparent: true,
       side: THREE.DoubleSide,
       depthTest: false,
@@ -908,8 +908,9 @@ function buildVitrines() {
       .addScaledVector(tan, 4.6)
       .addScaledVector(perp, VITRINE_SIDE[i] * 1.3 * lateral);
     sub.position.y += VITRINE_Y[i];
-    // angled back toward the camera's approach — a fixed, tasteful lean.
-    lookTarget.copy(p0).addScaledVector(tan, -4);
+    // angled back toward the camera's approach — a shallow, near-frontal
+    // lean (a steep one smeared the photographs at grazing angles).
+    lookTarget.copy(p0).addScaledVector(tan, -9);
     sub.lookAt(lookTarget);
     sub.scale.setScalar(cardScale);
     sub.visible = false; // revealed once its texture loads (or stays hidden)
@@ -927,6 +928,7 @@ function buildVitrines() {
       baseColor,
       hotColor,
       baseQuat: sub.quaternion.clone(),
+      baseScale: cardScale,
       worldCenter: new THREE.Vector3(),
       tiltX: 0,
       tiltY: 0,
@@ -1312,13 +1314,12 @@ function updateVitrines(p) {
   if (!vitrines) return;
   const entries = vitrines.userData.entries;
 
-  // chapter-5 envelope: in .585-.63 (after chapter 4's copy has largely
-  // faded — starting at .55 parked the cards behind the ch4 column), hold
-  // to .74, out by .80 — gone before the camera passes them, so a card is
-  // never parked half-off the screen edge, and well clear of the
+  // chapter-5 envelope: in .61-.66 — chapter 4's fade window ends at .60,
+  // so the cards never ghost over its copy (the client called the
+  // crossfade "abrupt") — hold to .74, out by .80, well clear of the
   // chapter-6 emergence turn (~.82).
-  const env = clamp01((p - 0.585) / 0.045) * (1 - clamp01((p - 0.74) / 0.06));
-  vitrines.visible = p > 0.57 && p < 0.82;
+  const env = clamp01((p - 0.61) / 0.05) * (1 - clamp01((p - 0.74) / 0.06));
+  vitrines.visible = p > 0.60 && p < 0.82;
 
   // project against the camera as it stands this frame (position + lookAt were
   // written at the top of tick; matrixWorldInverse is refreshed here because the
@@ -1327,6 +1328,9 @@ function updateVitrines(p) {
   camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
 
   const hovered = domHover >= 0 ? domHover : rayHover;
+  // designed arrival: the plates settle from 94% scale as the envelope
+  // opens, instead of popping in at full size
+  const settle = 0.94 + 0.06 * smootherstep(env);
 
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
@@ -1351,9 +1355,10 @@ function updateVitrines(p) {
     const camDist = camera.position.distanceTo(e.worldCenter);
     const fadeAt = camera.aspect < 1 ? 2.6 : 1.5; // portrait: fade sooner
     const nearFade = smootherstep(clamp01((camDist - fadeAt) / 1.3));
-    e.photoMat.opacity = nearFade;
-    e.backMat.opacity = nearFade;
-    e.sub.visible = e.loaded && !e.failed && nearFade > 0.01;
+    e.photoMat.opacity = nearFade * env;
+    e.backMat.opacity = nearFade * env;
+    e.sub.scale.setScalar(e.baseScale * settle);
+    e.sub.visible = e.loaded && !e.failed && nearFade > 0.01 && env > 0.005;
     e.sub.updateMatrixWorld(true);
 
     // .is-hot on the DOM caption (both hover directions land here)
