@@ -87,11 +87,24 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   check(Buffer.compare(enterA, enterB) !== 0, "stone spins while scrolling IN (entry frames differ)");
   check(Buffer.compare(pinMid, exit) !== 0, "stone spins while scrolling OUT (pin vs exit differ)");
 
-  // Manifesto: centered + scrubs word by word
-  const mfAlign = await page.evaluate(
-    () => getComputedStyle(document.querySelector(".mf-line")).textAlign
+  // Combined moment: credo and gem sit side by side on desktop
+  const layout = await page.evaluate(() => {
+    const t = document.querySelector(".rt-text").getBoundingClientRect();
+    const g = document.querySelector(".rt-stage").getBoundingClientRect();
+    return {
+      textRight: Math.round(t.right),
+      gemLeft: Math.round(g.left),
+      sideBySide:
+        t.right <= g.left + 24 &&
+        Math.abs((t.top + t.bottom) / 2 - (g.top + g.bottom) / 2) < 220,
+    };
+  });
+  check(
+    layout.sideBySide,
+    `stone + credo side by side (text right ${layout.textRight} <= gem left ${layout.gemLeft})`
   );
-  check(mfAlign === "center", `manifesto is centered (text-align: ${mfAlign})`);
+
+  // Manifesto scrubs word by word
   const mf = await page.evaluate(() => {
     const s = document.querySelector("[data-manifesto]");
     const r = s.getBoundingClientRect();
