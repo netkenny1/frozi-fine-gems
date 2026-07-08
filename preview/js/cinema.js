@@ -81,6 +81,7 @@
   var rotator = document.querySelector("[data-rotator]");
   var rtFrames = [];
   var RT_N = 120;
+  var RT_TURNS = 2; /* full tumbles across the section's whole viewport pass */
   var rtLoaded = false;
   var rtLoadStarted = false;
   var rtLast = -1;   /* frame index currently on the canvas */
@@ -168,16 +169,20 @@
     rtCtx.drawImage(rtFrames[idx], 0, 0, rtCanvas.width, rtCanvas.height);
   }
 
-  /* Frame index AND the rise/zoom transform are driven straight off scroll
-     position — no follower, no easing loop — so the stone tracks the finger
-     1:1 with zero trailing lag. Title, stone, and note move as one centered
-     composition: the stone lifts gently and swells toward the camera through
-     the middle while the type parallaxes a touch and softens at the seams, so
-     the section flows in and out instead of stranding the gem in dead space. */
+  /* Two scroll progressions, no follower or easing loop (1:1, zero lag):
+       p  — pinned progress (0 at pin start, 1 at pin end) drives the rise/zoom
+            and the type, so the composition centres during the held beat.
+       t  — full-travel progress across the section's WHOLE pass through the
+            viewport (top entering the bottom edge -> bottom leaving the top).
+            The frame is driven by t, so the stone keeps tumbling as it scrolls
+            IN, through the pin, and OUT — never frozen at the seams. Frames are
+            one seamless loop, so t wraps via modulo for a continuous multi-turn
+            spin. Title, stone and note read as one centered column. */
   function updateRotator() {
     if (!rotator) return;
     var rect = rotator.getBoundingClientRect();
-    var span = rect.height - window.innerHeight;
+    var vh = window.innerHeight;
+    var span = rect.height - vh;
     if (span <= 0) return;
     var p = clamp01(-rect.top / span);
     if (Math.abs(p - rtLastP) > 0.0015) {
@@ -204,7 +209,11 @@
       }
     }
 
-    if (rtLoaded) rtDraw(Math.round(p * (RT_N - 1)));
+    if (rtLoaded) {
+      var t = clamp01((vh - rect.top) / (rect.height + vh));
+      var idx = Math.round(t * RT_N * RT_TURNS) % RT_N;
+      rtDraw(idx);
+    }
   }
 
   /* ---- the method cinema ---- */

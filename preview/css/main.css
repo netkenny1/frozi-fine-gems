@@ -2735,11 +2735,12 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 }
 
 .mf-line {
-  max-width: 22ch;
+  max-width: 20ch;
+  margin-inline: auto;
+  text-align: center;
   font-size: clamp(2rem, 4.6vw, 4.2rem);
   line-height: 1.22;
   letter-spacing: 0.005em;
-  margin: 0;
 }
 
 .mf-line em {
