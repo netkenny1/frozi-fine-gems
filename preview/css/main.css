@@ -2774,12 +2774,12 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 }
 
 .rotator.rt-live {
-  height: 220vh;
+  height: 260vh;
 }
 
-/* Title, stone, and note are one centered column: type frames the gem above
-   and below so there is no dead space — the whole thing reads as a single
-   composition that holds together as the stone lifts and turns. */
+/* One combined moment: a small label, the turning gem, and the maison credo
+   stacked as a single centered column. The gem is the hero; the sentence inks
+   in beneath it as the reader scrolls. No dead space, nothing stranded. */
 .rt-sticky {
   position: sticky;
   top: 0;
@@ -2789,14 +2789,19 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   place-items: center;
-  gap: clamp(1rem, 2.6vh, 2rem);
-  padding: clamp(2.5rem, 6.5vh, 4.75rem) var(--gutter);
+  gap: clamp(0.9rem, 2.4vh, 1.8rem);
+  padding: clamp(2.25rem, 6vh, 4.5rem) var(--gutter);
   text-align: center;
   /* isolate the section's paint so the rest of the page doesn't repaint
      while the stone tumbles and rises */
   contain: paint;
 }
 
+.rt-eyebrow {
+  display: block;
+}
+
+/* Kept for the reduced-motion / no-JS heading fallback, harmless when unused */
 .rt-head {
   display: grid;
   gap: 0.85rem;
@@ -2813,10 +2818,18 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .rt-stage {
   position: relative;
-  width: min(54vh, 80vw);
+  width: min(46vh, 72vw);
   aspect-ratio: 1;
   margin: 0;
   align-self: center;
+}
+
+/* The credo, sized as supporting copy under the gem (not a full-screen
+   statement). Placed after .mf-line so these values win. */
+.rt-manifesto {
+  max-width: 24ch;
+  font-size: clamp(1.35rem, 2.6vw, 2.35rem);
+  line-height: 1.24;
 }
 
 /* JS drives translate3d + scale here every scroll frame; promote to its own
