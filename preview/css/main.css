@@ -2788,10 +2788,13 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   min-height: 100svh;
   overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* gem and text sized to content and centred as one group, so the blank
+     margins on the left and right are always equal (symmetric) */
+  grid-template-columns: auto auto;
+  justify-content: center;
   align-items: center;
-  gap: clamp(3rem, 8vw, 9rem);
-  padding: clamp(2.5rem, 6vh, 5rem) clamp(2rem, 10vw, 10rem);
+  gap: clamp(2rem, 4vw, 4rem);
+  padding: clamp(2.5rem, 6vh, 5rem) clamp(1.5rem, 5vw, 5rem);
   /* isolate the section's paint so the rest of the page doesn't repaint
      while the stone tumbles and rises */
   contain: paint;
@@ -2800,8 +2803,7 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 .rt-text {
   display: grid;
   gap: clamp(1rem, 2.4vh, 1.6rem);
-  max-width: 28rem;
-  justify-self: start;
+  max-width: 24rem;
   text-align: left;
 }
 
@@ -2826,11 +2828,10 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .rt-stage {
   position: relative;
-  width: min(50vh, 38vw);
+  width: min(54vh, 42vw);
   aspect-ratio: 1;
   margin: 0;
   align-self: center;
-  justify-self: end;
 }
 
 /* The credo, left-aligned in its own column beside the gem. Placed after
