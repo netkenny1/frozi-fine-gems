@@ -2777,10 +2777,10 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   height: 260vh;
 }
 
-/* One combined moment, side by side: the maison credo on the left, the turning
-   gem on the right. Both columns are pulled toward the centre gap so the pair
-   reads as a single editorial spread. Stacks to gem-over-text on narrow
-   screens (see the media query below). */
+/* One combined moment, side by side: the turning gem on the left, the maison
+   credo on the right, generous margins around both. Each column is pulled
+   toward the centre gap so the pair reads as a single editorial spread. Stacks
+   to gem-over-text on narrow screens (see the media query below). */
 .rt-sticky {
   position: sticky;
   top: 0;
@@ -2790,8 +2790,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
-  gap: clamp(2rem, 5vw, 5.5rem);
-  padding: clamp(2.5rem, 6vh, 5rem) clamp(1.5rem, 7vw, 7rem);
+  gap: clamp(3rem, 8vw, 9rem);
+  padding: clamp(2.5rem, 6vh, 5rem) clamp(2rem, 10vw, 10rem);
   /* isolate the section's paint so the rest of the page doesn't repaint
      while the stone tumbles and rises */
   contain: paint;
@@ -2800,8 +2800,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 .rt-text {
   display: grid;
   gap: clamp(1rem, 2.4vh, 1.6rem);
-  max-width: 30rem;
-  justify-self: end;
+  max-width: 28rem;
+  justify-self: start;
   text-align: left;
 }
 
@@ -2826,11 +2826,11 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .rt-stage {
   position: relative;
-  width: min(52vh, 42vw);
+  width: min(50vh, 38vw);
   aspect-ratio: 1;
   margin: 0;
   align-self: center;
-  justify-self: start;
+  justify-self: end;
 }
 
 /* The credo, left-aligned in its own column beside the gem. Placed after
@@ -2839,8 +2839,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   margin-inline: 0;
   text-align: left;
   max-width: 18ch;
-  font-size: clamp(1.5rem, 2.9vw, 2.75rem);
-  line-height: 1.22;
+  font-size: clamp(1.25rem, 2.2vw, 2.1rem);
+  line-height: 1.28;
 }
 
 /* Stack to gem-over-text on narrow screens where two columns won't fit */

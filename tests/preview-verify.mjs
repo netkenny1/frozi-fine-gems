@@ -87,21 +87,21 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   check(Buffer.compare(enterA, enterB) !== 0, "stone spins while scrolling IN (entry frames differ)");
   check(Buffer.compare(pinMid, exit) !== 0, "stone spins while scrolling OUT (pin vs exit differ)");
 
-  // Combined moment: credo and gem sit side by side on desktop
+  // Combined moment: gem on the left, credo on the right, side by side on desktop
   const layout = await page.evaluate(() => {
     const t = document.querySelector(".rt-text").getBoundingClientRect();
     const g = document.querySelector(".rt-stage").getBoundingClientRect();
     return {
-      textRight: Math.round(t.right),
-      gemLeft: Math.round(g.left),
+      gemRight: Math.round(g.right),
+      textLeft: Math.round(t.left),
       sideBySide:
-        t.right <= g.left + 24 &&
+        g.right <= t.left + 24 &&
         Math.abs((t.top + t.bottom) / 2 - (g.top + g.bottom) / 2) < 220,
     };
   });
   check(
     layout.sideBySide,
-    `stone + credo side by side (text right ${layout.textRight} <= gem left ${layout.gemLeft})`
+    `gem left of credo, side by side (gem right ${layout.gemRight} <= text left ${layout.textLeft})`
   );
 
   // Manifesto scrubs word by word
