@@ -2563,6 +2563,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   height: 100svh;
   overflow: hidden;
   display: grid;
+  /* keep the full-bleed clip-path wipes from repainting the rest of the page */
+  contain: paint;
 }
 
 .mc-frame {
@@ -2590,6 +2592,18 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .mc-live .mc-frame[data-mc-frame="1"] {
   clip-path: inset(calc((1 - var(--mc-f1, 0)) * 100%) 0 0 0);
+}
+
+/* the two rising frames are transformed and clipped every scroll frame;
+   give each its own compositor layer so the drift + wipe stay off the main
+   thread instead of repainting a full-screen photograph each tick */
+.mc-live .mc-frame[data-mc-frame="1"],
+.mc-live .mc-frame[data-mc-frame="2"] {
+  will-change: clip-path;
+}
+
+.mc-live .mc-frame img {
+  will-change: transform;
 }
 
 .mc-live .mc-frame[data-mc-frame="1"] img {

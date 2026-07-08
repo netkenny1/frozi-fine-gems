@@ -62,18 +62,31 @@
     manifesto.classList.add("mf-live");
   }
 
+  var mfLastP = -1;   /* last progress we inked the sentence for */
+  var mfLastOp = [];  /* last opacity string written per word */
   function updateManifesto() {
     if (!manifesto || !words.length) return;
     var rect = manifesto.getBoundingClientRect();
     var span = rect.height - window.innerHeight;
     if (span <= 0) return;
     var p = clamp01(-rect.top / span);
+    /* the runway is 240vh: while the section is off-screen p pins at 0 or 1
+       and every scroll frame otherwise rewrites all word opacities for nothing.
+       Skip unless the reader actually moved through the sentence — this is what
+       keeps the rest of the page's scroll at full frame rate. */
+    if (Math.abs(p - mfLastP) < 0.0012) return;
+    mfLastP = p;
     /* each word owns a staggered window across the first 85% of the runway;
        the tail holds the finished sentence for a quiet beat */
     var n = words.length;
     for (var i = 0; i < n; i++) {
       var w = smootherstep((p - (i / n) * 0.72) / 0.22);
-      words[i].style.opacity = (0.16 + 0.84 * w).toFixed(3);
+      var op = (0.16 + 0.84 * w).toFixed(3);
+      /* only touch the DOM for words whose ink actually changed */
+      if (mfLastOp[i] !== op) {
+        words[i].style.opacity = op;
+        mfLastOp[i] = op;
+      }
     }
   }
 
