@@ -3,10 +3,11 @@
    reversible:
      0. The stone: a 120-frame pre-rendered tumble of the maison emerald on a
         wandering, nodding axis, scrubbed 1:1 by scroll (no follower — the
-        frame tracks the finger with zero lag). The stage also rises from
-        below the fold and swells toward the camera through the middle, then
-        keeps climbing up and out the top. Frames lazy-load and pre-decode as
-        the section approaches.
+        frame tracks the finger with zero lag). Title, stone and note form one
+        centered column; the stone lifts gently and swells toward the camera
+        mid-runway while the type parallaxes and fades at the seams, so the
+        moment flows in and out. Frames lazy-load and pre-decode as the
+        section approaches.
      1. The manifesto: one serif sentence whose words ink in from dim sage
         to ivory as the reader scrolls its runway.
      2. The method cinema: three full-bleed photographs wipe open in
@@ -83,13 +84,17 @@
   var rtLoaded = false;
   var rtLoadStarted = false;
   var rtLast = -1;   /* frame index currently on the canvas */
-  var rtLastY = 1e9; /* last applied transform, so we only touch style on change */
+  var rtLastP = -1;  /* last progress we wrote transforms for */
   var rtCanvas = null;
   var rtCtx = null;
   var rtStage = null;
+  var rtHead = null;
+  var rtNote = null;
   if (rotator) {
     rtCanvas = rotator.querySelector(".rt-canvas");
     rtStage = rotator.querySelector(".rt-stage");
+    rtHead = rotator.querySelector(".rt-head");
+    rtNote = rotator.querySelector(".rt-note");
     rtCtx = rtCanvas ? rtCanvas.getContext("2d") : null;
     if (rtCtx) {
       rotator.classList.add("rt-live");
@@ -165,27 +170,37 @@
 
   /* Frame index AND the rise/zoom transform are driven straight off scroll
      position — no follower, no easing loop — so the stone tracks the finger
-     1:1 with zero trailing lag. The stone climbs from below the fold, swells
-     toward the camera through the middle, then keeps rising up and out the
-     top as you scroll past. */
+     1:1 with zero trailing lag. Title, stone, and note move as one centered
+     composition: the stone lifts gently and swells toward the camera through
+     the middle while the type parallaxes a touch and softens at the seams, so
+     the section flows in and out instead of stranding the gem in dead space. */
   function updateRotator() {
     if (!rotator) return;
     var rect = rotator.getBoundingClientRect();
     var span = rect.height - window.innerHeight;
     if (span <= 0) return;
     var p = clamp01(-rect.top / span);
-
-    /* rise + zoom (applied even before frames finish loading) */
-    if (rtStage) {
+    if (Math.abs(p - rtLastP) > 0.0015) {
+      rtLastP = p;
       var e = smootherstep(p);
-      var ty = 20 - 46 * e;                 /* +20vh (under) -> -26vh (out top) */
-      var s = p < 0.5
-        ? 0.82 + 0.26 * smootherstep(p / 0.5)          /* swell toward camera */
-        : 1.08 - 0.13 * smootherstep((p - 0.5) / 0.5); /* recede as it rises away */
-      if (Math.abs(ty - rtLastY) > 0.05) {
-        rtLastY = ty;
+      /* gentle lift that stays framed; swell peaks mid then eases back */
+      var ty = 6 - 12 * e;                          /* +6vh -> -6vh */
+      var s = 0.92 + 0.14 * Math.sin(Math.PI * p);  /* 0.92 -> 1.06 -> 0.92 */
+      if (rtStage) {
         rtStage.style.transform =
           "translate3d(0," + ty.toFixed(2) + "vh,0) scale(" + s.toFixed(4) + ")";
+      }
+      /* the type is fully present on arrival and only softens as the section
+         leaves, smoothing the seam into the manifesto; a slight opposing
+         parallax gives it some depth */
+      var edge = smootherstep((1 - p) / 0.12);
+      if (rtHead) {
+        rtHead.style.opacity = edge.toFixed(3);
+        rtHead.style.transform = "translate3d(0," + (-3.5 * e).toFixed(2) + "vh,0)";
+      }
+      if (rtNote) {
+        rtNote.style.opacity = edge.toFixed(3);
+        rtNote.style.transform = "translate3d(0," + (3 * e).toFixed(2) + "vh,0)";
       }
     }
 

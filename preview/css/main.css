@@ -2773,9 +2773,12 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 }
 
 .rotator.rt-live {
-  height: 300vh;
+  height: 220vh;
 }
 
+/* Title, stone, and note are one centered column: type frames the gem above
+   and below so there is no dead space — the whole thing reads as a single
+   composition that holds together as the stone lifts and turns. */
 .rt-sticky {
   position: sticky;
   top: 0;
@@ -2783,25 +2786,48 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   min-height: 100svh;
   overflow: hidden;
   display: grid;
-  align-content: center;
-  justify-items: center;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  place-items: center;
+  gap: clamp(1rem, 2.6vh, 2rem);
+  padding: clamp(2.5rem, 6.5vh, 4.75rem) var(--gutter);
+  text-align: center;
   /* isolate the section's paint so the rest of the page doesn't repaint
      while the stone tumbles and rises */
   contain: paint;
 }
 
+.rt-head {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 44rem;
+}
+
+.rt-head .eyebrow {
+  display: block;
+}
+
+.rt-head .h2 {
+  margin: 0;
+}
+
 .rt-stage {
   position: relative;
-  width: min(70vh, 84vw);
+  width: min(54vh, 80vw);
   aspect-ratio: 1;
   margin: 0;
+  align-self: center;
 }
 
 /* JS drives translate3d + scale here every scroll frame; promote to its own
    compositor layer so the motion never touches layout or paint */
 .rt-live .rt-stage {
   will-change: transform;
-  transform: translate3d(0, 20vh, 0) scale(0.82);
+  transform: translate3d(0, 6vh, 0) scale(0.92);
+}
+
+.rt-live .rt-head,
+.rt-live .rt-note {
+  will-change: transform, opacity;
 }
 
 .rt-stage img,
@@ -2822,20 +2848,6 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .rt-ready .rt-fallback {
   visibility: hidden;
-}
-
-.rt-copy {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: clamp(2.5rem, 7vh, 5rem);
-  display: grid;
-  gap: 0.5rem;
-  pointer-events: none;
-}
-
-.rt-copy .h2 {
-  margin: 0;
 }
 
 .rt-note {
