@@ -1,11 +1,12 @@
 /* FROZI FINE GEMS — scroll choreography (scrubbed, native scroll only).
    Three pinned moments, all driven 1:1 by scroll position and fully
    reversible:
-     0. The stone: a 120-frame pre-rendered turntable of the maison emerald
-        spinning on a diagonal, globe-tilted axis, scrubbed by scroll. A
-        critically-damped follower chases the scroll target so fast flicks
-        settle smoothly instead of snapping frame to frame; frames lazy-load
-        and pre-decode as the section approaches.
+     0. The stone: a 120-frame pre-rendered tumble of the maison emerald on a
+        wandering, nodding axis, scrubbed 1:1 by scroll (no follower — the
+        frame tracks the finger with zero lag). The stage also rises from
+        below the fold and swells toward the camera through the middle, then
+        keeps climbing up and out the top. Frames lazy-load and pre-decode as
+        the section approaches.
      1. The manifesto: one serif sentence whose words ink in from dim sage
         to ivory as the reader scrolls its runway.
      2. The method cinema: three full-bleed photographs wipe open in
@@ -82,14 +83,13 @@
   var rtLoaded = false;
   var rtLoadStarted = false;
   var rtLast = -1;   /* frame index currently on the canvas */
-  var rtPos = -1;    /* eased frame position (float) */
-  var rtTarget = 0;  /* frame position the scroll is asking for */
-  var rtAnimating = false;
-  var rtPrev = 0;
+  var rtLastY = 1e9; /* last applied transform, so we only touch style on change */
   var rtCanvas = null;
   var rtCtx = null;
+  var rtStage = null;
   if (rotator) {
     rtCanvas = rotator.querySelector(".rt-canvas");
+    rtStage = rotator.querySelector(".rt-stage");
     rtCtx = rtCanvas ? rtCanvas.getContext("2d") : null;
     if (rtCtx) {
       rotator.classList.add("rt-live");
@@ -130,7 +130,7 @@
             rotator.classList.add("rt-ready");
             rtSize();
             rtLast = -1;
-            updateRotator(true);
+            updateRotator();
           }
         };
         if (im.decode) {
@@ -163,39 +163,33 @@
     rtCtx.drawImage(rtFrames[idx], 0, 0, rtCanvas.width, rtCanvas.height);
   }
 
-  /* critically-damped chase toward the scroll target — frame-rate
-     independent, so a fast flick glides to rest instead of snapping */
-  function rtTick(now) {
-    var dt = Math.min(64, now - rtPrev) / 1000;
-    rtPrev = now;
-    rtPos += (rtTarget - rtPos) * (1 - Math.exp(-dt * 11));
-    if (Math.abs(rtTarget - rtPos) < 0.1) {
-      rtPos = rtTarget;
-      rtAnimating = false;
-    } else {
-      requestAnimationFrame(rtTick);
-    }
-    rtDraw(Math.round(rtPos));
-  }
-
-  function updateRotator(snap) {
-    if (!rotator || !rtLoaded) return;
+  /* Frame index AND the rise/zoom transform are driven straight off scroll
+     position — no follower, no easing loop — so the stone tracks the finger
+     1:1 with zero trailing lag. The stone climbs from below the fold, swells
+     toward the camera through the middle, then keeps rising up and out the
+     top as you scroll past. */
+  function updateRotator() {
+    if (!rotator) return;
     var rect = rotator.getBoundingClientRect();
     var span = rect.height - window.innerHeight;
     if (span <= 0) return;
     var p = clamp01(-rect.top / span);
-    rtTarget = p * (RT_N - 1);
-    /* tiny deltas (slow scrub) draw 1:1; big jumps ease in */
-    if (snap || rtPos < 0 || Math.abs(rtTarget - rtPos) < 1.5) {
-      rtPos = rtTarget;
-      rtDraw(Math.round(rtPos));
-      return;
+
+    /* rise + zoom (applied even before frames finish loading) */
+    if (rtStage) {
+      var e = smootherstep(p);
+      var ty = 20 - 46 * e;                 /* +20vh (under) -> -26vh (out top) */
+      var s = p < 0.5
+        ? 0.82 + 0.26 * smootherstep(p / 0.5)          /* swell toward camera */
+        : 1.08 - 0.13 * smootherstep((p - 0.5) / 0.5); /* recede as it rises away */
+      if (Math.abs(ty - rtLastY) > 0.05) {
+        rtLastY = ty;
+        rtStage.style.transform =
+          "translate3d(0," + ty.toFixed(2) + "vh,0) scale(" + s.toFixed(4) + ")";
+      }
     }
-    if (!rtAnimating) {
-      rtAnimating = true;
-      rtPrev = performance.now();
-      requestAnimationFrame(rtTick);
-    }
+
+    if (rtLoaded) rtDraw(Math.round(p * (RT_N - 1)));
   }
 
   /* ---- the method cinema ---- */

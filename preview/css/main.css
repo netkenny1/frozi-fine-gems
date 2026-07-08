@@ -2785,13 +2785,23 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   display: grid;
   align-content: center;
   justify-items: center;
+  /* isolate the section's paint so the rest of the page doesn't repaint
+     while the stone tumbles and rises */
+  contain: paint;
 }
 
 .rt-stage {
   position: relative;
-  width: min(74vh, 88vw);
+  width: min(70vh, 84vw);
   aspect-ratio: 1;
   margin: 0;
+}
+
+/* JS drives translate3d + scale here every scroll frame; promote to its own
+   compositor layer so the motion never touches layout or paint */
+.rt-live .rt-stage {
+  will-change: transform;
+  transform: translate3d(0, 20vh, 0) scale(0.82);
 }
 
 .rt-stage img,
