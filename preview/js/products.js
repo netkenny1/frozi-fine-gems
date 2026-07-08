@@ -1,4 +1,4 @@
-/* FROZI FINE GEMS — product registry + product-page hydration.
+/* FROZI FINE GEMS product registry + product-page hydration.
    One template (product.html) serves every piece via ?ref=FG-0xx.
    Loaded before main.js so reveals and tilt bind to hydrated content. */
 (function () {
@@ -77,81 +77,81 @@
 
   var PRODUCTS = {
     "FG-011": {
-      ref: "FG-011", name: "Vipera Ring", category: "Rings", price: "$3,400",
+      ref: "FG-011", name: "Vipera Ring", category: "Rings", price: "AED 12,500",
       sub: "Step-cut emerald, diamond halo", sizes: true,
       img: "assets/img/vipera.jpg", imgW: 1200, imgH: 1600,
-      imgAlt: "The Vipera Ring — a step-cut emerald in a diamond halo, photographed on white seamless",
-      desc: "A single step-cut emerald held in a halo of brilliants, cut to the original 2026 drawing. The band is round in section — heavier than it looks, quieter than it sounds. Plate FG-011 in the maison ledger.",
+      imgAlt: "The Vipera Ring, a step-cut emerald in a diamond halo, photographed on white seamless",
+      desc: "A single step-cut emerald held in a halo of brilliants, cut to the original 2026 drawing. The band is round in section, heavier than it looks, quieter than it sounds. Plate FG-011 in the maison ledger.",
       materials: ["Muzo-origin emerald, 1.2 ct, step cut", "Halo of recycled brilliants, 0.4 ct total", "Recycled platinum 950, round-section band"],
       plate: "vipera", plateBox: "0 0 240 240",
       related: ["FG-014", "FG-021", "FG-033"]
     },
     "FG-014": {
-      ref: "FG-014", name: "Meridian Band", category: "Rings", price: "$1,850",
+      ref: "FG-014", name: "Meridian Band", category: "Rings", price: "AED 6,800",
       sub: "Pavé-set band, satin platinum", sizes: true,
       img: "assets/img/meridian.jpg", imgW: 1200, imgH: 800,
-      imgAlt: "The Meridian Band — a wide pavé-set band photographed on black",
-      desc: "A full turn of pavé, set flush so the band reads as one unbroken surface of light. A single hairline groove — the meridian — runs the circumference. Plate FG-014 in the maison ledger.",
+      imgAlt: "The Meridian Band, a wide pavé-set band photographed on black",
+      desc: "A full turn of pavé, set flush so the band reads as one unbroken surface of light. A single hairline groove, the meridian, runs the circumference. Plate FG-014 in the maison ledger.",
       materials: ["Recycled brilliants, 1.1 ct total, flush pavé", "Recycled platinum 950, satin interior", "Engraved meridian groove, hand-cut"],
       plate: "meridian", plateBox: "0 0 200 200",
       related: ["FG-011", "FG-041", "FG-031"]
     },
     "FG-021": {
-      ref: "FG-021", name: "Lumen Pendant", category: "Necklaces", price: "$2,900",
+      ref: "FG-021", name: "Lumen Pendant", category: "Necklaces", price: "AED 10,650",
       sub: "Emerald drop, hand-drawn chain", sizes: false,
       img: "assets/img/lumen.jpg", imgW: 1200, imgH: 1200,
-      imgAlt: "The Lumen Pendant — an emerald drop on a fine chain, resting on deep green cloth",
+      imgAlt: "The Lumen Pendant, an emerald drop on a fine chain, resting on deep green cloth",
       desc: "A step-cut emerald hung from a trace chain fine enough to disappear, so the stone appears to rest on the collarbone by agreement rather than engineering. Adjustable 42–45 cm. Plate FG-021 in the maison ledger.",
       materials: ["Muzo-origin emerald, 0.9 ct, step cut", "Recycled platinum trace chain, 42–45 cm", "Clasp engraved with the plate number"],
       plate: "lumen", plateBox: "0 0 220 280",
       related: ["FG-024", "FG-011", "FG-043"]
     },
     "FG-024": {
-      ref: "FG-024", name: "Voss Collier", category: "Necklaces", price: "$9,200",
+      ref: "FG-024", name: "Voss Collier", category: "Necklaces", price: "AED 33,800",
       sub: "Diamond fringe, emerald drops", sizes: false,
       img: "assets/img/voss.jpg", imgW: 1200, imgH: 800,
-      imgAlt: "The Voss Collier — a diamond fringe necklace with emerald drops",
+      imgAlt: "The Voss Collier, a diamond fringe necklace with emerald drops",
       desc: "The largest piece in the ledger: a fringe of baguettes that moves like water, carrying three graduated emerald drops. Made for occasions that don't repeat. Plate FG-024 in the maison ledger.",
       materials: ["Three graduated Muzo emeralds, 3.1 ct total", "Baguette fringe, recycled stones throughout", "Recycled platinum 950, articulated links"],
       plate: "voss", plateBox: "0 0 220 170",
       related: ["FG-021", "FG-033", "FG-041"]
     },
     "FG-031": {
-      ref: "FG-031", name: "Eos Earrings", category: "Earrings", price: "$1,150",
+      ref: "FG-031", name: "Eos Earrings", category: "Earrings", price: "AED 4,250",
       sub: "Chevron pavé, recycled platinum", sizes: false,
       img: "assets/img/eos.jpg", imgW: 1200, imgH: 800,
-      imgAlt: "The Eos Earrings — pavé chevron drops photographed on black",
+      imgAlt: "The Eos Earrings, pavé chevron drops photographed on black",
       desc: "Disc drops set with chevron rows of pavé, angled so they catch light on the turn of the head rather than head-on. Worn daily by everyone who has ever tried them. Plate FG-031 in the maison ledger.",
       materials: ["Recycled brilliants in chevron pavé", "Recycled platinum 950 discs and posts", "Butterfly backs, engraved"],
       plate: "eos", plateBox: "0 0 200 200",
       related: ["FG-033", "FG-021", "FG-014"]
     },
     "FG-033": {
-      ref: "FG-033", name: "Thalis Drops", category: "Earrings", price: "$1,650",
+      ref: "FG-033", name: "Thalis Drops", category: "Earrings", price: "AED 6,050",
       sub: "Pear-cut emeralds, articulated", sizes: false,
       img: "assets/img/thalis.jpg", imgW: 1200, imgH: 1200,
-      imgAlt: "The Thalis Drops — green teardrop earrings in ornate silver settings",
+      imgAlt: "The Thalis Drops, green teardrop earrings in ornate silver settings",
       desc: "Pear-cut emeralds in openwork settings, articulated at the shoulder so the drops swing a half-beat behind the wearer. The drawing took eleven attempts; the movement was the hard part. Plate FG-033 in the maison ledger.",
       materials: ["Pear-cut emeralds, 2.4 ct total", "Openwork recycled platinum settings", "Articulated at post and shoulder"],
       plate: "thalis", plateBox: "0 0 200 220",
       related: ["FG-031", "FG-024", "FG-011"]
     },
     "FG-041": {
-      ref: "FG-041", name: "Sable Cuff", category: "Bracelets", price: "$2,150",
+      ref: "FG-041", name: "Sable Cuff", category: "Bracelets", price: "AED 7,900",
       sub: "Pavé open cuff, blackened platinum", sizes: false,
       img: "assets/img/sable.jpg", imgW: 1200, imgH: 800,
-      imgAlt: "The Sable Cuff — an open pavé cuff on a black reflective surface",
-      desc: "An open cuff in blackened platinum with a single spine of pavé. The blackening wears at the high points over years — the piece records its owner. Plate FG-041 in the maison ledger.",
+      imgAlt: "The Sable Cuff, an open pavé cuff on a black reflective surface",
+      desc: "An open cuff in blackened platinum with a single spine of pavé. The blackening wears at the high points over years, and the piece records its owner. Plate FG-041 in the maison ledger.",
       materials: ["Recycled platinum 950, blackened finish", "Pavé spine of recycled brilliants", "Sprung opening, sized to the wrist at fitting"],
       plate: "sable", plateBox: "0 0 200 200",
       related: ["FG-043", "FG-014", "FG-031"]
     },
     "FG-043": {
-      ref: "FG-043", name: "Rill Chain", category: "Bracelets", price: "$1,890",
+      ref: "FG-043", name: "Rill Chain", category: "Bracelets", price: "AED 6,950",
       sub: "Diamond line bracelet, five stations", sizes: false,
       img: "assets/img/rill.jpg", imgW: 1200, imgH: 675,
-      imgAlt: "The Rill Chain — a fine diamond line bracelet on black",
-      desc: "A line bracelet fine as running water, interrupted five times by set stones — the stations. Fastens with a hidden box clasp that closes with a watchmaker's click. Plate FG-043 in the maison ledger.",
+      imgAlt: "The Rill Chain, a fine diamond line bracelet on black",
+      desc: "A line bracelet fine as running water, interrupted five times by set stones, the stations. Fastens with a hidden box clasp that closes with a watchmaker's click. Plate FG-043 in the maison ledger.",
       materials: ["Five station-set recycled brilliants", "Recycled platinum 950 line links", "Hidden box clasp, engraved"],
       plate: "rill", plateBox: "0 0 220 130",
       related: ["FG-041", "FG-021", "FG-031"]
@@ -164,23 +164,23 @@
   var stage = document.querySelector(".product-stage");
   if (!stage) return;
 
-  /* The URL param is used only as a lookup key into PRODUCTS — it must
+  /* The URL param is used only as a lookup key into PRODUCTS, it must
      never be interpolated into markup. All innerHTML below is built from
      the hardcoded registry, so no user-controlled data reaches the DOM. */
   var params = new URLSearchParams(window.location.search);
   var ref = (params.get("ref") || "FG-011").toUpperCase();
   var p = PRODUCTS[ref] || PRODUCTS["FG-011"];
 
-  document.title = p.name + " — Ref. " + p.ref + " — Frozi Fine Gems";
+  document.title = p.name + " · Ref. " + p.ref + " · Frozi Fine Gems";
 
   function setText(sel, text) {
     var el = document.querySelector(sel);
     if (el) el.textContent = text;
   }
 
-  setText('[data-p="eyebrow"]', "Collection — " + p.category + " · Ref. " + p.ref);
+  setText('[data-p="eyebrow"]', "Collection · " + p.category + " · Ref. " + p.ref);
   setText('[data-p="name"]', p.name);
-  setText('[data-p="price"]', p.price + " — made to order");
+  setText('[data-p="price"]', p.price + ", made to order");
   setText('[data-p="desc"]', p.desc);
   setText('[data-p="refcode"]', p.ref);
 

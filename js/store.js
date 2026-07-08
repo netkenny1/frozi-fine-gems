@@ -54,9 +54,9 @@
     return bag;
   }
 
-  /* ---- Money: registry prices are display strings ("$3,400") ---- */
+  /* ---- Money: registry prices are display strings ("AED 12,500") ---- */
   function cents(price) { return parseInt(price.replace(/[^0-9]/g, ""), 10) || 0; }
-  function dollars(n) { return "$" + n.toLocaleString("en-US"); }
+  function dollars(n) { return "AED " + n.toLocaleString("en-US"); }
 
   /* ---- Order references: FZ- + time in base 36, ledger-style ---- */
   function orderRef() {
