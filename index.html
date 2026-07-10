@@ -148,49 +148,69 @@
       </div>
     </section>
 
-    <!-- ================= Method (a true sequence) ================= -->
-    <section class="section section--light has-scrub" aria-labelledby="method-title">
-      <!-- Ledger plate, drawn by the reader's own scroll, scrubbed both ways -->
-      <svg class="illus scrub-plate" viewBox="0 0 240 240" aria-hidden="true">
-        <g class="fine" opacity=".5">
-          <line class="sd" pathLength="1" x1="120" y1="4" x2="120" y2="236"/>
-          <line class="sd" pathLength="1" x1="4" y1="140" x2="236" y2="140"/>
-        </g>
-        <circle class="sd" pathLength="1" cx="120" cy="140" r="58"/>
-        <circle class="sd fine" pathLength="1" cx="120" cy="140" r="50"/>
-        <path class="sd" pathLength="1" d="M104 46h32l12 12v18l-12 12h-32l-12-12V58z"/>
-        <path class="sd fine" pathLength="1" d="M110 56h20l7 7v10l-7 7h-20l-7-7V63z"/>
-        <line class="sd" pathLength="1" x1="104" y1="88" x2="108" y2="96"/>
-        <line class="sd" pathLength="1" x1="136" y1="88" x2="132" y2="96"/>
-        <circle class="sd fine" pathLength="1" cx="120" cy="140" r="66"/>
-      </svg>
-      <div class="wrap">
-        <div class="section-head reveal">
-          <div>
+    <!-- ============ The stone + the maison, one pinned moment ============ -->
+    <!-- The Maison WebGL emerald turns with scroll, remains freely manipulable
+         on both axes, then returns to the current scroll pose after release.
+         Without JS or with reduced motion, the photographic fallback remains. -->
+    <section class="rotator section--dark" data-rotator data-manifesto
+             aria-label="The stone, and the maison in one line">
+      <div class="rt-sticky">
+        <figure class="rt-stage" tabindex="0" role="img"
+                aria-label="A round-cut Muzo emerald. Scroll or drag in any direction to turn it."
+                title="Drag to turn the stone">
+          <div class="rt-stone">
+            <img class="rt-fallback" src="assets/rotation/emerald-000.webp" alt="A round-cut Muzo emerald photographed on black, turning with the page" width="1000" height="1000" loading="lazy" decoding="async">
+            <div class="rt-gem" data-gem data-scroll-gem aria-hidden="true"></div>
+          </div>
+        </figure>
+        <div class="rt-text">
+          <span class="eyebrow rt-eyebrow">The stone</span>
+          <p class="mf-line rt-manifesto">A small house with a <em>deep</em> green. Every piece drawn by hand, made for the person who asked.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Method, the cinema triptych ================= -->
+    <!-- Three full-bleed photographs, raised by the reader's own scroll
+         (native scroll + sticky; compositor transforms only). Without JS or
+         with reduced motion it reads as a single full-bleed image with the
+         three steps stacked beside it. -->
+    <section class="method-cinema section--dark" aria-labelledby="method-title" data-cinema>
+      <div class="mc-sticky">
+        <figure class="mc-frame" data-mc-frame="0">
+          <img src="assets/img/emeralds.jpg" alt="Loose emeralds gathered on dark cloth, waiting to be drawn" width="1600" height="1067" loading="lazy" decoding="async">
+        </figure>
+        <figure class="mc-frame" data-mc-frame="1">
+          <img src="assets/img/atelier.jpg" alt="A jeweler's hands finishing a piece at the polishing wheel" width="1600" height="2400" loading="lazy" decoding="async">
+        </figure>
+        <figure class="mc-frame" data-mc-frame="2">
+          <img src="assets/img/glove.jpg" alt="A gloved hand presenting a finished emerald piece" width="1600" height="1067" loading="lazy" decoding="async">
+        </figure>
+        <div class="mc-scrim" aria-hidden="true"></div>
+        <div class="wrap mc-copy">
+          <header class="mc-head">
             <span class="eyebrow">The method</span>
             <h2 class="h2" id="method-title">Drawn first, <em>then</em> made</h2>
-          </div>
-        </div>
-        <div class="method-grid">
-          <div class="process">
-            <div class="process-step reveal">
+          </header>
+          <div class="mc-steps">
+            <div class="mc-step" data-mc-step="0">
               <span class="process-numeral" aria-hidden="true">I.</span>
               <h3 class="h3">The drawing</h3>
               <p>Each commission starts on paper, graphite then ink. The drawing is numbered, dated, and entered in the maison ledger before any metal is touched. If the drawing isn't right, the piece is never made.</p>
             </div>
-            <div class="process-step reveal" style="--i:1">
+            <div class="mc-step" data-mc-step="1">
               <span class="process-numeral" aria-hidden="true">II.</span>
               <h3 class="h3">The setting</h3>
               <p>Stones are cut to the drawing, not the other way round. We work in Muzo-origin emeralds and recycled platinum, two materials known deeply, rather than a catalogue known thinly.</p>
             </div>
-            <div class="process-step reveal" style="--i:2">
+            <div class="mc-step" data-mc-step="2">
               <span class="process-numeral" aria-hidden="true">III.</span>
               <h3 class="h3">The signature</h3>
               <p>Every finished piece is engraved with its plate number, the same reference written on its original drawing. Bring the piece back at any time; the ledger remembers it.</p>
             </div>
           </div>
-          <div class="img-frame method-figure">
-            <img src="assets/img/atelier.jpg" alt="A jeweler's hands finishing a piece at the polishing wheel" width="1600" height="2400" loading="lazy" decoding="async">
+          <div class="mc-counter" aria-hidden="true">
+            <span data-mc-counter>01</span><span class="mc-counter-sep"></span><span>03</span>
           </div>
         </div>
       </div>
@@ -294,5 +314,8 @@
 
   <script src="js/store.js" defer></script>
   <script src="js/main.js" defer></script>
+  <script src="js/gem-model.js" defer></script>
+  <script src="js/gem.js" defer></script>
+  <script src="js/cinema.js" defer></script>
 </body>
 </html>

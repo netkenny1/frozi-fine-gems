@@ -27,15 +27,14 @@
   /* ---- Scroll choreography ----------------------------------------------
      One rAF frame drives every scroll-linked layer: parallax drift,
      deep-zoom settles, the hero's cinematic exit, photographs drifting
-     inside their frames, the scroll-scrubbed ledger plate, the ref-code
-     ticker, and a velocity shear on the vitrines. Everything writes
+     inside their frames, the scroll-scrubbed ledger plate, and the ref-code
+     ticker. Everything writes
      transform / translate / scale / opacity only — no layout work. The
      independent translate/scale properties are used wherever a class
      already owns transform (hover zooms, reveal settles), so the two
      compose instead of fighting. */
   var layers = [];
   var pxImgs = [];
-  var shearEls = [];
   var scrub = null;
   var ticker = null;
   var heroGrid = null, heroCue = null, heroBg = null;
@@ -55,7 +54,7 @@
       document.querySelectorAll(".img-frame:not(.stage-photo) img, .category-tile img")
         .forEach(function (img) {
           img.style.scale = "1.12";
-          pxImgs.push({ img: img, frame: img.parentElement });
+          pxImgs.push({ img: img, frame: img.parentElement, active: false });
         });
       heroGrid = document.querySelector(".hero-grid");
       heroCue = document.querySelector(".scroll-cue");
@@ -64,21 +63,30 @@
     var plate = document.querySelector(".scrub-plate");
     if (plate) scrub = { section: plate.closest("section"), paths: plate.querySelectorAll(".sd") };
     ticker = document.querySelector("[data-ticker]");
-    if (finePointer) shearEls = document.querySelectorAll(".vitrine-media");
+  }
+
+  if (pxImgs.length && "IntersectionObserver" in window) {
+    var pxFor = new Map();
+    pxImgs.forEach(function (item) {
+      pxFor.set(item.frame, item);
+    });
+    var pxIo = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var item = pxFor.get(entry.target);
+        if (item) item.active = entry.isIntersecting;
+      });
+    }, { rootMargin: "25% 0%" });
+    pxImgs.forEach(function (item) { pxIo.observe(item.frame); });
+  } else {
+    pxImgs.forEach(function (item) { item.active = true; });
   }
 
   var vh = window.innerHeight;
   window.addEventListener("resize", function () { vh = window.innerHeight; }, { passive: true });
 
-  var lastY = window.scrollY;
-  var shear = 0;
-  var shearOn = false;
-
   var ticking = false;
   function onScrollFrame() {
     var y = window.scrollY;
-    var velocity = y - lastY;
-    lastY = y;
 
     if (header) header.classList.toggle("is-scrolled", y > 24);
     if (progress) {
@@ -98,6 +106,7 @@
     }
 
     for (i = 0; i < pxImgs.length; i++) {
+      if (!pxImgs[i].active) continue;
       r = pxImgs[i].frame.getBoundingClientRect();
       if (r.bottom < 0 || r.top > vh) continue;
       t = (vh - r.top) / (vh + r.height);
@@ -127,30 +136,7 @@
 
     if (ticker) ticker.style.transform = "translate3d(" + (-y * 0.3).toFixed(1) + "px,0,0)";
 
-    /* velocity shear: fast scrolling shears the vitrine glass by a
-       fraction of a degree; it settles over the following frames */
-    var settling = false;
-    if (shearEls.length) {
-      var target = Math.min(Math.max(velocity * 0.045, -1.8), 1.8);
-      shear += (target - shear) * 0.14;
-      if (Math.abs(shear) < 0.02 && Math.abs(target) < 0.02) {
-        if (shearOn) {
-          for (i = 0; i < shearEls.length; i++) shearEls[i].style.transform = "";
-          shearOn = false;
-        }
-      } else {
-        var sk = "skewY(" + shear.toFixed(3) + "deg)";
-        for (i = 0; i < shearEls.length; i++) shearEls[i].style.transform = sk;
-        shearOn = true;
-        settling = true;
-      }
-    }
-
     ticking = false;
-    if (settling) {
-      ticking = true;
-      requestAnimationFrame(onScrollFrame);
-    }
   }
   window.addEventListener("scroll", function () {
     if (!ticking) {
@@ -259,17 +245,28 @@
       document.body.classList.toggle("cursor-on-link", !!e.target.closest(HOT));
     }, { passive: true });
 
-    /* translate3d keeps both layers on the compositor; snap the ring to
-       its target when close so it doesn't shimmer on sub-pixel deltas */
-    (function loop() {
+    var cursorRaf = 0;
+    function paintCursor() {
+      cursorRaf = 0;
+      if (!shown) return;
       rx += (mx - rx) * 0.18;
       ry += (my - ry) * 0.18;
       if (Math.abs(mx - rx) < 0.1) rx = mx;
       if (Math.abs(my - ry) < 0.1) ry = my;
       dot.style.transform = "translate3d(" + mx + "px," + my + "px,0)";
       ring.style.transform = "translate3d(" + rx + "px," + ry + "px,0)";
-      requestAnimationFrame(loop);
-    })();
+      if (rx !== mx || ry !== my) cursorRaf = requestAnimationFrame(paintCursor);
+    }
+
+    function requestCursorFrame() {
+      if (!cursorRaf) cursorRaf = requestAnimationFrame(paintCursor);
+    }
+
+    document.addEventListener("mousemove", requestCursorFrame, { passive: true });
+    document.addEventListener("mouseleave", function () {
+      if (cursorRaf) cancelAnimationFrame(cursorRaf);
+      cursorRaf = 0;
+    });
   }
 
   /* ---- 3D tilt: vitrines lean toward the pointer ---- */
@@ -398,7 +395,12 @@
      so it is assigned at click time and cleared on bfcache restores. */
   if (!reduceMotion && "startViewTransition" in document) {
     document.addEventListener("click", function (e) {
-      var link = e.target.closest(".vitrine-name a");
+      /* Either anchor inside a vitrine names the image: the caption link
+         (.vitrine-name a) AND the image-wrapping link in .vitrine-media. This
+         way the cross-document morph fires from every entry point — the
+         stacked fallback cards AND the immersive-mode screen-anchored labels,
+         whichever <a> the click resolves to. */
+      var link = e.target.closest('.vitrine a[href*="product.html"]');
       if (!link) return;
       var vitrine = link.closest(".vitrine");
       var img = vitrine && vitrine.querySelector(".vitrine-media img");

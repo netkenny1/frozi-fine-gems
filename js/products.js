@@ -181,6 +181,9 @@
   setText('[data-p="eyebrow"]', "Collection · " + p.category + " · Ref. " + p.ref);
   setText('[data-p="name"]', p.name);
   setText('[data-p="price"]', p.price + ", made to order");
+  setText('[data-p-mobile="eyebrow"]', "Collection · " + p.category + " · Ref. " + p.ref);
+  setText('[data-p-mobile="name"]', p.name);
+  setText('[data-p-mobile="price"]', p.price + ", made to order");
   setText('[data-p="desc"]', p.desc);
   setText('[data-p="refcode"]', p.ref);
 
