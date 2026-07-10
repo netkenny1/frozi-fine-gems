@@ -86,6 +86,24 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   check(await page.locator(".rotator.rt-ready").count() === 1, "Maison WebGL scroll gem is live");
   check(Buffer.compare(enterA, enterB) !== 0, "stone spins while scrolling IN (entry frames differ)");
   check(Buffer.compare(pinMid, exit) !== 0, "stone spins while scrolling OUT (pin vs exit differ)");
+  await page.evaluate((y) => scrollTo(0, y), Math.round(rot.top));
+  await page.waitForTimeout(80);
+  const scrollStart = await page.evaluate(() => ({
+    ry: Number(document.querySelector(".rt-gem canvas").dataset.ry),
+    transform: document.querySelector(".rt-stage").style.transform,
+  }));
+  await page.evaluate((y) => scrollTo(0, y), Math.round(rot.top + rot.h - VH));
+  await page.waitForTimeout(80);
+  const scrollEnd = await page.evaluate(() => ({
+    ry: Number(document.querySelector(".rt-gem canvas").dataset.ry),
+    transform: document.querySelector(".rt-stage").style.transform,
+  }));
+  check(
+    scrollStart.transform.includes("6vh") &&
+      scrollEnd.transform.includes("-6vh") &&
+      Math.abs(scrollEnd.ry - scrollStart.ry) > 4,
+    `stone keeps original scroll lift and spin (${scrollStart.ry.toFixed(2)} -> ${scrollEnd.ry.toFixed(2)}rad)`
+  );
 
   // Combined moment: gem on the left, credo on the right, side by side on desktop
   const layout = await page.evaluate(() => {
@@ -148,6 +166,7 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   await page.waitForTimeout(180);
   const coastPose = await gemCanvas.evaluate((canvas) => ({
     ry: Number(canvas.dataset.ry),
+    targetRy: Number(canvas.dataset.targetRy),
     dragging: canvas.dataset.dragging,
   }));
   await page.mouse.up();
@@ -157,6 +176,25 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
       Math.sign(coastPose.ry - releasePose.ry) === Math.sign(releasePose.vy) &&
       Math.abs(coastPose.ry - releasePose.ry) > 0.04,
     `stone keeps release momentum after pointer exits (${Math.abs(coastPose.ry - releasePose.ry).toFixed(2)}rad coast)`
+  );
+  await page.waitForTimeout(600);
+  const beforeScrollThrow = await gemCanvas.evaluate((canvas) => ({
+    ry: Number(canvas.dataset.ry),
+    targetRy: Number(canvas.dataset.targetRy),
+  }));
+  await page.evaluate((y) => scrollTo(0, y), Math.round(rot.top + (rot.h - VH) * 0.75));
+  await page.waitForTimeout(34);
+  const scrolledThrow = await gemCanvas.evaluate((canvas) => ({
+    ry: Number(canvas.dataset.ry),
+    targetRy: Number(canvas.dataset.targetRy),
+  }));
+  const targetShift = scrolledThrow.targetRy - beforeScrollThrow.targetRy;
+  const offsetShift =
+    (scrolledThrow.ry - scrolledThrow.targetRy) -
+    (beforeScrollThrow.ry - beforeScrollThrow.targetRy);
+  check(
+    Math.abs(targetShift) > 0.5 && Math.abs(offsetShift) < 0.6,
+    `scroll choreography remains immediate during momentum (${targetShift.toFixed(2)}rad target shift)`
   );
   await page.waitForTimeout(5000);
   const returnState = await page.evaluate(() => {

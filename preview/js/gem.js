@@ -499,13 +499,25 @@
       setScrollProgress: function (progress) {
         if (!scrollDriven) return;
         var p = Math.max(0, Math.min(1, progress));
-        targetRx = 0.38 + Math.sin(p * Math.PI * 4) * 0.28;
-        targetRy = 0.65 + p * Math.PI * 4;
-        if (!dragging && !settling) {
-          rx = targetRx;
-          ry = targetRy;
-          vx = 0;
-          vy = 0;
+        var nextRx = 0.38 + Math.sin(p * Math.PI * 4) * 0.28;
+        var nextRy = 0.65 + p * Math.PI * 4;
+        var scrollRx = nextRx - targetRx;
+        var scrollRy = nextRy - targetRy;
+        targetRx = nextRx;
+        targetRy = nextRy;
+        if (!dragging) {
+          if (settling) {
+            /* Scroll always owns the base choreography. Carry the temporary
+               throw offset along with that base so inertia never suppresses
+               the stone's original scroll spin. */
+            rx += scrollRx;
+            ry += scrollRy;
+          } else {
+            rx = targetRx;
+            ry = targetRy;
+            vx = 0;
+            vy = 0;
+          }
         }
         schedule();
       },
