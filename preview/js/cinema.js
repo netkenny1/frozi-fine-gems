@@ -10,16 +10,19 @@
         section approaches.
      1. The manifesto: one serif sentence whose words ink in from dim sage
         to ivory as the reader scrolls its runway.
-     2. The method cinema: three full-bleed photographs wipe open in
-        sequence while the step copy crossfades (--mc-f1/--mc-f2 wipe
-        progress, --mc-drift parallax, .is-current on the active step).
-   Everything visual is opacity / clip-path / transform in main.css — no
-   layout, no paint. Without JS (or with reduced motion) both sections read
+     2. The method cinema: three full-bleed photographs rise as translated
+        compositor curtains while the step copy crossfades.
+   Everything visual is opacity / transform in main.css. Without JS (or with
+   reduced motion) both sections read
    as static: sentence fully lit, one photograph, steps stacked. */
 (function () {
   "use strict";
 
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  var compactViewport = window.matchMedia("(max-width: 820px)").matches;
+  var viewH = window.innerHeight;
+  var scrollYNow = window.scrollY;
 
   function clamp01(x) {
     return x < 0 ? 0 : x > 1 ? 1 : x;
@@ -64,12 +67,13 @@
 
   var mfLastP = -1;   /* last progress we inked the sentence for */
   var mfLastOp = [];  /* last opacity string written per word */
+  var manifestoBox = null;
   function updateManifesto() {
-    if (!manifesto || !words.length) return;
-    var rect = manifesto.getBoundingClientRect();
-    var span = rect.height - window.innerHeight;
+    if (!manifesto || !words.length || !manifestoBox) return;
+    if (scrollYNow + viewH < manifestoBox.top || scrollYNow > manifestoBox.bottom) return;
+    var span = manifestoBox.height - viewH;
     if (span <= 0) return;
-    var p = clamp01(-rect.top / span);
+    var p = clamp01((scrollYNow - manifestoBox.top) / span);
     /* the runway is 240vh: while the section is off-screen p pins at 0 or 1
        and every scroll frame otherwise rewrites all word opacities for nothing.
        Skip unless the reader actually moved through the sentence — this is what
@@ -93,7 +97,9 @@
   /* ---- the stone: scroll-turned 360 ---- */
   var rotator = document.querySelector("[data-rotator]");
   var rtFrames = [];
-  var RT_N = 120;
+  var RT_SOURCE_N = 120;
+  var RT_STRIDE = compactViewport ? 2 : 1;
+  var RT_N = Math.ceil(RT_SOURCE_N / RT_STRIDE);
   var RT_TURNS = 2; /* full tumbles across the section's whole viewport pass */
   var rtLoaded = false;
   var rtLoadStarted = false;
@@ -104,6 +110,7 @@
   var rtStage = null;
   var rtHead = null;
   var rtNote = null;
+  var rotatorBox = null;
   if (rotator) {
     rtCanvas = rotator.querySelector(".rt-canvas");
     rtStage = rotator.querySelector(".rt-stage");
@@ -120,14 +127,15 @@
   function rtSize() {
     if (!rtCanvas) return;
     var rect = rtCanvas.getBoundingClientRect();
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = Math.max(2, Math.round(rect.width * dpr));
+    var dpr = Math.min(window.devicePixelRatio || 1, compactViewport ? 1.5 : 2);
+    var cap = compactViewport ? 640 : 960;
+    var w = Math.max(2, Math.min(cap, Math.round(rect.width * dpr)));
     if (rtCanvas.width !== w) {
       rtCanvas.width = w;
       rtCanvas.height = w;
       /* resizing resets context state */
       rtCtx.imageSmoothingEnabled = true;
-      rtCtx.imageSmoothingQuality = "high";
+      rtCtx.imageSmoothingQuality = compactViewport ? "medium" : "high";
       rtLast = -1; /* force a redraw at the new backing size */
     }
   }
@@ -136,29 +144,45 @@
     if (rtLoadStarted || !rotator) return;
     rtLoadStarted = true;
     var done = 0;
-    for (var i = 0; i < RT_N; i++) {
-      (function (i) {
-        var im = new Image();
-        im.decoding = "async";
-        im.src = "assets/rotation/emerald-" + ("00" + i).slice(-3) + ".webp";
-        /* decode ahead of time so first drawImage of each frame never janks */
-        var ready = function () {
-          rtFrames[i] = im;
-          if (++done === RT_N) {
-            rtLoaded = true;
-            rotator.classList.add("rt-ready");
-            rtSize();
-            rtLast = -1;
-            updateRotator();
-          }
-        };
-        if (im.decode) {
-          im.decode().then(ready, ready);
-        } else {
-          im.onload = ready;
-        }
-      })(i);
+    var next = 0;
+    var active = 0;
+    var limit = compactViewport ? 4 : 8;
+
+    function complete(i, im) {
+      if (im.naturalWidth) rtFrames[i] = im;
+      done++;
+      active--;
+      if (done === RT_N) {
+        rtLoaded = true;
+        rotator.classList.add("rt-ready");
+        rtSize();
+        rtLast = -1;
+        updateRotator();
+      } else {
+        pump();
+      }
     }
+
+    function loadFrame(i) {
+      var im = new Image();
+      var sourceIndex = i * RT_STRIDE;
+      im.decoding = "async";
+      im.onload = function () {
+        if (im.decode) im.decode().then(function () { complete(i, im); }, function () { complete(i, im); });
+        else complete(i, im);
+      };
+      im.onerror = function () { complete(i, im); };
+      im.src = "assets/rotation/emerald-" + ("00" + sourceIndex).slice(-3) + ".webp";
+    }
+
+    function pump() {
+      while (active < limit && next < RT_N) {
+        active++;
+        loadFrame(next++);
+      }
+    }
+
+    pump();
   }
 
   if (rotator && "IntersectionObserver" in window) {
@@ -192,12 +216,11 @@
             one seamless loop, so t wraps via modulo for a continuous multi-turn
             spin. Title, stone and note read as one centered column. */
   function updateRotator() {
-    if (!rotator) return;
-    var rect = rotator.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var span = rect.height - vh;
+    if (!rotator || !rotatorBox) return;
+    if (scrollYNow + viewH < rotatorBox.top || scrollYNow > rotatorBox.bottom) return;
+    var span = rotatorBox.height - viewH;
     if (span <= 0) return;
-    var p = clamp01(-rect.top / span);
+    var p = clamp01((scrollYNow - rotatorBox.top) / span);
     if (Math.abs(p - rtLastP) > 0.0015) {
       rtLastP = p;
       var e = smootherstep(p);
@@ -223,7 +246,8 @@
     }
 
     if (rtLoaded) {
-      var t = clamp01((vh - rect.top) / (rect.height + vh));
+      var rectTop = rotatorBox.top - scrollYNow;
+      var t = clamp01((viewH - rectTop) / (rotatorBox.height + viewH));
       var idx = Math.round(t * RT_N * RT_TURNS) % RT_N;
       rtDraw(idx);
     }
@@ -233,8 +257,12 @@
   var section = document.querySelector("[data-cinema]");
   var steps = section ? section.querySelectorAll("[data-mc-step]") : [];
   var counter = section ? section.querySelector("[data-mc-counter]") : null;
+  var cinemaFrame1 = section ? section.querySelector('[data-mc-frame="1"]') : null;
+  var cinemaFrame2 = section ? section.querySelector('[data-mc-frame="2"]') : null;
+  var cinemaBox = null;
   if (section && steps.length === 3) {
     section.classList.add("mc-live");
+    document.body.classList.add("has-scroll-cinema");
   } else {
     section = null;
   }
@@ -245,22 +273,25 @@
   var lastF2 = -1;
 
   function updateCinema() {
-    if (!section) return;
-    var rect = section.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var span = rect.height - vh;
+    if (!section || !cinemaBox) return;
+    if (scrollYNow + viewH < cinemaBox.top || scrollYNow > cinemaBox.bottom) return;
+    var span = cinemaBox.height - viewH;
     if (span <= 0) return;
-    var p = clamp01(-rect.top / span);
+    var p = clamp01((scrollYNow - cinemaBox.top) / span);
 
     /* Three equal acts. Frame n+1 wipes over frame n across the middle of
        each act boundary, so every photograph gets a held, quiet beat. */
     var f1 = smootherstep((p - 0.28) / 0.17);
     var f2 = smootherstep((p - 0.61) / 0.17);
-    if (f1 !== lastF1 || f2 !== lastF2) {
-      section.style.setProperty("--mc-f1", f1.toFixed(4));
-      section.style.setProperty("--mc-f2", f2.toFixed(4));
-      /* one slow shared drift keeps the held frame breathing */
-      section.style.setProperty("--mc-drift", (p * -3.2).toFixed(3) + "%");
+    if (Math.abs(f1 - lastF1) > 0.0005 || Math.abs(f2 - lastF2) > 0.0005) {
+      if (cinemaFrame1) {
+        cinemaFrame1.style.transform =
+          "translate3d(0," + ((1 - f1) * 100).toFixed(3) + "%,0)";
+      }
+      if (cinemaFrame2) {
+        cinemaFrame2.style.transform =
+          "translate3d(0," + ((1 - f2) * 100).toFixed(3) + "%,0)";
+      }
       lastF1 = f1;
       lastF2 = f2;
     }
@@ -277,6 +308,7 @@
 
   function update() {
     ticking = false;
+    scrollYNow = window.scrollY;
     updateManifesto();
     updateRotator();
     updateCinema();
@@ -289,11 +321,43 @@
     }
   }
 
+  function boxFor(el) {
+    if (!el) return null;
+    var rect = el.getBoundingClientRect();
+    var top = rect.top + window.scrollY;
+    return { top: top, height: rect.height, bottom: top + rect.height };
+  }
+
+  function measure() {
+    viewH = window.innerHeight;
+    scrollYNow = window.scrollY;
+    manifestoBox = boxFor(manifesto);
+    rotatorBox = boxFor(rotator);
+    cinemaBox = boxFor(section);
+    mfLastP = -1;
+    rtLastP = -1;
+    lastF1 = -1;
+    lastF2 = -1;
+  }
+
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", function () {
+    compactViewport = window.matchMedia("(max-width: 820px)").matches;
+    measure();
     rtSize();
     onScroll();
   });
+  window.addEventListener("load", function () {
+    measure();
+    onScroll();
+  }, { once: true });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      measure();
+      onScroll();
+    });
+  }
+  measure();
   rtSize();
   update();
 })();

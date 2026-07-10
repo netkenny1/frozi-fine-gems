@@ -182,7 +182,7 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto(URL);
   await page.waitForTimeout(INTRO_MS);
-  const median = await page.evaluate(
+  const frameBudget = await page.evaluate(
     () =>
       new Promise((res) => {
         const times = [];
@@ -192,18 +192,57 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
           const now = performance.now();
           times.push(now - last);
           last = now;
-          if (++n < 40) {
-            scrollBy(0, 60);
+          if (++n < 80) {
+            // Trackpad/touch flicks move farther than the old gentle 60px
+            // sample. The p95 catches intermittent stalls hidden by a median.
+            scrollBy(0, 110);
             requestAnimationFrame(step);
           } else {
             times.sort((a, b) => a - b);
-            res(times[Math.floor(times.length / 2)]);
+            res({
+              median: times[Math.floor(times.length / 2)],
+              p95: times[Math.floor(times.length * 0.95)],
+            });
           }
         }
         requestAnimationFrame(step);
       })
   );
-  check(median <= 22, `mobile: median frame ${median.toFixed(1)}ms <= 22ms`);
+  check(
+    frameBudget.median <= 22,
+    `mobile: median frame ${frameBudget.median.toFixed(1)}ms <= 22ms`
+  );
+  check(
+    frameBudget.p95 <= 24,
+    `mobile: fast-scroll p95 ${frameBudget.p95.toFixed(1)}ms <= 24ms`
+  );
+  const mobileRotatorTop = await page.evaluate(() => {
+    const section = document.querySelector("[data-rotator]");
+    return section.getBoundingClientRect().top + scrollY;
+  });
+  await page.evaluate((y) => scrollTo(0, y), mobileRotatorTop);
+  await page.waitForTimeout(2000);
+  const mobileRotationFrames = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .filter((entry) => entry.name.includes("/assets/rotation/emerald-")).length
+  );
+  check(
+    mobileRotationFrames > 0 && mobileRotationFrames <= 60,
+    `mobile: emerald decode set capped (${mobileRotationFrames}/60 frames)`
+  );
+  const mobileCinemaMid = await page.evaluate(() => {
+    const section = document.querySelector("[data-cinema]");
+    const rect = section.getBoundingClientRect();
+    return rect.top + scrollY + (section.offsetHeight - innerHeight) * 0.33;
+  });
+  await page.evaluate((y) => scrollTo(0, y), mobileCinemaMid);
+  await page.waitForTimeout(200);
+  const curtainStyle = await page.locator('[data-mc-frame="1"]').getAttribute("style");
+  check(
+    Boolean(curtainStyle && curtainStyle.includes("translate3d")),
+    "mobile: cinema curtain uses a compositor transform"
+  );
   check(errors.length === 0, "mobile: no console errors");
   await page.close();
   await ctx.close();

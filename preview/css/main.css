@@ -2542,9 +2542,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 /* ---- The method cinema (scroll-scrubbed editorial triptych) -------------- */
 /* Default (no JS / reduced motion): one full-bleed photograph, steps stacked.
-   With js/cinema.js live, the section grows into a 340vh runway; frames wipe
-   open bottom-up on --mc-f1/--mc-f2 and the steps crossfade. Everything is
-   transform / clip-path / opacity — no layout, no paint. */
+   With js/cinema.js live, the section grows into a 340vh runway; later frames
+   rise as compositor curtains and the steps crossfade. */
 
 .method-cinema {
   position: relative;
@@ -2571,13 +2570,14 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   position: absolute;
   inset: 0;
   margin: 0;
+  overflow: hidden;
 }
 
 .mc-frame img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: translateY(var(--mc-drift, 0%)) scale(1.04);
+  transform: scale(1.04);
 }
 
 /* static fallback: first photograph only */
@@ -2591,31 +2591,28 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 }
 
 .mc-live .mc-frame[data-mc-frame="1"] {
-  clip-path: inset(calc((1 - var(--mc-f1, 0)) * 100%) 0 0 0);
+  transform: translate3d(0, 100%, 0);
 }
 
-/* the two rising frames are transformed and clipped every scroll frame;
-   give each its own compositor layer so the drift + wipe stay off the main
-   thread instead of repainting a full-screen photograph each tick */
+/* The later frames travel as compositor layers. A translated curtain keeps
+   the full-screen transition off the paint path on fast touch/trackpad input. */
 .mc-live .mc-frame[data-mc-frame="1"],
 .mc-live .mc-frame[data-mc-frame="2"] {
-  will-change: clip-path;
-}
-
-.mc-live .mc-frame img {
   will-change: transform;
+  backface-visibility: hidden;
+  contain: paint;
 }
 
 .mc-live .mc-frame[data-mc-frame="1"] img {
-  transform: translateY(var(--mc-drift, 0%)) scale(calc(1.1 - 0.06 * var(--mc-f1, 0)));
+  transform: scale(1.04);
 }
 
 .mc-live .mc-frame[data-mc-frame="2"] {
-  clip-path: inset(calc((1 - var(--mc-f2, 0)) * 100%) 0 0 0);
+  transform: translate3d(0, 100%, 0);
 }
 
 .mc-live .mc-frame[data-mc-frame="2"] img {
-  transform: translateY(var(--mc-drift, 0%)) scale(calc(1.1 - 0.06 * var(--mc-f2, 0)));
+  transform: scale(1.04);
 }
 
 /* legibility scrim under the copy column */
@@ -2937,6 +2934,12 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 /* ---- Preview refinement pass -------------------------------------------------
    Commerce-facing polish stays in /preview so the production pages remain
    untouched while the direction is evaluated. */
+
+.has-scroll-cinema .site-header.is-scrolled {
+  background: rgba(10, 12, 11, 0.96);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 
 .product-mobile-head {
   display: none;
