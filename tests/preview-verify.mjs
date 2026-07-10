@@ -126,14 +126,39 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
     rx: Number(document.querySelector(".rt-gem canvas").dataset.rx),
     ry: Number(document.querySelector(".rt-gem canvas").dataset.ry),
   }));
-  await page.mouse.up();
   check(
     dragState.dragging &&
       Math.abs(dragState.rx - poseBeforeDrag.rx) > 0.02 &&
       Math.abs(dragState.ry - poseBeforeDrag.ry) > 0.02,
     `stone drag is free on both axes (rx ${poseBeforeDrag.rx.toFixed(2)} -> ${dragState.rx.toFixed(2)}, ry ${poseBeforeDrag.ry.toFixed(2)} -> ${dragState.ry.toFixed(2)})`
   );
-  await page.waitForTimeout(2400);
+  // Leaving the document while holding the stone must release the drag and
+  // preserve the last angular velocity as a throw.
+  await gemCanvas.dispatchEvent("pointerout", {
+    bubbles: true,
+    pointerId: 1,
+    relatedTarget: null,
+  });
+  await page.waitForTimeout(34);
+  const releasePose = await gemCanvas.evaluate((canvas) => ({
+    ry: Number(canvas.dataset.ry),
+    vy: Number(canvas.dataset.vy),
+    dragging: canvas.dataset.dragging,
+  }));
+  await page.waitForTimeout(180);
+  const coastPose = await gemCanvas.evaluate((canvas) => ({
+    ry: Number(canvas.dataset.ry),
+    dragging: canvas.dataset.dragging,
+  }));
+  await page.mouse.up();
+  check(
+    releasePose.dragging === "false" &&
+      coastPose.dragging === "false" &&
+      Math.sign(coastPose.ry - releasePose.ry) === Math.sign(releasePose.vy) &&
+      Math.abs(coastPose.ry - releasePose.ry) > 0.04,
+    `stone keeps release momentum after pointer exits (${Math.abs(coastPose.ry - releasePose.ry).toFixed(2)}rad coast)`
+  );
+  await page.waitForTimeout(5000);
   const returnState = await page.evaluate(() => {
     const canvas = document.querySelector(".rt-gem canvas");
     const stage = document.querySelector(".rt-stage");

@@ -286,11 +286,13 @@
 
     /* ---- interaction: free drag, inertia, scroll-owned resting pose ---- */
     var rx = 0.45, ry = 0.65, vx = 0, vy = 0;
-    var dragging = false, lastX = 0, lastY = 0, lastTouch = 0;
+    var dragging = false, dragPointer = null, lastX = 0, lastY = 0, lastTouch = 0;
     var keyX = 0.55, keyY = 0.75;
     var orbitT = -1e9;
     var targetRx = rx, targetRy = ry;
     var settling = false;
+    var releasedAt = -1e9;
+    var lastFrame = performance.now();
     var active = true;
     var raf = 0;
     var stage = host.closest(".rt-stage");
@@ -302,27 +304,52 @@
     if (!reduce) {
       canvas.addEventListener("pointerdown", function (e) {
         dragging = true; settling = false;
-        lastX = e.clientX; lastY = e.clientY; lastTouch = performance.now();
+        dragPointer = e.pointerId;
+        lastX = e.clientX; lastY = e.clientY; lastTouch = e.timeStamp || performance.now();
+        vx = 0; vy = 0;
         canvas.style.cursor = "grabbing"; canvas.setPointerCapture(e.pointerId);
         if (stage) stage.classList.add("is-dragging");
       });
       canvas.addEventListener("pointermove", function (e) {
-        if (dragging) {
-          vy = (e.clientX - lastX) * 0.008;
-          vx = (e.clientY - lastY) * 0.006;
-          ry += vy; rx += vx;
-          lastX = e.clientX; lastY = e.clientY; lastTouch = performance.now();
+        if (dragging && e.pointerId === dragPointer) {
+          var samples = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+          if (!samples.length) samples = [e];
+          samples.forEach(function (sample) {
+            var stamp = sample.timeStamp || performance.now();
+            var frameTime = Math.max(4, Math.min(50, stamp - lastTouch)) / 16.667;
+            var moveY = (sample.clientX - lastX) * 0.008;
+            var moveX = (sample.clientY - lastY) * 0.006;
+            var instantVx = Math.max(-0.14, Math.min(0.14, moveX / frameTime));
+            var instantVy = Math.max(-0.18, Math.min(0.18, moveY / frameTime));
+            vx = vx * 0.45 + instantVx * 0.55;
+            vy = vy * 0.45 + instantVy * 0.55;
+            ry += moveY; rx += moveX;
+            lastX = sample.clientX; lastY = sample.clientY; lastTouch = stamp;
+          });
         }
         var r = canvas.getBoundingClientRect();
         keyX = 0.25 + ((e.clientX - r.left) / r.width) * 0.7;
         keyY = 1.0 - ((e.clientY - r.top) / r.height) * 0.6;
       }, { passive: true });
       var release = function () {
-        dragging = false; settling = scrollDriven; canvas.style.cursor = "grab";
+        if (!dragging) return;
+        dragging = false; dragPointer = null; settling = scrollDriven;
+        releasedAt = performance.now();
+        canvas.style.cursor = "grab";
         if (stage) stage.classList.remove("is-dragging");
       };
       canvas.addEventListener("pointerup", release);
       canvas.addEventListener("pointercancel", release);
+      canvas.addEventListener("lostpointercapture", release);
+      window.addEventListener("pointerup", release);
+      window.addEventListener("pointercancel", release);
+      window.addEventListener("pointerout", function (e) {
+        if (!e.relatedTarget) release();
+      });
+      window.addEventListener("blur", release);
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) release();
+      });
       canvas.addEventListener("click", function () { orbitT = performance.now(); });
     }
 
@@ -371,14 +398,23 @@
     function frame(now) {
       raf = 0;
       if (!active) return;
+      var frameScale = Math.max(0.25, Math.min(2.5, (now - lastFrame) / 16.667));
+      lastFrame = now;
       resize();
       if (!dragging && !reduce) {
-        rx += vx; ry += vy; vx *= 0.94; vy *= 0.94;         /* inertia */
+        rx += vx * frameScale; ry += vy * frameScale;
+        var drag = scrollDriven ? 0.972 : 0.94;
+        var friction = Math.pow(drag, frameScale);
+        vx *= friction; vy *= friction;                       /* frame-rate independent inertia */
         if (scrollDriven) {
           var restRy = nearestAngle(targetRy, ry);
           if (settling || Math.abs(vx) > 0.0002 || Math.abs(vy) > 0.0002) {
-            rx += (targetRx - rx) * 0.065;
-            ry += (restRy - ry) * 0.065;
+            /* A thrown stone coasts first. The restoring spring then fades in,
+               keeping the release direction readable before it returns home. */
+            var returnMix = Math.max(0, Math.min(1, (now - releasedAt - 260) / 900));
+            var spring = 0.03 * returnMix * frameScale;
+            rx += (targetRx - rx) * spring;
+            ry += (restRy - ry) * spring;
             if (
               Math.abs(targetRx - rx) < 0.001 &&
               Math.abs(restRy - ry) < 0.001 &&
@@ -415,6 +451,9 @@
       canvas.dataset.targetRx = targetRx.toFixed(5);
       canvas.dataset.targetRy = nearestAngle(targetRy, ry).toFixed(5);
       canvas.dataset.dragging = dragging ? "true" : "false";
+      canvas.dataset.vx = vx.toFixed(5);
+      canvas.dataset.vy = vy.toFixed(5);
+      canvas.dataset.settling = settling ? "true" : "false";
       gl.uniformMatrix4fv(P3D.u.uModel, false, model(rx, ry, bob));
       gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
       gl.enableVertexAttribArray(P3D.a.aP);
