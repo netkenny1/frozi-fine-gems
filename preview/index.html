@@ -149,11 +149,9 @@
     </section>
 
     <!-- ============ The stone + the maison, one pinned moment ============ -->
-    <!-- The gem section and the manifesto, combined: the maison emerald turns
-         (spinning in and out of view) while the credo inks in from dim sage to
-         ivory, both scrubbed 1:1 by the same scroll. Frames lazy-load; without
-         JS or with reduced motion it is a still gem with the sentence fully
-         lit. -->
+    <!-- The Maison WebGL emerald turns with scroll, remains freely manipulable
+         on both axes, then returns to the current scroll pose after release.
+         Without JS or with reduced motion, the photographic fallback remains. -->
     <section class="rotator section--dark" data-rotator data-manifesto
              aria-label="The stone, and the maison in one line">
       <div class="rt-sticky">
@@ -162,7 +160,7 @@
                 title="Drag to turn the stone">
           <div class="rt-stone">
             <img class="rt-fallback" src="assets/rotation/emerald-000.webp" alt="A round-cut Muzo emerald photographed on black, turning with the page" width="1000" height="1000" loading="lazy" decoding="async">
-            <canvas class="rt-canvas" aria-hidden="true"></canvas>
+            <div class="rt-gem" data-gem data-scroll-gem aria-hidden="true"></div>
           </div>
         </figure>
         <div class="rt-text">
@@ -316,6 +314,8 @@
 
   <script src="js/store.js" defer></script>
   <script src="js/main.js" defer></script>
+  <script src="js/gem-model.js" defer></script>
+  <script src="js/gem.js" defer></script>
   <script src="js/cinema.js" defer></script>
 </body>
 </html>

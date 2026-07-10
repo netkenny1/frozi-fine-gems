@@ -170,6 +170,8 @@
   ].join("\n");
 
   function mount(host) {
+    var scrollDriven = host.hasAttribute("data-scroll-gem");
+    if (scrollDriven && reduce) return false;
     var canvas = document.createElement("canvas");
     canvas.style.cssText =
       "position:absolute;inset:0;width:100%;height:100%;display:block;" +
@@ -282,16 +284,27 @@
       return [cy,sx*sy,-cx*sy,0, 0,cx,sx,0, sy,-sx*cy,cx*cy,0, 0,ty,0,1];
     }
 
-    /* ---- interaction: drag with inertia, idle drift, the walking light ---- */
+    /* ---- interaction: free drag, inertia, scroll-owned resting pose ---- */
     var rx = 0.45, ry = 0.65, vx = 0, vy = 0;
     var dragging = false, lastX = 0, lastY = 0, lastTouch = 0;
     var keyX = 0.55, keyY = 0.75;
     var orbitT = -1e9;
+    var targetRx = rx, targetRy = ry;
+    var settling = false;
+    var active = true;
+    var raf = 0;
+    var stage = host.closest(".rt-stage");
+
+    function nearestAngle(target, current) {
+      return current + Math.atan2(Math.sin(target - current), Math.cos(target - current));
+    }
 
     if (!reduce) {
       canvas.addEventListener("pointerdown", function (e) {
-        dragging = true; lastX = e.clientX; lastY = e.clientY; lastTouch = performance.now();
+        dragging = true; settling = false;
+        lastX = e.clientX; lastY = e.clientY; lastTouch = performance.now();
         canvas.style.cursor = "grabbing"; canvas.setPointerCapture(e.pointerId);
+        if (stage) stage.classList.add("is-dragging");
       });
       canvas.addEventListener("pointermove", function (e) {
         if (dragging) {
@@ -304,19 +317,24 @@
         keyX = 0.25 + ((e.clientX - r.left) / r.width) * 0.7;
         keyY = 1.0 - ((e.clientY - r.top) / r.height) * 0.6;
       }, { passive: true });
-      var release = function () { dragging = false; canvas.style.cursor = "grab"; };
+      var release = function () {
+        dragging = false; settling = scrollDriven; canvas.style.cursor = "grab";
+        if (stage) stage.classList.remove("is-dragging");
+      };
       canvas.addEventListener("pointerup", release);
       canvas.addEventListener("pointercancel", release);
       canvas.addEventListener("click", function () { orbitT = performance.now(); });
     }
 
     function resize() {
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var compact = window.matchMedia("(max-width: 820px)").matches;
+      var cap = scrollDriven ? (compact ? 1.25 : 1.5) : 2;
+      var dpr = Math.min(window.devicePixelRatio || 1, cap);
       var w = Math.max(canvas.clientWidth * dpr | 0, 2);
       var h = Math.max(canvas.clientHeight * dpr | 0, 2);
       if (canvas.width === w && canvas.height === h && scene) return;
       canvas.width = w; canvas.height = h;
-      var ss = dpr < 1.5 ? 2 : 1;                           /* supersample on 1x displays */
+      var ss = scrollDriven ? 1 : (dpr < 1.5 ? 2 : 1);     /* homepage favors interaction latency */
       drop(scene); drop(pingA); drop(pingB);
       scene = makeTarget(w * ss, h * ss, true);
       pingA = makeTarget(Math.max(w >> 2, 1), Math.max(h >> 2, 1), false);
@@ -346,12 +364,36 @@
     gl.uniform1i(PCOMP.u.uScene, 0);
     gl.uniform1i(PCOMP.u.uBloom, 1);
 
+    function schedule() {
+      if (!raf && active) raf = requestAnimationFrame(frame);
+    }
+
     function frame(now) {
+      raf = 0;
+      if (!active) return;
       resize();
       if (!dragging && !reduce) {
         rx += vx; ry += vy; vx *= 0.94; vy *= 0.94;         /* inertia */
-        if (now - lastTouch > 2500) ry += 0.0032;           /* idle drift */
-        rx += (0.45 - rx) * 0.005;
+        if (scrollDriven) {
+          var restRy = nearestAngle(targetRy, ry);
+          if (settling || Math.abs(vx) > 0.0002 || Math.abs(vy) > 0.0002) {
+            rx += (targetRx - rx) * 0.065;
+            ry += (restRy - ry) * 0.065;
+            if (
+              Math.abs(targetRx - rx) < 0.001 &&
+              Math.abs(restRy - ry) < 0.001 &&
+              Math.abs(vx) < 0.0002 &&
+              Math.abs(vy) < 0.0002
+            ) {
+              rx = targetRx; ry = restRy; vx = 0; vy = 0; settling = false;
+            }
+          } else {
+            rx = targetRx; ry = restRy;
+          }
+        } else {
+          if (now - lastTouch > 2500) ry += 0.0032;         /* Maison idle drift */
+          rx += (0.45 - rx) * 0.005;
+        }
       }
       rx = Math.max(-0.9, Math.min(0.9, rx));
       var o = (now - orbitT) / 1400;
@@ -368,6 +410,11 @@
       gl.uniform1f(P3D.u.uAmp, amp);
       gl.uniform3f(P3D.u.uKey, keyX, keyY, 0.5);
       var bob = reduce ? 0 : Math.sin(now * 0.0007) * 0.04;
+      canvas.dataset.rx = rx.toFixed(5);
+      canvas.dataset.ry = ry.toFixed(5);
+      canvas.dataset.targetRx = targetRx.toFixed(5);
+      canvas.dataset.targetRy = nearestAngle(targetRy, ry).toFixed(5);
+      canvas.dataset.dragging = dragging ? "true" : "false";
       gl.uniformMatrix4fv(P3D.u.uModel, false, model(rx, ry, bob));
       gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
       gl.enableVertexAttribArray(P3D.a.aP);
@@ -397,18 +444,39 @@
       gl.viewport(0, 0, canvas.width, canvas.height);
       drawQuad(PCOMP, scene.tex, pingA.tex);
 
-      if (!reduce) requestAnimationFrame(frame);
+      if (!reduce) schedule();
     }
-    requestAnimationFrame(frame);
+    schedule();
 
     if (!reduce) {
       setTimeout(function () { orbitT = performance.now(); }, 2400);
       setInterval(function () {                             /* an occasional walk on its own */
         if (performance.now() - lastTouch > 4000) orbitT = performance.now();
       }, 9000);
-      window.addEventListener("resize", resize);
+      window.addEventListener("resize", function () { resize(); schedule(); });
     }
-    return true;
+
+    var controller = {
+      setScrollProgress: function (progress) {
+        if (!scrollDriven) return;
+        var p = Math.max(0, Math.min(1, progress));
+        targetRx = 0.38 + Math.sin(p * Math.PI * 4) * 0.28;
+        targetRy = 0.65 + p * Math.PI * 4;
+        if (!dragging && !settling) {
+          rx = targetRx;
+          ry = targetRy;
+          vx = 0;
+          vy = 0;
+        }
+        schedule();
+      },
+      setActive: function (value) {
+        active = Boolean(value);
+        if (active) schedule();
+      },
+      canvas: canvas,
+    };
+    return controller;
   }
 
   window.FroziGem = { mount: mount };
@@ -418,8 +486,9 @@
   if (host) {
     var scope = host.closest("section") || document.body;
     scope.classList.add("has-gem");
-    var ok = false;
-    try { ok = mount(host); } catch (e) {}
-    if (!ok) scope.classList.remove("has-gem");
+    var controller = false;
+    try { controller = mount(host); } catch (e) {}
+    if (controller) host._froziGemController = controller;
+    else scope.classList.remove("has-gem");
   }
 })();

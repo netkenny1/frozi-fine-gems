@@ -83,7 +83,7 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   const enterB = await stoneShot(rot.top - VH * 0.15);
   const pinMid = await stoneShot(rot.top + (rot.h - VH) * 0.5);
   const exit = await stoneShot(rot.top + (rot.h - VH) + VH * 0.35);
-  check(await page.locator(".rotator.rt-ready").count() === 1, "rotator frames loaded (rt-ready)");
+  check(await page.locator(".rotator.rt-ready").count() === 1, "Maison WebGL scroll gem is live");
   check(Buffer.compare(enterA, enterB) !== 0, "stone spins while scrolling IN (entry frames differ)");
   check(Buffer.compare(pinMid, exit) !== 0, "stone spins while scrolling OUT (pin vs exit differ)");
 
@@ -104,12 +104,16 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
     `gem left of credo, side by side (gem right ${layout.gemRight} <= text left ${layout.textLeft})`
   );
 
-  // The photographic stone remains scroll-owned, but drag temporarily offsets
-  // its frame and spatial pose before a damped return to the scroll position.
+  // Scroll owns the resting pose, while direct manipulation is free on both
+  // model axes before a damped return to that scroll-owned orientation.
   await page.evaluate((y) => scrollTo(0, y), Math.round(rot.top + (rot.h - VH) * 0.5));
   await page.waitForTimeout(400);
-  const canvasBox = await page.locator(".rt-canvas").boundingBox();
-  const frameBeforeDrag = await page.locator(".rt-canvas").getAttribute("data-frame");
+  const gemCanvas = page.locator(".rt-gem canvas");
+  const canvasBox = await gemCanvas.boundingBox();
+  const poseBeforeDrag = await gemCanvas.evaluate((canvas) => ({
+    rx: Number(canvas.dataset.rx),
+    ry: Number(canvas.dataset.ry),
+  }));
   await page.mouse.move(canvasBox.x + canvasBox.width * 0.5, canvasBox.y + canvasBox.height * 0.5);
   await page.mouse.down();
   await page.mouse.move(
@@ -119,26 +123,27 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   );
   const dragState = await page.evaluate(() => ({
     dragging: document.querySelector(".rt-stage").classList.contains("is-dragging"),
-    frame: document.querySelector(".rt-canvas").dataset.frame,
+    rx: Number(document.querySelector(".rt-gem canvas").dataset.rx),
+    ry: Number(document.querySelector(".rt-gem canvas").dataset.ry),
   }));
   await page.mouse.up();
   check(
-    dragState.dragging && dragState.frame !== frameBeforeDrag,
-    `stone drag changes frame (${frameBeforeDrag} -> ${dragState.frame})`
+    dragState.dragging &&
+      Math.abs(dragState.rx - poseBeforeDrag.rx) > 0.02 &&
+      Math.abs(dragState.ry - poseBeforeDrag.ry) > 0.02,
+    `stone drag is free on both axes (rx ${poseBeforeDrag.rx.toFixed(2)} -> ${dragState.rx.toFixed(2)}, ry ${poseBeforeDrag.ry.toFixed(2)} -> ${dragState.ry.toFixed(2)})`
   );
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(2400);
   const returnState = await page.evaluate(() => {
-    const canvas = document.querySelector(".rt-canvas");
+    const canvas = document.querySelector(".rt-gem canvas");
     const stage = document.querySelector(".rt-stage");
-    const frame = Number(canvas.dataset.frame);
-    const base = Number(canvas.dataset.baseFrame);
-    const total = 120;
-    const delta = Math.min(Math.abs(frame - base), total - Math.abs(frame - base));
-    return { delta, dragging: stage.classList.contains("is-dragging") };
+    const rxDelta = Math.abs(Number(canvas.dataset.rx) - Number(canvas.dataset.targetRx));
+    const ryDelta = Math.abs(Number(canvas.dataset.ry) - Number(canvas.dataset.targetRy));
+    return { rxDelta, ryDelta, dragging: stage.classList.contains("is-dragging") };
   });
   check(
-    !returnState.dragging && returnState.delta <= 1,
-    `stone returns to scroll pose (frame delta ${returnState.delta})`
+    !returnState.dragging && returnState.rxDelta < 0.02 && returnState.ryDelta < 0.02,
+    `stone returns to scroll pose (rx ${returnState.rxDelta.toFixed(3)}, ry ${returnState.ryDelta.toFixed(3)})`
   );
 
   // Manifesto scrubs word by word
@@ -265,8 +270,8 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
       .filter((entry) => entry.name.includes("/assets/rotation/emerald-")).length
   );
   check(
-    mobileRotationFrames > 0 && mobileRotationFrames <= 60,
-    `mobile: emerald decode set capped (${mobileRotationFrames}/60 frames)`
+    mobileRotationFrames <= 1,
+    `mobile: live gem loads only its static fallback (${mobileRotationFrames} image)`
   );
   const mobileCinemaMid = await page.evaluate(() => {
     const section = document.querySelector("[data-cinema]");
@@ -281,8 +286,8 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
     "mobile: cinema curtain uses a compositor transform"
   );
   check(
-    await page.locator(".rt-canvas").evaluate((canvas) => getComputedStyle(canvas).touchAction === "pan-y"),
-    "mobile: gem drag preserves vertical page scrolling"
+    await page.locator(".rt-gem canvas").evaluate((canvas) => getComputedStyle(canvas).touchAction === "none"),
+    "mobile: gem accepts unrestricted two-axis touch manipulation"
   );
   check(errors.length === 0, "mobile: no console errors");
   await page.close();

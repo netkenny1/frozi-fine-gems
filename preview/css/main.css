@@ -2775,9 +2775,9 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 
 /* ---- The stone (scroll-turned 360) --------------------------------------- */
-/* Static by default: one still of the emerald on a quiet screen. With
-   js/cinema.js live (.rt-live) the section grows a runway and the canvas
-   scrubs through 72 pre-rendered frames, one turn per runway. */
+/* Static by default: one still of the emerald on a quiet screen. With the
+   shared Maison WebGL renderer live, scroll owns the resting pose while
+   direct manipulation remains free on both axes. */
 
 .rotator {
   background: var(--noir);
@@ -2904,41 +2904,15 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 }
 
 .rt-stage img,
-.rt-canvas {
+.rt-gem {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
 
-.rt-canvas {
-  display: none;
-  cursor: grab;
-  touch-action: pan-y;
-  transform: translate3d(var(--rt-manip-x, 0), var(--rt-manip-y, 0), 0)
-    rotate(var(--rt-manip-r, 0deg));
+.rt-gem canvas {
   will-change: transform;
-}
-
-.rt-ready .rt-canvas {
-  display: block;
-}
-
-.rt-ready .rt-stone {
-  animation: rt-stone-float 6s ease-in-out infinite;
-}
-
-.rt-stage.is-dragging .rt-stone {
-  animation-play-state: paused;
-}
-
-.rt-stage.is-dragging .rt-canvas {
-  cursor: grabbing;
-}
-
-@keyframes rt-stone-float {
-  0%, 100% { transform: translate3d(0, -0.7%, 0); }
-  50% { transform: translate3d(0, 0.9%, 0); }
 }
 
 .rt-ready .rt-fallback {
@@ -2955,14 +2929,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   .rotator.rt-live {
     height: auto;
   }
-  .rt-canvas {
-    display: none !important;
-  }
   .rt-ready .rt-fallback {
     visibility: visible;
-  }
-  .rt-ready .rt-stone {
-    animation: none;
   }
 }
 
