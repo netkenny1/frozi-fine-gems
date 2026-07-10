@@ -111,6 +111,17 @@
   var rtHead = null;
   var rtNote = null;
   var rotatorBox = null;
+  var rtBaseFrame = 0;
+  var rtDragOffset = 0;
+  var rtDragVelocity = 0;
+  var rtManipX = 0;
+  var rtManipY = 0;
+  var rtManipR = 0;
+  var rtDragging = false;
+  var rtReturnRaf = 0;
+  var rtKeyTimer = 0;
+  var rtLastX = 0;
+  var rtLastY = 0;
   if (rotator) {
     rtCanvas = rotator.querySelector(".rt-canvas");
     rtStage = rotator.querySelector(".rt-stage");
@@ -206,6 +217,136 @@
     rtCtx.drawImage(rtFrames[idx], 0, 0, rtCanvas.width, rtCanvas.height);
   }
 
+  function rtWrapFrame(value) {
+    var idx = Math.round(value) % RT_N;
+    return idx < 0 ? idx + RT_N : idx;
+  }
+
+  function rtRenderInteractive() {
+    if (!rtLoaded) return;
+    var base = rtWrapFrame(rtBaseFrame);
+    var shown = rtWrapFrame(rtBaseFrame + rtDragOffset);
+    rtCanvas.dataset.baseFrame = String(base);
+    rtCanvas.dataset.frame = String(shown);
+    rtDraw(shown);
+  }
+
+  function rtApplyManipulation() {
+    if (!rtCanvas) return;
+    rtCanvas.style.setProperty("--rt-manip-x", rtManipX.toFixed(2) + "px");
+    rtCanvas.style.setProperty("--rt-manip-y", rtManipY.toFixed(2) + "px");
+    rtCanvas.style.setProperty("--rt-manip-r", rtManipR.toFixed(3) + "deg");
+  }
+
+  function rtReturnStep() {
+    rtReturnRaf = 0;
+    if (rtDragging) return;
+
+    /* A damped spring preserves a little release inertia, then resolves to
+       the frame owned by the current scroll position. */
+    rtDragVelocity += -rtDragOffset * 0.055;
+    rtDragVelocity *= 0.82;
+    rtDragOffset += rtDragVelocity;
+    rtManipX *= 0.84;
+    rtManipY *= 0.84;
+    rtManipR *= 0.82;
+    rtApplyManipulation();
+    rtRenderInteractive();
+
+    if (
+      Math.abs(rtDragOffset) < 0.04 &&
+      Math.abs(rtDragVelocity) < 0.04 &&
+      Math.abs(rtManipX) < 0.08 &&
+      Math.abs(rtManipY) < 0.08
+    ) {
+      rtDragOffset = 0;
+      rtDragVelocity = 0;
+      rtManipX = 0;
+      rtManipY = 0;
+      rtManipR = 0;
+      rtApplyManipulation();
+      rtRenderInteractive();
+      if (rtStage) rtStage.classList.remove("is-returning");
+      return;
+    }
+
+    rtReturnRaf = requestAnimationFrame(rtReturnStep);
+  }
+
+  function rtBeginReturn() {
+    if (rtDragging || rtReturnRaf) return;
+    if (rtStage) rtStage.classList.add("is-returning");
+    rtReturnRaf = requestAnimationFrame(rtReturnStep);
+  }
+
+  function rtStopReturn() {
+    if (rtReturnRaf) cancelAnimationFrame(rtReturnRaf);
+    rtReturnRaf = 0;
+    if (rtStage) rtStage.classList.remove("is-returning");
+  }
+
+  if (rtCanvas && rtStage) {
+    rtCanvas.addEventListener("pointerdown", function (event) {
+      if (!rtLoaded) return;
+      rtStopReturn();
+      rtDragging = true;
+      rtDragVelocity = 0;
+      rtLastX = event.clientX;
+      rtLastY = event.clientY;
+      rtStage.classList.add("is-dragging");
+      rtCanvas.setPointerCapture(event.pointerId);
+    });
+
+    rtCanvas.addEventListener("pointermove", function (event) {
+      if (!rtDragging) return;
+      var dx = event.clientX - rtLastX;
+      var dy = event.clientY - rtLastY;
+      var width = Math.max(rtCanvas.clientWidth, 1);
+      var frameDelta = dx * RT_N / width * 0.55;
+      rtDragOffset += frameDelta;
+      rtDragVelocity = frameDelta;
+      rtManipX = Math.max(-18, Math.min(18, rtManipX + dx * 0.12));
+      rtManipY = Math.max(-12, Math.min(12, rtManipY + dy * 0.1));
+      rtManipR = Math.max(-2.2, Math.min(2.2, rtManipR + dx * 0.012));
+      rtLastX = event.clientX;
+      rtLastY = event.clientY;
+      rtApplyManipulation();
+      rtRenderInteractive();
+    }, { passive: true });
+
+    var releaseStone = function (event) {
+      if (!rtDragging) return;
+      rtDragging = false;
+      rtStage.classList.remove("is-dragging");
+      if (event && rtCanvas.hasPointerCapture(event.pointerId)) {
+        rtCanvas.releasePointerCapture(event.pointerId);
+      }
+      rtBeginReturn();
+    };
+    rtCanvas.addEventListener("pointerup", releaseStone);
+    rtCanvas.addEventListener("pointercancel", releaseStone);
+
+    rtStage.addEventListener("keydown", function (event) {
+      var frameDelta = 0;
+      var xDelta = 0;
+      var yDelta = 0;
+      if (event.key === "ArrowLeft") { frameDelta = -4; xDelta = -5; }
+      else if (event.key === "ArrowRight") { frameDelta = 4; xDelta = 5; }
+      else if (event.key === "ArrowUp") yDelta = -4;
+      else if (event.key === "ArrowDown") yDelta = 4;
+      else return;
+      event.preventDefault();
+      rtStopReturn();
+      rtDragOffset += frameDelta;
+      rtManipX = Math.max(-18, Math.min(18, rtManipX + xDelta));
+      rtManipY = Math.max(-12, Math.min(12, rtManipY + yDelta));
+      rtApplyManipulation();
+      rtRenderInteractive();
+      clearTimeout(rtKeyTimer);
+      rtKeyTimer = setTimeout(rtBeginReturn, 240);
+    });
+  }
+
   /* Two scroll progressions, no follower or easing loop (1:1, zero lag):
        p  — pinned progress (0 at pin start, 1 at pin end) drives the rise/zoom
             and the type, so the composition centres during the held beat.
@@ -248,8 +389,8 @@
     if (rtLoaded) {
       var rectTop = rotatorBox.top - scrollYNow;
       var t = clamp01((viewH - rectTop) / (rotatorBox.height + viewH));
-      var idx = Math.round(t * RT_N * RT_TURNS) % RT_N;
-      rtDraw(idx);
+      rtBaseFrame = t * RT_N * RT_TURNS;
+      rtRenderInteractive();
     }
   }
 

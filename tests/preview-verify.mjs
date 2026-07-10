@@ -104,6 +104,43 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
     `gem left of credo, side by side (gem right ${layout.gemRight} <= text left ${layout.textLeft})`
   );
 
+  // The photographic stone remains scroll-owned, but drag temporarily offsets
+  // its frame and spatial pose before a damped return to the scroll position.
+  await page.evaluate((y) => scrollTo(0, y), Math.round(rot.top + (rot.h - VH) * 0.5));
+  await page.waitForTimeout(400);
+  const canvasBox = await page.locator(".rt-canvas").boundingBox();
+  const frameBeforeDrag = await page.locator(".rt-canvas").getAttribute("data-frame");
+  await page.mouse.move(canvasBox.x + canvasBox.width * 0.5, canvasBox.y + canvasBox.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(
+    canvasBox.x + canvasBox.width * 0.78,
+    canvasBox.y + canvasBox.height * 0.58,
+    { steps: 5 }
+  );
+  const dragState = await page.evaluate(() => ({
+    dragging: document.querySelector(".rt-stage").classList.contains("is-dragging"),
+    frame: document.querySelector(".rt-canvas").dataset.frame,
+  }));
+  await page.mouse.up();
+  check(
+    dragState.dragging && dragState.frame !== frameBeforeDrag,
+    `stone drag changes frame (${frameBeforeDrag} -> ${dragState.frame})`
+  );
+  await page.waitForTimeout(1800);
+  const returnState = await page.evaluate(() => {
+    const canvas = document.querySelector(".rt-canvas");
+    const stage = document.querySelector(".rt-stage");
+    const frame = Number(canvas.dataset.frame);
+    const base = Number(canvas.dataset.baseFrame);
+    const total = 120;
+    const delta = Math.min(Math.abs(frame - base), total - Math.abs(frame - base));
+    return { delta, dragging: stage.classList.contains("is-dragging") };
+  });
+  check(
+    !returnState.dragging && returnState.delta <= 1,
+    `stone returns to scroll pose (frame delta ${returnState.delta})`
+  );
+
   // Manifesto scrubs word by word
   const mf = await page.evaluate(() => {
     const s = document.querySelector("[data-manifesto]");
@@ -242,6 +279,10 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
   check(
     Boolean(curtainStyle && curtainStyle.includes("translate3d")),
     "mobile: cinema curtain uses a compositor transform"
+  );
+  check(
+    await page.locator(".rt-canvas").evaluate((canvas) => getComputedStyle(canvas).touchAction === "pan-y"),
+    "mobile: gem drag preserves vertical page scrolling"
   );
   check(errors.length === 0, "mobile: no console errors");
   await page.close();

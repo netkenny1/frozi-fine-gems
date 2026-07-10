@@ -2845,6 +2845,16 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   align-self: center;
 }
 
+.rt-stage:focus-visible {
+  outline: 1px solid var(--jade-bright);
+  outline-offset: 0.5rem;
+}
+
+.rt-stone {
+  position: absolute;
+  inset: 0;
+}
+
 /* The credo, left-aligned in its own column beside the gem. Placed after
    .mf-line so these values win. */
 .rt-manifesto {
@@ -2903,10 +2913,32 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .rt-canvas {
   display: none;
+  cursor: grab;
+  touch-action: pan-y;
+  transform: translate3d(var(--rt-manip-x, 0), var(--rt-manip-y, 0), 0)
+    rotate(var(--rt-manip-r, 0deg));
+  will-change: transform;
 }
 
 .rt-ready .rt-canvas {
   display: block;
+}
+
+.rt-ready .rt-stone {
+  animation: rt-stone-float 6s ease-in-out infinite;
+}
+
+.rt-stage.is-dragging .rt-stone {
+  animation-play-state: paused;
+}
+
+.rt-stage.is-dragging .rt-canvas {
+  cursor: grabbing;
+}
+
+@keyframes rt-stone-float {
+  0%, 100% { transform: translate3d(0, -0.7%, 0); }
+  50% { transform: translate3d(0, 0.9%, 0); }
 }
 
 .rt-ready .rt-fallback {
@@ -2928,6 +2960,9 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   }
   .rt-ready .rt-fallback {
     visibility: visible;
+  }
+  .rt-ready .rt-stone {
+    animation: none;
   }
 }
 

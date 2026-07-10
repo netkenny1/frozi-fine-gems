@@ -157,9 +157,13 @@
     <section class="rotator section--dark" data-rotator data-manifesto
              aria-label="The stone, and the maison in one line">
       <div class="rt-sticky">
-        <figure class="rt-stage">
-          <img class="rt-fallback" src="assets/rotation/emerald-000.webp" alt="A round-cut Muzo emerald photographed on black, turning with the page" width="1000" height="1000" loading="lazy" decoding="async">
-          <canvas class="rt-canvas" aria-hidden="true"></canvas>
+        <figure class="rt-stage" tabindex="0" role="img"
+                aria-label="A round-cut Muzo emerald. Scroll or drag horizontally to turn it."
+                title="Drag to turn the stone">
+          <div class="rt-stone">
+            <img class="rt-fallback" src="assets/rotation/emerald-000.webp" alt="A round-cut Muzo emerald photographed on black, turning with the page" width="1000" height="1000" loading="lazy" decoding="async">
+            <canvas class="rt-canvas" aria-hidden="true"></canvas>
+          </div>
         </figure>
         <div class="rt-text">
           <span class="eyebrow rt-eyebrow">The stone</span>
