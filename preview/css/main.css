@@ -2933,3 +2933,204 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
     visibility: visible;
   }
 }
+
+/* ---- Preview refinement pass -------------------------------------------------
+   Commerce-facing polish stays in /preview so the production pages remain
+   untouched while the direction is evaluated. */
+
+.product-mobile-head {
+  display: none;
+}
+
+.product-mobile-viewing {
+  display: none;
+}
+
+.product-assurances {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1.75rem;
+  border-block: 1px solid var(--line-on-dark);
+}
+
+.product-assurances > div {
+  padding: 1rem 0.85rem;
+}
+
+.product-assurances > div + div {
+  border-left: 1px solid var(--line-on-dark);
+}
+
+.product-assurances dt {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.2;
+  color: var(--ivory);
+}
+
+.product-assurances dd {
+  margin-top: 0.35rem;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .vitrine-cta {
+    opacity: 1;
+    transform: none;
+  }
+
+  .vitrine:hover {
+    transform: none;
+  }
+
+  .vitrine:hover .vitrine-media img {
+    transform: none;
+    filter: saturate(0.88);
+  }
+}
+
+@media (max-width: 46em) {
+  .product {
+    gap: 1.4rem;
+  }
+
+  .product-mobile-head {
+    display: block;
+    padding-top: 0.25rem;
+  }
+
+  .product-mobile-head .eyebrow {
+    display: block;
+    margin-bottom: 0.8rem;
+  }
+
+  .product-mobile-head h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.35rem, 12vw, 3.1rem);
+    line-height: 1.02;
+    margin-bottom: 0.65rem;
+  }
+
+  .product-mobile-head .product-price {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .product-stage {
+    aspect-ratio: 4 / 4.7;
+  }
+
+  .product-info > .eyebrow,
+  .product-info > h1,
+  .product-info > .product-price {
+    display: none;
+  }
+
+  .product-desc {
+    margin-top: 0.75rem;
+  }
+
+  .product-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    margin-inline: calc(var(--gutter) * -1);
+    padding: 0.8rem var(--gutter);
+    background: rgba(10, 12, 11, 0.94);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 -1px 0 var(--line-on-dark);
+  }
+
+  .product-actions .btn:not(.btn--solid) {
+    display: none;
+  }
+
+  .product-assurances {
+    margin-top: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .product-assurances > div {
+    padding-inline: 0.55rem;
+  }
+
+  .product-assurances dt {
+    font-size: 0.9rem;
+  }
+
+  .product-assurances dd {
+    font-size: 0.625rem;
+  }
+
+  .product-mobile-viewing {
+    display: inline-block;
+    margin-bottom: 2rem;
+  }
+
+  .page-intro--ledger {
+    padding-top: 7.25rem;
+    padding-bottom: 5.25rem;
+  }
+
+  .page-intro--ledger .display {
+    font-size: clamp(2.65rem, 13vw, 3.35rem);
+    margin-block: 1rem 1.15rem;
+  }
+
+  .page-intro--ledger .lede {
+    max-width: 31rem;
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .chip-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    padding-bottom: 0.35rem;
+    scrollbar-width: none;
+  }
+
+  .chip-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chip {
+    flex: 0 0 auto;
+    border-radius: 0;
+  }
+
+  .site-footer {
+    padding-top: 3.25rem;
+  }
+
+  .footer-grid {
+    gap: 2.5rem 1.5rem;
+  }
+
+  .footer-grid > :first-child,
+  .footer-grid > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .footer-grid > :first-child .footer-tag {
+    max-width: 28rem;
+  }
+
+  .footer-tag,
+  .footer-col ul {
+    font-size: 0.9375rem;
+  }
+
+  .footer-col a,
+  .footer-col li,
+  .detail-list li span:last-child {
+    overflow-wrap: anywhere;
+  }
+}
