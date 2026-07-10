@@ -283,7 +283,7 @@ h3 {
   z-index: 2;
 }
 
-/* ---- Intro curtain (home, once per session) ----------------------------- */
+/* ---- Intro curtain (home, every load) ----------------------------------- */
 
 .intro {
   position: fixed;

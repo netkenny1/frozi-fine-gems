@@ -5,15 +5,12 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-  /* ---- Intro curtain: once per session, home only ---- */
+  /* ---- Intro curtain: every home load, unless reduced motion ---- */
   var intro = document.querySelector(".intro");
   if (intro) {
-    var seen = false;
-    try { seen = sessionStorage.getItem("frozi-intro") === "1"; } catch (e) {}
-    if (seen || reduceMotion) {
+    if (reduceMotion) {
       document.body.classList.add("no-intro");
     } else {
-      try { sessionStorage.setItem("frozi-intro", "1"); } catch (e) {}
       intro.classList.add("is-done"); /* transition-delay paces the exit */
     }
   }
