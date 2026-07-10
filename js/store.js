@@ -148,11 +148,11 @@
         subtotal += line;
         return (
           '<li class="bag-row" data-i="' + i + '">' +
-          '<a class="bag-thumb" href="product.html?ref=' + p.ref + '">' +
+          '<a class="bag-thumb" href="' + (p.href || "product.html?ref=" + p.ref) + '">' +
           '<img src="' + p.img + '" alt="" width="180" height="180" loading="lazy" decoding="async">' +
           "</a>" +
           '<div class="bag-row-body">' +
-          '<h3 class="bag-row-name"><a href="product.html?ref=' + p.ref + '">' + p.name + "</a></h3>" +
+          '<h3 class="bag-row-name"><a href="' + (p.href || "product.html?ref=" + p.ref) + '">' + p.name + "</a></h3>" +
           '<p class="bag-row-meta">Ref. ' + p.ref + (it.size ? " · Size EU " + it.size : "") + " · Made to order</p>" +
           '<div class="bag-row-tools">' +
           '<span class="qty" role="group" aria-label="Quantity">' +

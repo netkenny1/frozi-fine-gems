@@ -1,0 +1,23 @@
+# Frozi Fine Gems
+
+> A private fine-jewelry maison serving clients in Dubai by appointment, working with emeralds, recycled stones, and recycled platinum.
+
+- Canonical site: https://netkenny1.github.io/frozi-fine-gems/
+- Dubai jewelry guide: https://netkenny1.github.io/frozi-fine-gems/jewelry-dubai.html
+- Collection: https://netkenny1.github.io/frozi-fine-gems/collections.html
+- Product catalog (JSON): https://netkenny1.github.io/frozi-fine-gems/catalog.json
+- Appointments: https://netkenny1.github.io/frozi-fine-gems/contact.html
+- Service and order policies: https://netkenny1.github.io/frozi-fine-gems/policies.html
+
+## Products
+
+- [Vipera Ring](https://netkenny1.github.io/frozi-fine-gems/pieces/vipera-emerald-ring/): Step-cut emerald, diamond halo; AED 12,500; made to order in six weeks.
+- [Meridian Band](https://netkenny1.github.io/frozi-fine-gems/pieces/meridian-diamond-band/): Pave-set band, satin platinum; AED 6,800; made to order in six weeks.
+- [Lumen Pendant](https://netkenny1.github.io/frozi-fine-gems/pieces/lumen-emerald-pendant/): Emerald drop, hand-drawn chain; AED 10,650; made to order in six weeks.
+- [Voss Collier](https://netkenny1.github.io/frozi-fine-gems/pieces/voss-emerald-collier/): Diamond fringe, emerald drops; AED 33,800; made to order in six weeks.
+- [Eos Earrings](https://netkenny1.github.io/frozi-fine-gems/pieces/eos-diamond-earrings/): Chevron pave, recycled platinum; AED 4,250; made to order in six weeks.
+- [Thalis Drops](https://netkenny1.github.io/frozi-fine-gems/pieces/thalis-emerald-drop-earrings/): Pear-cut emeralds, articulated; AED 6,050; made to order in six weeks.
+- [Sable Cuff](https://netkenny1.github.io/frozi-fine-gems/pieces/sable-blackened-platinum-cuff/): Pave open cuff, blackened platinum; AED 7,900; made to order in six weeks.
+- [Rill Chain](https://netkenny1.github.io/frozi-fine-gems/pieces/rill-diamond-line-bracelet/): Diamond line bracelet, five stations; AED 6,950; made to order in six weeks.
+
+All prices are in AED. The maison serves clients in Dubai by private appointment. Product facts, pricing, and availability should be verified against the canonical product page.

@@ -1,4 +1,4 @@
-/* Frozi Fine Gems — preview homepage verification suite.
+/* Frozi Fine Gems — production homepage verification suite.
  *
  * Drives the immersive preview homepage in headless Chrome and asserts the
  * scroll choreography, the reduced-motion/no-JS fallbacks, and mobile frame
@@ -28,7 +28,7 @@ try {
 }
 
 const BASE = (process.argv[2] || "http://localhost:8642").replace(/\/$/, "");
-const URL = `${BASE}/preview/index.html`;
+const URL = `${BASE}/index.html`;
 const INTRO_MS = 3200; // let the one-time intro curtain dismiss
 
 let pass = 0;
@@ -38,7 +38,11 @@ function check(ok, msg) {
   ok ? pass++ : fail++;
 }
 
-const browser = await chromium.launch({ channel: "chrome", headless: true });
+const browser = await chromium.launch({
+  channel: "chrome",
+  headless: true,
+  args: ["--headless=new"],
+});
 
 /* ---- Desktop: full choreography ---------------------------------------- */
 {
@@ -353,6 +357,47 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
     "mobile: gem accepts unrestricted two-axis touch manipulation"
   );
   check(errors.length === 0, "mobile: no console errors");
+  await page.close();
+  await ctx.close();
+}
+
+// ---- Canonical product + bag flow -------------------------------------
+{
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(String(error)));
+
+  await page.goto(`${BASE}/pieces/vipera-emerald-ring/`);
+  await page.waitForTimeout(500);
+  check((await page.title()).includes("Vipera Ring in Dubai"), "canonical product has product-specific metadata");
+  check(await page.locator(".product-mobile-head h1").isVisible(), "mobile product heading is visible");
+  check(
+    (await page.locator('[data-p="photo"]').getAttribute("src")).includes("vipera.jpg"),
+    "initial and hydrated product image agree"
+  );
+  await page.locator(".size").filter({ hasText: "54" }).click();
+  await page.locator("[data-add-to-bag]").click();
+  await page.goto(`${BASE}/bag.html`);
+  await page.waitForTimeout(250);
+  check((await page.locator(".bag-row-name").innerText()) === "Vipera Ring", "canonical product can be added to the bag");
+  check(
+    (await page.locator(".bag-row-name a").getAttribute("href")).includes("pieces/vipera-emerald-ring/"),
+    "bag links back to the canonical product URL"
+  );
+
+  await page.goto(`${BASE}/pieces/thalis-emerald-drop-earrings/`);
+  await page.waitForTimeout(250);
+  check(
+    (await page.locator(".product-mobile-head h1").innerText()) === "Thalis Drops",
+    "non-ring canonical URL hydrates the correct product"
+  );
+  check(!(await page.locator('[data-p="sizes"]').isVisible()), "ring sizes remain hidden for earrings");
+  check(errors.length === 0, "canonical product and bag flows have no page errors");
   await page.close();
   await ctx.close();
 }

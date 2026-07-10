@@ -75,7 +75,7 @@
       '<circle class="draw" pathLength="1" style="--i:4" cx="16" cy="20" r="4.5"/>'
   };
 
-  var PRODUCTS = {
+  var PRODUCTS = (window.FROZI_CATALOG && window.FROZI_CATALOG.products) || {
     "FG-011": {
       ref: "FG-011", name: "Vipera Ring", category: "Rings", price: "AED 12,500",
       sub: "Step-cut emerald, diamond halo", sizes: true,
@@ -168,10 +168,13 @@
      never be interpolated into markup. All innerHTML below is built from
      the hardcoded registry, so no user-controlled data reaches the DOM. */
   var params = new URLSearchParams(window.location.search);
-  var ref = (params.get("ref") || "FG-011").toUpperCase();
+  var embeddedRef = document.body.getAttribute("data-product-ref");
+  var ref = (embeddedRef || params.get("ref") || "FG-011").toUpperCase();
   var p = PRODUCTS[ref] || PRODUCTS["FG-011"];
 
-  document.title = p.name + " · Ref. " + p.ref + " · Frozi Fine Gems";
+  if (!embeddedRef) {
+    document.title = p.name + " · Ref. " + p.ref + " · Frozi Fine Gems";
+  }
 
   function setText(sel, text) {
     var el = document.querySelector(sel);
@@ -223,7 +226,7 @@
           '<div class="vitrine-media">' +
           '<img src="' + q.img + '" alt="' + q.imgAlt + '" width="' + q.imgW + '" height="' + q.imgH + '" loading="lazy" decoding="async">' +
           "</div>" +
-          '<h3 class="vitrine-name"><a href="product.html?ref=' + q.ref + '">' + q.name + "</a></h3>" +
+          '<h3 class="vitrine-name"><a href="' + (q.href || "product.html?ref=" + q.ref) + '">' + q.name + "</a></h3>" +
           '<p class="vitrine-sub">' + q.sub + "</p>" +
           '<div class="vitrine-meta"><span class="vitrine-price">' + q.price + '</span><span class="vitrine-cta">View piece</span></div>' +
           "</article>"

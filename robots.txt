@@ -1,2 +1,16 @@
-User-agent: *
+User-agent: OAI-SearchBot
+Allow: /
 Disallow: /preview/
+Disallow: /frozi-fine-gems/preview/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /preview/
+Disallow: /frozi-fine-gems/preview/
+
+User-agent: *
+Allow: /
+Disallow: /preview/
+Disallow: /frozi-fine-gems/preview/
+
+Sitemap: https://netkenny1.github.io/frozi-fine-gems/sitemap.xml
