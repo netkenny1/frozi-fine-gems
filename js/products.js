@@ -82,7 +82,7 @@
       img: "assets/img/vipera.jpg", imgW: 1200, imgH: 1600,
       imgAlt: "The Vipera Ring, a step-cut emerald in a diamond halo, photographed on white seamless",
       desc: "A single step-cut emerald held in a halo of brilliants, cut to the original 2026 drawing. The band is round in section, heavier than it looks, quieter than it sounds. Plate FG-011 in the maison ledger.",
-      materials: ["Muzo-origin emerald, 1.2 ct, step cut", "Halo of recycled brilliants, 0.4 ct total", "Recycled platinum 950, round-section band"],
+      materials: ["Panjshir emerald, 1.2 ct, step cut", "Halo of recycled brilliants, 0.4 ct total", "Recycled platinum 950, round-section band"],
       plate: "vipera", plateBox: "0 0 240 240",
       related: ["FG-014", "FG-021", "FG-033"]
     },
@@ -102,7 +102,7 @@
       img: "assets/img/lumen.jpg", imgW: 1200, imgH: 1200,
       imgAlt: "The Lumen Pendant, an emerald drop on a fine chain, resting on deep green cloth",
       desc: "A step-cut emerald hung from a trace chain fine enough to disappear, so the stone appears to rest on the collarbone by agreement rather than engineering. Adjustable 42–45 cm. Plate FG-021 in the maison ledger.",
-      materials: ["Muzo-origin emerald, 0.9 ct, step cut", "Recycled platinum trace chain, 42–45 cm", "Clasp engraved with the plate number"],
+      materials: ["Panjshir emerald, 0.9 ct, step cut", "Recycled platinum trace chain, 42–45 cm", "Clasp engraved with the plate number"],
       plate: "lumen", plateBox: "0 0 220 280",
       related: ["FG-024", "FG-011", "FG-043"]
     },
@@ -112,7 +112,7 @@
       img: "assets/img/voss.jpg", imgW: 1200, imgH: 800,
       imgAlt: "The Voss Collier, a diamond fringe necklace with emerald drops",
       desc: "The largest piece in the ledger: a fringe of baguettes that moves like water, carrying three graduated emerald drops. Made for occasions that don't repeat. Plate FG-024 in the maison ledger.",
-      materials: ["Three graduated Muzo emeralds, 3.1 ct total", "Baguette fringe, recycled stones throughout", "Recycled platinum 950, articulated links"],
+      materials: ["Three graduated Panjshir emeralds, 3.1 ct total", "Baguette fringe, recycled stones throughout", "Recycled platinum 950, articulated links"],
       plate: "voss", plateBox: "0 0 220 170",
       related: ["FG-021", "FG-033", "FG-041"]
     },

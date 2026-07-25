@@ -57,7 +57,7 @@ const browser = await chromium.launch({
   const VH = 900;
 
   check(
-    (await page.locator("h1").first().innerText()).toLowerCase().includes("fine jewelry"),
+    (await page.locator("h1").first().innerText()).toLowerCase().includes("own valley"),
     "hero headline is rendered"
   );
 
@@ -475,37 +475,38 @@ const browser = await chromium.launch({
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(900);
 
-  /* GEMS has to end under the I of FROZI. Both lines carry trailing
-     letter-spacing after their last glyph, so compare INK edges. */
+  /* The lockup is the house's own logo now (assets/brand), so what matters
+     is that both marks actually load and are legible, not glyph alignment. */
   const lockup = await page.evaluate(() => {
-    const measure = (root) => {
-      const wm = root.querySelector(".wordmark");
-      const sub = wm.querySelector("span");
-      const top = [...wm.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
-      const inkRight = (node, spacing) => {
-        const text = node.textContent.replace(/\s+$/, "");
-        const r = document.createRange();
-        r.setStart(node, text.length - 1);
-        r.setEnd(node, text.length);
-        return r.getBoundingClientRect().right - spacing;
-      };
-      return Math.abs(
-        inkRight(sub.firstChild, parseFloat(getComputedStyle(sub).letterSpacing)) -
-          inkRight(top, parseFloat(getComputedStyle(wm).letterSpacing))
-      );
-    };
+    const imgs = [...document.querySelectorAll(".site-header .wordmark img")];
+    const footer = document.querySelector(".footer-grid .wm-lockup");
     return {
-      header: measure(document.querySelector(".site-header")),
-      footer: measure(document.querySelector(".footer-grid")),
+      count: imgs.length,
+      loaded: imgs.filter((i) => i.complete && i.naturalWidth > 0).length,
+      markHeight: imgs[0] ? Math.round(imgs[0].getBoundingClientRect().height) : 0,
+      footerSrc: footer ? footer.getAttribute("src") : null,
+      srcs: imgs.map((i) => i.src.split("/").pop()),
     };
   });
   check(
-    lockup.header < 1.5 && lockup.footer < 1.5,
-    `FINE GEMS ends under FROZI (header off by ${lockup.header.toFixed(2)}px, footer ${lockup.footer.toFixed(2)}px)`
+    lockup.count === 2 && lockup.loaded === 2 && lockup.markHeight >= 30 &&
+      /frozi-lockup\.png$/.test(lockup.footerSrc || ""),
+    `the house logo loads in header and footer (${lockup.srcs.join(" + ")}, mark ${lockup.markHeight}px)`
   );
   check(
-    (await page.locator(".brand-note").innerText()).trim().toLowerCase() === "home of panjshir gems",
+    (await page.locator(".brand-note").innerText()).trim().toLowerCase() === "home of panjshir emeralds",
     "the provenance line sits beside the lockup"
+  );
+
+  /* six stones, six different cuts, in one straight evenly spaced row */
+  const currency = await page.evaluate(() => {
+    const sel = document.querySelector(".locale-select");
+    const price = document.querySelector(".vitrine-price, [data-p=\"price\"]");
+    return { control: !!sel, options: sel ? [...sel.options].map((o) => o.value) : [] };
+  });
+  check(
+    currency.control && currency.options.join(",") === "AED,USD,EUR,GBP,SAR",
+    `the currency control offers the five currencies (${currency.options.join(", ")})`
   );
 
   await page.locator(".stone-tray").scrollIntoViewIfNeeded();
@@ -518,16 +519,29 @@ const browser = await chromium.launch({
       names: ctrl ? ctrl.stones.map((s) => s.name) : [],
       spread: ctrl ? ctrl.stones.map((s) => Math.round(s.sx)) : [],
       radius: ctrl ? Math.round(ctrl.stones[0].sr) : 0,
+      cuts: ctrl ? ctrl.stones.map((s) => s.spec.cut) : [],
+      rows: ctrl ? [...new Set(ctrl.stones.map((s) => Math.round(s.sy)))] : [],
+      meshes: ctrl ? new Set(ctrl.stones.map((s) => s.mesh)).size : 0,
     };
   });
   check(
     tray.canvases === 1 &&
-      tray.names.join(",") === "emerald,sapphire,ruby,diamond,tourmaline",
-    `all five stones share one canvas (${tray.canvases} canvas, ${tray.names.length} stones)`
+      tray.names.join(",") === "emerald,sapphire,ruby,diamond,tourmaline,kunzite",
+    `all six stones share one canvas (${tray.canvases} canvas, ${tray.names.length} stones)`
   );
   check(
     tray.spread.every((x, i) => i === 0 || x > tray.spread[i - 1] + tray.radius),
     `stones are laid out clear of each other (${tray.spread.join(", ")})`
+  );
+  // evenly spaced: every gap within a pixel of the others
+  const gaps = tray.spread.slice(1).map((x, i) => x - tray.spread[i]);
+  check(
+    Math.max(...gaps) - Math.min(...gaps) <= 2 && tray.rows.length === 1,
+    `the row is straight and evenly spaced (gaps ${gaps.join(", ")}, ${tray.rows.length} row)`
+  );
+  check(
+    new Set(tray.cuts).size === 6 && tray.meshes === 6,
+    `each stone is its own cut (${tray.cuts.join(", ")})`
   );
 
   // drag the middle stone: only that stone may turn

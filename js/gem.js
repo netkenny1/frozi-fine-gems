@@ -190,24 +190,29 @@
      from. body is the light it keeps; rim tints its own grazing highlight. */
   var SPECIES = {
     emerald: {
-      label: "Emerald", eta: [0.6460, 0.6365, 0.6270], sigma: [3.20, 0.60, 1.30],
+      label: "Emerald", cut: "emerald", eta: [0.6460, 0.6365, 0.6270], sigma: [3.20, 0.60, 1.30],
       body: [0.003, 0.042, 0.026], rim: [0.29, 0.57, 0.455]
     },
     sapphire: {
-      label: "Sapphire", eta: [0.5773, 0.5650, 0.5527], sigma: [3.60, 2.30, 0.42],
+      label: "Sapphire", cut: "oval", eta: [0.5773, 0.5650, 0.5527], sigma: [3.60, 2.30, 0.42],
       body: [0.003, 0.014, 0.055], rim: [0.32, 0.48, 0.78]
     },
     ruby: {
-      label: "Ruby", eta: [0.5798, 0.5675, 0.5552], sigma: [0.34, 3.30, 2.60],
+      label: "Ruby", cut: "pear", eta: [0.5798, 0.5675, 0.5552], sigma: [0.34, 3.30, 2.60],
       body: [0.055, 0.004, 0.010], rim: [0.78, 0.30, 0.36]
     },
     diamond: {
-      label: "Diamond", eta: [0.4435, 0.4137, 0.3839], sigma: [0.05, 0.05, 0.05],
+      label: "Diamond", cut: "round", eta: [0.4435, 0.4137, 0.3839], sigma: [0.05, 0.05, 0.05],
       body: [0.020, 0.022, 0.026], rim: [0.72, 0.78, 0.84]
     },
     tourmaline: {
-      label: "Tourmaline", eta: [0.6273, 0.6158, 0.6043], sigma: [3.00, 0.55, 0.45],
+      label: "Tourmaline", cut: "cushion", eta: [0.6273, 0.6158, 0.6043], sigma: [3.00, 0.55, 0.45],
       body: [0.003, 0.040, 0.040], rim: [0.26, 0.66, 0.62]
+    },
+    /* spodumene, out of Nuristan and Laghman — an Afghan stone like the green */
+    kunzite: {
+      label: "Kunzite", cut: "marquise", eta: [0.6103, 0.5988, 0.5873], sigma: [0.45, 2.10, 1.05],
+      body: [0.045, 0.010, 0.030], rim: [0.85, 0.55, 0.72]
     }
   };
 
@@ -227,6 +232,8 @@
       .filter(function (n) { return SPECIES[n]; });
     if (!roster.length) roster = ["emerald"];
     var tray = roster.length > 1;
+    /* "cluster" sets the rest around the first stone instead of in a row */
+    var cluster = tray && host.getAttribute("data-gem-layout") === "cluster";
     var room = tray ? ROOM_TRAY : ROOM_SOLO;
 
     var canvas = document.createElement("canvas");
@@ -238,24 +245,34 @@
              canvas.getContext("experimental-webgl", { antialias: false, alpha: true });
     if (!gl) { host.removeChild(canvas); return false; }
 
-    /* ---- geometry: the baked round-brilliant cut (js/gem-model.js),
-       expanded to non-indexed triangles with flat per-face normals. The same
-       model's hull planes drive the shader's exact interior trace. ---- */
-    var MODEL = window.FROZI_GEM_MODEL;
-    if (!MODEL) { host.removeChild(canvas); return false; }
-    var pos = [], nrm = [];
-    var mp = MODEL.positions, mi = MODEL.indices;
-    for (var f = 0; f < mi.length; f += 3) {
-      var a = [mp[mi[f]*3], mp[mi[f]*3+1], mp[mi[f]*3+2]];
-      var b = [mp[mi[f+1]*3], mp[mi[f+1]*3+1], mp[mi[f+1]*3+2]];
-      var c = [mp[mi[f+2]*3], mp[mi[f+2]*3+1], mp[mi[f+2]*3+2]];
-      var ux = b[0]-a[0], uy = b[1]-a[1], uz = b[2]-a[2];
-      var vx = c[0]-a[0], vy = c[1]-a[1], vz = c[2]-a[2];
-      var nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
-      var l = Math.sqrt(nx*nx+ny*ny+nz*nz) || 1;
-      [a, b, c].forEach(function (p) { pos.push(p[0], p[1], p[2]); nrm.push(nx/l, ny/l, nz/l); });
+    /* ---- geometry: one mesh per cut in use ---------------------------------
+       The round brilliant is the baked model (js/gem-model.js); the step,
+       oval, pear, marquise and cushion cuts are generated (js/gem-cuts.js).
+       Each is expanded to non-indexed triangles with flat per-face normals,
+       and each carries its own hull planes, which is what lets the shader
+       trace the interior of whichever cut it is drawing. ---- */
+    var CUTS = {};
+    if (window.FROZI_GEM_MODEL) CUTS.round = window.FROZI_GEM_MODEL;
+    if (window.FROZI_CUTS) {
+      Object.keys(window.FROZI_CUTS).forEach(function (k) { CUTS[k] = window.FROZI_CUTS[k]; });
     }
-    var vertCount = pos.length / 3;
+    if (!CUTS.round) { host.removeChild(canvas); return false; }
+
+    function expand(model) {
+      var pos = [], nrm = [];
+      var mp = model.positions, mi = model.indices;
+      for (var f = 0; f < mi.length; f += 3) {
+        var a = [mp[mi[f]*3], mp[mi[f]*3+1], mp[mi[f]*3+2]];
+        var b = [mp[mi[f+1]*3], mp[mi[f+1]*3+1], mp[mi[f+1]*3+2]];
+        var c = [mp[mi[f+2]*3], mp[mi[f+2]*3+1], mp[mi[f+2]*3+2]];
+        var ux = b[0]-a[0], uy = b[1]-a[1], uz = b[2]-a[2];
+        var vx = c[0]-a[0], vy = c[1]-a[1], vz = c[2]-a[2];
+        var nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
+        var l = Math.sqrt(nx*nx+ny*ny+nz*nz) || 1;
+        [a, b, c].forEach(function (q) { pos.push(q[0], q[1], q[2]); nrm.push(nx/l, ny/l, nz/l); });
+      }
+      return { pos: pos, nrm: nrm, count: pos.length / 3, planes: model.planes };
+    }
 
     /* ---- programs ---- */
     function shader(type, src) {
@@ -279,7 +296,6 @@
       ["uProj", "uView", "uModel", "uEye", "uKey", "uOrbit", "uAmp", "uPlanes",
        "uScale", "uSigma", "uEta", "uBody", "uRim", "uEnvBase", "uEnvFill", "uEnvRim"]);
     gl.useProgram(P3D.p);
-    gl.uniform4fv(P3D.u.uPlanes, MODEL.planes);
     gl.uniform3fv(P3D.u.uEnvBase, room.base);
     gl.uniform3fv(P3D.u.uEnvFill, room.fill);
     gl.uniform3fv(P3D.u.uEnvRim, room.rim);
@@ -293,7 +309,18 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
       return b;
     }
-    var posBuf = buffer(pos), nrmBuf = buffer(nrm);
+    /* a vertex buffer per cut the roster actually asks for */
+    var meshes = {};
+    function meshFor(cutName) {
+      var key = CUTS[cutName] ? cutName : "round";
+      if (!meshes[key]) {
+        var m = expand(CUTS[key]);
+        meshes[key] = {
+          pos: buffer(m.pos), nrm: buffer(m.nrm), count: m.count, planes: m.planes
+        };
+      }
+      return meshes[key];
+    }
     var quadBuf = buffer([-1, -1, 3, -1, -1, 3]);           /* one big triangle */
 
     /* ---- framebuffers: full-res scene (supersampled), quarter-res bloom ---- */
@@ -361,7 +388,7 @@
        the dataset the tests read, and every single-stone mount drive it. */
     var stones = roster.map(function (name, i) {
       return {
-        name: name, spec: SPECIES[name],
+        name: name, spec: SPECIES[name], mesh: meshFor(SPECIES[name].cut),
         rx: 0.45, ry: 0.65 + i * 1.13, vx: 0, vy: 0,
         x: 0, y: 0, scale: 1,
         sx: 0, sy: 0, sr: 0,                                /* screen centre + radius */
@@ -479,9 +506,26 @@
       var visW = VIS_H * asp;
       if (!tray) {
         primary.x = 0; primary.y = 0; primary.scale = 1;
+      } else if (cluster) {
+        /* the house stone in the middle, the others set around it — sized to
+           the smaller side of the frame so the ring never crops */
+        var fit = Math.min(visW, VIS_H);
+        var ring = fit * 0.34;
+        var sat = ring * 0.42;
+        primary.x = 0; primary.y = 0; primary.scale = ring * 0.52;
+        var around = stones.length - 1;
+        stones.forEach(function (st, i) {
+          if (!i) return;
+          var a = -Math.PI / 2 + ((i - 1) / around) * Math.PI * 2;
+          st.x = Math.cos(a) * ring;
+          st.y = Math.sin(a) * ring;
+          st.scale = sat;
+        });
       } else if (asp >= 2.55) {
-        var gap = Math.min(1.74, visW / (stones.length + 0.5));
-        var s = Math.min(gap * 0.44, VIS_H * 0.30);
+        /* one straight row, evenly spaced: the frame is divided by the number
+           of stones so the gaps between them are identical */
+        var gap = visW / (stones.length + 0.35);
+        var s = Math.min(gap * 0.42, VIS_H * 0.32);
         stones.forEach(function (st, i) {
           st.x = (i - (stones.length - 1) / 2) * gap;
           st.y = 0;
@@ -612,12 +656,8 @@
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.useProgram(P3D.p);
       gl.uniform3f(P3D.u.uKey, keyX, keyY, 0.5);
-      gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
       gl.enableVertexAttribArray(P3D.a.aP);
-      gl.vertexAttribPointer(P3D.a.aP, 3, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ARRAY_BUFFER, nrmBuf);
       gl.enableVertexAttribArray(P3D.a.aN);
-      gl.vertexAttribPointer(P3D.a.aN, 3, gl.FLOAT, false, 0, 0);
 
       canvas.dataset.rx = primary.rx.toFixed(5);
       canvas.dataset.ry = primary.ry.toFixed(5);
@@ -644,7 +684,12 @@
         gl.uniform3fv(P3D.u.uBody, st.spec.body);
         gl.uniform3fv(P3D.u.uRim, st.spec.rim);
         gl.uniformMatrix4fv(P3D.u.uModel, false, model(st.rx, st.ry, st.x, st.y + bob));
-        gl.drawArrays(gl.TRIANGLES, 0, vertCount);
+        gl.uniform4fv(P3D.u.uPlanes, st.mesh.planes);
+        gl.bindBuffer(gl.ARRAY_BUFFER, st.mesh.pos);
+        gl.vertexAttribPointer(P3D.a.aP, 3, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, st.mesh.nrm);
+        gl.vertexAttribPointer(P3D.a.aN, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, st.mesh.count);
       });
       gl.disableVertexAttribArray(P3D.a.aN);
       gl.disable(gl.DEPTH_TEST);

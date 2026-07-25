@@ -34,8 +34,12 @@
   <header class="site-header">
     <div class="wrap nav">
       <div class="brand">
-        <a class="wordmark" href="index.html">Frozi <span>Fine Gems</span></a>
-        <p class="brand-note">Home of Panjshir Gems</p>
+        <a class="wordmark" href="index.html" aria-label="Frozi Fine Gems &amp; Jewelry, home">
+          <img class="wm-mark" src="assets/brand/frozi-mark.png" alt="" width="306" height="509" decoding="async">
+          <img class="wm-word" src="assets/brand/frozi-word.png" alt="" width="759" height="194" decoding="async">
+          <span class="u-hidden">Frozi Fine Gems &amp; Jewelry</span>
+        </a>
+        <p class="brand-note">Home of Panjshir Emeralds</p>
       </div>
       <nav aria-label="Main">
         <button class="nav-toggle" aria-expanded="false" aria-label="Menu">
@@ -48,6 +52,7 @@
           <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
         </ul>
       </nav>
+      <div class="locale" data-locale></div>
     </div>
   </header>
 
@@ -66,8 +71,10 @@
           </h1>
           <p class="lede reveal" style="--i:2">Our green is viridian, a pigment so dark it reads as black until the light finds it. A fair description, we think, of how jewelry should behave.</p>
         </div>
-        <!-- the ambient stone: dark until the light finds it -->
-        <div class="gem-mount gem-mount--intro reveal" style="--i:3" data-gem aria-hidden="true"></div>
+        <!-- the house stone: a Panjshir emerald in the step cut the logo's
+             own bezel is drawn as. It turns in the hand. -->
+        <div class="gem-mount gem-mount--intro reveal" style="--i:3" data-gem
+             data-gems="emerald" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -103,29 +110,30 @@
           <span class="eyebrow reveal">Plate no. 1</span>
           <h2 class="h2 reveal" style="--i:1">It began with <em>one</em> drawing</h2>
           <p class="lede reveal" style="--i:2">Before there was a bench, there was a sketchbook: a step-cut emerald, drawn and redrawn until the proportions stopped arguing. That drawing became plate no. 1 of the ledger, and the ledger became the maison.</p>
-          <p class="muted reveal" style="--i:3">We still work the same way. Two materials, Muzo-origin emerald and recycled platinum, one bench, and no piece that didn't earn its way off the page. When a client commissions work, they leave with the jewel and its original drawing, because the two were never separate things.</p>
+          <p class="muted reveal" style="--i:3">We still work the same way. Two materials, Panjshir emerald and recycled platinum, one bench, and no piece that didn't earn its way off the page. When a client commissions work, they leave with the jewel and its original drawing, because the two were never separate things.</p>
         </div>
       </div>
     </section>
 
-    <!-- ================= The tray: five stones, one lamp ================= -->
+    <!-- ================= The legend for the stones above ================= -->
     <section class="section section--dark stones" aria-labelledby="stones-title">
       <div class="wrap">
         <div class="section-head reveal">
           <div>
-            <span class="eyebrow">The tray</span>
-            <h2 class="h2" id="stones-title">Five stones, <em>turned</em> in the hand</h2>
+            <span class="eyebrow">The stones</span>
+            <h2 class="h2" id="stones-title">Six stones, <em>turned</em> in the hand</h2>
           </div>
-          <p class="stones-note">Take hold of any one of them. All five sit under the same lamp, which is the only honest way to read one stone against another.</p>
+          <p class="stones-note">Each one is cut the way its species is cut, and each turns in the hand. They sit in a row under one lamp, which is the only honest way to read one stone against another.</p>
         </div>
         <div class="stone-tray reveal" style="--i:1" data-gem
-             data-gems="emerald,sapphire,ruby,diamond,tourmaline" aria-hidden="true"></div>
+             data-gems="emerald,sapphire,ruby,diamond,tourmaline,kunzite" aria-hidden="true"></div>
         <ul class="stone-key reveal" style="--i:2">
-          <li><b>Emerald</b><span>Beryl · Panjshir · n 1.577</span></li>
-          <li><b>Sapphire</b><span>Corundum · n 1.770</span></li>
-          <li><b>Ruby</b><span>Corundum · n 1.762</span></li>
-          <li><b>Diamond</b><span>Carbon · n 2.417</span></li>
-          <li><b>Tourmaline</b><span>Elbaite · n 1.624</span></li>
+          <li><b>Emerald</b><span>Step cut · Panjshir · n 1.577</span></li>
+          <li><b>Sapphire</b><span>Oval · Corundum · n 1.770</span></li>
+          <li><b>Ruby</b><span>Pear · Corundum · n 1.762</span></li>
+          <li><b>Diamond</b><span>Brilliant · Carbon · n 2.417</span></li>
+          <li><b>Tourmaline</b><span>Cushion · Elbaite · n 1.624</span></li>
+          <li><b>Kunzite</b><span>Marquise · Nuristan · n 1.670</span></li>
         </ul>
       </div>
     </section>
@@ -139,7 +147,7 @@
           </div>
         </div>
         <ul class="detail-list reveal" style="--i:1">
-          <li><span class="k">Materials</span><span>Muzo-origin emeralds and recycled platinum 950. Two materials, known deeply.</span></li>
+          <li><span class="k">Materials</span><span>Panjshir emeralds and recycled platinum 950. Two materials, known deeply.</span></li>
           <li><span class="k">Editions</span><span>None. Every piece is made once, for the person who asked.</span></li>
           <li><span class="k">Provenance</span><span>Each stone's cutting house and export record travel with the piece.</span></li>
           <li><span class="k">Guarantee</span><span>Resizing, re-oiling, and re-polishing for the life of the piece.</span></li>
@@ -172,7 +180,9 @@
     <div class="wrap">
       <div class="footer-grid">
         <div>
-          <a class="wordmark" href="index.html">Frozi <span>Fine Gems</span></a>
+          <a class="wordmark wordmark--stacked" href="index.html" aria-label="Frozi Fine Gems &amp; Jewelry, home">
+            <img class="wm-lockup" src="assets/brand/frozi-lockup.png" alt="Frozi Fine Gems &amp; Jewelry" width="759" height="839" loading="lazy" decoding="async">
+          </a>
           <p class="footer-tag">Fine jewelry in Dubai, quietly made. Emeralds and recycled platinum, drawn and set in a single atelier.</p>
         </div>
         <div class="footer-col">
@@ -211,8 +221,10 @@
   </footer>
 
   <script src="js/store.js" defer></script>
+  <script src="js/locale.js" defer></script>
   <script src="js/main.js" defer></script>
   <script src="js/gem-model.js" defer></script>
+  <script src="js/gem-cuts.js" defer></script>
   <script src="js/gem.js" defer></script>
 </body>
 </html>

@@ -19,8 +19,12 @@
   <header class="site-header">
     <div class="wrap nav">
       <div class="brand">
-        <a class="wordmark" href="index.html">Frozi <span>Fine Gems</span></a>
-        <p class="brand-note">Home of Panjshir Gems</p>
+        <a class="wordmark" href="index.html" aria-label="Frozi Fine Gems &amp; Jewelry, home">
+          <img class="wm-mark" src="assets/brand/frozi-mark.png" alt="" width="306" height="509" decoding="async">
+          <img class="wm-word" src="assets/brand/frozi-word.png" alt="" width="759" height="194" decoding="async">
+          <span class="u-hidden">Frozi Fine Gems &amp; Jewelry</span>
+        </a>
+        <p class="brand-note">Home of Panjshir Emeralds</p>
       </div>
       <nav aria-label="Main">
         <button class="nav-toggle" aria-expanded="false" aria-label="Menu">
@@ -33,6 +37,7 @@
           <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
         </ul>
       </nav>
+      <div class="locale" data-locale></div>
     </div>
   </header>
 
@@ -59,8 +64,10 @@
   </main>
 
   <script src="js/store.js" defer></script>
+  <script src="js/locale.js" defer></script>
   <script src="js/main.js" defer></script>
   <script src="js/gem-model.js" defer></script>
+  <script src="js/gem-cuts.js" defer></script>
   <script src="js/gem.js" defer></script>
 </body>
 </html>
