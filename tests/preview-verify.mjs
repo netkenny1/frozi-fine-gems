@@ -61,6 +61,24 @@ const browser = await chromium.launch({
     "hero headline is rendered"
   );
 
+  /* The hero CTAs must be hoverable/clickable over their WHOLE box: the
+     decorative scroll cue used to sit on top of their lower half. */
+  const cueHit = await page.evaluate(() => {
+    const out = [];
+    document.querySelectorAll(".hero-actions a").forEach((a) => {
+      const r = a.getBoundingClientRect();
+      const x = Math.round(r.left + r.width / 2);
+      let covered = null;
+      [0.1, 0.3, 0.5, 0.7, 0.9].forEach((f) => {
+        const hit = document.elementFromPoint(x, Math.round(r.top + r.height * f));
+        if (hit?.closest("a") !== a) covered = covered || `${a.textContent.trim()} @${f} -> ${hit?.className || hit?.tagName}`;
+      });
+      if (covered) out.push(covered);
+    });
+    return out;
+  });
+  check(cueHit.length === 0, `hero CTAs receive the pointer over their full height${cueHit.length ? " — blocked: " + cueHit.join("; ") : ""}`);
+
   // Vitrine cards reveal on approach
   await page.evaluate(() => scrollTo(0, 0));
   await page.waitForTimeout(500);
@@ -398,6 +416,194 @@ const browser = await chromium.launch({
   );
   check(!(await page.locator('[data-p="sizes"]').isVisible()), "ring sizes remain hidden for earrings");
   check(errors.length === 0, "canonical product and bag flows have no page errors");
+  await page.close();
+  await ctx.close();
+}
+
+// ---- With JavaScript unavailable, the site must still be readable ------
+//      A curtain or an entrance animation that waits for a script it never
+//      gets leaves a blank page. This is the guard against that.
+{
+  const ctx = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+    javaScriptEnabled: false,
+  });
+  const page = await ctx.newPage();
+  for (const path of ["/index.html", "/about.html", "/collections.html"]) {
+    await page.goto(`${BASE}${path}`);
+    await page.waitForTimeout(3200);   // the CSS curtain lift is 1.5s + 0.9s
+    const state = await page.evaluate(() => {
+      const intro = document.querySelector(".intro");
+      const cs = intro ? getComputedStyle(intro) : null;
+      /* Only elements that carry content: a decorative WebGL host with
+         nothing to render is meant to collapse without its script. */
+      const hidden = [...document.querySelectorAll("h1, .reveal, .lm > span")]
+        .filter((el) => el.textContent.trim() && el.getAttribute("aria-hidden") !== "true")
+        .filter((el) => {
+          const s = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return s.opacity === "0" || s.visibility === "hidden" || r.height === 0 ||
+            (s.transform !== "none" && Math.abs(new DOMMatrix(s.transform).f) > 4);
+        }).length;
+      return {
+        curtain: cs ? cs.display !== "none" && cs.visibility !== "hidden" : false,
+        centre: (() => {
+          const el = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+          return el ? el.tagName : "none";
+        })(),
+        hidden,
+        h1: (document.querySelector("h1") || {}).innerText || "",
+      };
+    });
+    check(!state.curtain, `no-JS ${path}: the intro curtain lifts on its own`);
+    check(
+      state.hidden === 0 && state.h1.length > 0,
+      `no-JS ${path}: nothing stays hidden waiting for a script (${state.hidden} hidden)`
+    );
+  }
+  await page.close();
+  await ctx.close();
+}
+
+// ---- The maison lockup + the tray of five stones -----------------------
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(String(error)));
+  await page.goto(`${BASE}/about.html`);
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(900);
+
+  /* GEMS has to end under the I of FROZI. Both lines carry trailing
+     letter-spacing after their last glyph, so compare INK edges. */
+  const lockup = await page.evaluate(() => {
+    const measure = (root) => {
+      const wm = root.querySelector(".wordmark");
+      const sub = wm.querySelector("span");
+      const top = [...wm.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+      const inkRight = (node, spacing) => {
+        const text = node.textContent.replace(/\s+$/, "");
+        const r = document.createRange();
+        r.setStart(node, text.length - 1);
+        r.setEnd(node, text.length);
+        return r.getBoundingClientRect().right - spacing;
+      };
+      return Math.abs(
+        inkRight(sub.firstChild, parseFloat(getComputedStyle(sub).letterSpacing)) -
+          inkRight(top, parseFloat(getComputedStyle(wm).letterSpacing))
+      );
+    };
+    return {
+      header: measure(document.querySelector(".site-header")),
+      footer: measure(document.querySelector(".footer-grid")),
+    };
+  });
+  check(
+    lockup.header < 1.5 && lockup.footer < 1.5,
+    `FINE GEMS ends under FROZI (header off by ${lockup.header.toFixed(2)}px, footer ${lockup.footer.toFixed(2)}px)`
+  );
+  check(
+    (await page.locator(".brand-note").innerText()).trim().toLowerCase() === "home of panjshir gems",
+    "the provenance line sits beside the lockup"
+  );
+
+  await page.locator(".stone-tray").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1400);
+  const tray = await page.evaluate(() => {
+    const host = document.querySelector(".stone-tray");
+    const ctrl = host._froziGemController;
+    return {
+      canvases: document.querySelectorAll(".stone-tray canvas").length,
+      names: ctrl ? ctrl.stones.map((s) => s.name) : [],
+      spread: ctrl ? ctrl.stones.map((s) => Math.round(s.sx)) : [],
+      radius: ctrl ? Math.round(ctrl.stones[0].sr) : 0,
+    };
+  });
+  check(
+    tray.canvases === 1 &&
+      tray.names.join(",") === "emerald,sapphire,ruby,diamond,tourmaline",
+    `all five stones share one canvas (${tray.canvases} canvas, ${tray.names.length} stones)`
+  );
+  check(
+    tray.spread.every((x, i) => i === 0 || x > tray.spread[i - 1] + tray.radius),
+    `stones are laid out clear of each other (${tray.spread.join(", ")})`
+  );
+
+  // drag the middle stone: only that stone may turn
+  const box = await page.locator(".stone-tray").boundingBox();
+  const mid = await page.evaluate(() =>
+    document.querySelector(".stone-tray")._froziGemController.stones[2]
+  ).then(() => page.evaluate(() => {
+    const s = document.querySelector(".stone-tray")._froziGemController.stones[2];
+    return { sx: s.sx, sy: s.sy };
+  }));
+  const before = await page.evaluate(() =>
+    document.querySelector(".stone-tray")._froziGemController.stones.map((s) => s.ry)
+  );
+  await page.mouse.move(box.x + mid.sx, box.y + mid.sy);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++) {
+    await page.mouse.move(box.x + mid.sx + i * 6, box.y + mid.sy);
+    await page.waitForTimeout(16);
+  }
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+  const after = await page.evaluate(() =>
+    document.querySelector(".stone-tray")._froziGemController.stones.map((s) => s.ry)
+  );
+  const moved = after.map((v, i) => Math.abs(v - before[i]));
+  check(
+    moved[2] > 0.3 && moved.filter((d, i) => i !== 2).every((d) => d < moved[2] / 3),
+    `dragging one stone turns only that stone (${moved.map((d) => d.toFixed(2)).join(", ")})`
+  );
+
+  const trayFrames = await page.evaluate(async () => {
+    const t = [];
+    let last = performance.now();
+    await new Promise((resolve) => {
+      let n = 0;
+      const tick = () => {
+        const now = performance.now();
+        t.push(now - last);
+        last = now;
+        if (++n < 90) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+    t.sort((a, b) => a - b);
+    return t[Math.floor(t.length / 2)];
+  });
+  check(trayFrames <= 22, `five live stones hold frame budget (median ${trayFrames.toFixed(1)}ms)`);
+  check(errors.length === 0, "maison page has no console errors");
+  await page.close();
+  await ctx.close();
+}
+
+// ---- The tray under reduced motion ------------------------------------
+{
+  const ctx = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    reducedMotion: "reduce",
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(String(error)));
+  await page.goto(`${BASE}/about.html`);
+  await page.locator(".stone-tray").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1200);
+  /* Read the canvas back rather than screenshotting it: a page screenshot of
+     a GPU-composited canvas is not byte-stable between captures even when
+     nothing has redrawn, which made this check flake 1 run in 3. */
+  const still = await page.evaluate(async () => {
+    const canvas = document.querySelector(".stone-tray canvas");
+    const before = canvas.toDataURL();
+    await new Promise((r) => setTimeout(r, 700));
+    return { same: canvas.toDataURL() === before };
+  });
+  check(still.same, "reduced-motion: the tray holds still");
+  check(errors.length === 0, "reduced-motion: maison page has no console errors");
   await page.close();
   await ctx.close();
 }

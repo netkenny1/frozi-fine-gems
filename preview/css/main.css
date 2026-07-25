@@ -285,6 +285,8 @@ h3 {
 
 /* ---- Intro curtain (home, once per session) ----------------------------- */
 
+/* the curtain lifts ITSELF: nothing that covers the content may depend on
+   JavaScript to get out of the way (see css/main.css) */
 .intro {
   position: fixed;
   inset: 0;
@@ -292,8 +294,12 @@ h3 {
   display: grid;
   place-items: center;
   background: var(--noir);
-  transition: transform 0.9s cubic-bezier(0.7, 0, 0.2, 1) 1.5s,
-    visibility 0s 2.4s;
+  animation: intro-lift 0.9s cubic-bezier(0.7, 0, 0.2, 1) 1.5s both;
+}
+
+@keyframes intro-lift {
+  from { transform: none; }
+  to { transform: translateY(-100%); visibility: hidden; }
 }
 
 .intro-mark {
@@ -330,9 +336,10 @@ h3 {
   to { transform: scaleX(1); }
 }
 
-.intro.is-done {
-  transform: translateY(-100%);
-  visibility: hidden;
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    display: none;
+  }
 }
 
 body.no-intro .intro {
@@ -585,9 +592,15 @@ body.no-intro .intro {
     linear-gradient(rgba(10, 12, 11, 0.25), rgba(10, 12, 11, 0.2) 70%, var(--noir));
 }
 
-.hero > .wrap,
-.hero .scroll-cue {
+.hero > .wrap {
   position: relative;
+  z-index: 2;
+}
+
+/* z-index only — the cue sets its own position:absolute below, and a
+   `position: relative` here would win on specificity, dropping the cue back
+   into flow where its `bottom` offset lifts it over the hero CTAs. */
+.hero .scroll-cue {
   z-index: 2;
 }
 
@@ -638,6 +651,7 @@ body.no-intro .intro {
   bottom: 2.25rem;
   left: 50%;
   translate: -50% 0;
+  pointer-events: none; /* decorative (aria-hidden): never eat a CTA click */
   display: flex;
   flex-direction: column;
   align-items: center;

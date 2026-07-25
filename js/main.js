@@ -5,14 +5,13 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-  /* ---- Intro curtain: every home load, unless reduced motion ---- */
+  /* ---- Intro curtain: every home load, unless reduced motion ----
+     The lift itself is a CSS animation (see .intro) so it happens with or
+     without this script. All that is left here is telling the rest of the
+     choreography that a curtain is playing. */
   var intro = document.querySelector(".intro");
-  if (intro) {
-    if (reduceMotion) {
-      document.body.classList.add("no-intro");
-    } else {
-      intro.classList.add("is-done"); /* transition-delay paces the exit */
-    }
+  if (intro && reduceMotion) {
+    document.body.classList.add("no-intro");
   }
 
   /* ---- Header: condense after scroll ---- */

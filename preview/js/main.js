@@ -5,17 +5,11 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-  /* ---- Intro curtain: once per session, home only ---- */
+  /* ---- Intro curtain: the lift is a CSS animation (see .intro), so it
+     happens with or without this script ---- */
   var intro = document.querySelector(".intro");
-  if (intro) {
-    var seen = false;
-    try { seen = sessionStorage.getItem("frozi-intro") === "1"; } catch (e) {}
-    if (seen || reduceMotion) {
-      document.body.classList.add("no-intro");
-    } else {
-      try { sessionStorage.setItem("frozi-intro", "1"); } catch (e) {}
-      intro.classList.add("is-done"); /* transition-delay paces the exit */
-    }
+  if (intro && reduceMotion) {
+    document.body.classList.add("no-intro");
   }
 
   /* ---- Header: condense after scroll ---- */

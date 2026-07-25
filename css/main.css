@@ -21,6 +21,13 @@
   --line-on-dark: rgba(241, 239, 232, 0.16);
   --line-on-light: rgba(10, 12, 11, 0.14);
 
+  /* the scrolled nav band, and the wash over full-bleed photo sections.
+     Both are overridden by the moonlit home page at the foot of this file. */
+  --header-veil: linear-gradient(rgba(20, 33, 29, 0.95), rgba(12, 20, 18, 0.92));
+  --header-veil-flat: rgba(18, 30, 27, 0.97);
+  --header-edge: rgba(241, 239, 232, 0.24);
+  --photo-wash: linear-gradient(rgba(10, 12, 11, 0.74), rgba(11, 47, 34, 0.78));
+
   /* Type — DM Serif Display keeps the didone character with hairlines
      sturdy enough for light grounds; Bodoni survives only in the wordmark */
   --font-display: "DM Serif Display", "Didot", "Bodoni MT", serif;
@@ -275,7 +282,7 @@ h3 {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(rgba(10, 12, 11, 0.74), rgba(11, 47, 34, 0.78));
+  background: var(--photo-wash);
 }
 
 .bg-section > .wrap {
@@ -285,6 +292,11 @@ h3 {
 
 /* ---- Intro curtain (home, every load) ----------------------------------- */
 
+/* The curtain lifts ITSELF, in CSS. It used to wait for js/main.js to add
+   .is-done, which meant any load where the JS did not run — blocked script,
+   a failed request on refresh, a content blocker — left a full-screen panel
+   of --noir over the entire site: a blank page. Nothing that covers the
+   content may depend on JavaScript to get out of the way. */
 .intro {
   position: fixed;
   inset: 0;
@@ -292,8 +304,12 @@ h3 {
   display: grid;
   place-items: center;
   background: var(--noir);
-  transition: transform 0.9s cubic-bezier(0.7, 0, 0.2, 1) 1.5s,
-    visibility 0s 2.4s;
+  animation: intro-lift 0.9s cubic-bezier(0.7, 0, 0.2, 1) 1.5s both;
+}
+
+@keyframes intro-lift {
+  from { transform: none; }
+  to { transform: translateY(-100%); visibility: hidden; }
 }
 
 .intro-mark {
@@ -330,9 +346,11 @@ h3 {
   to { transform: scaleX(1); }
 }
 
-.intro.is-done {
-  transform: translateY(-100%);
-  visibility: hidden;
+/* reduced motion: no curtain at all, with or without JS */
+@media (prefers-reduced-motion: reduce) {
+  .intro {
+    display: none;
+  }
 }
 
 body.no-intro .intro {
@@ -363,11 +381,13 @@ body.no-intro .intro {
   transition: background 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out);
 }
 
+/* the band has to read as a distinct surface, not as more page: it lifts a
+   shade, cools, and closes on a visible hairline */
 .site-header.is-scrolled {
-  background: rgba(10, 12, 11, 0.86);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 1px 0 var(--line-on-dark);
+  background: var(--header-veil);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.15);
+  box-shadow: 0 1px 0 var(--header-edge), 0 26px 44px -34px rgba(0, 0, 0, 0.9);
 }
 
 .nav {
@@ -383,28 +403,73 @@ body.no-intro .intro {
   padding-block: 0.9rem;
 }
 
+/* the header lockup and the provenance line share a baseline band */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.9rem, 1.6vw, 1.6rem);
+}
+
+/* provenance, not decoration: the valley the emeralds actually come from */
+.brand-note {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-left: clamp(0.9rem, 1.6vw, 1.6rem);
+  border-left: 1px solid var(--line-on-dark);
+  font-size: 0.625rem;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--sage);
+}
+
+/* the full nav and a one-line provenance stop fitting together here, so the
+   line folds instead of pushing the lockup around */
+@media (max-width: 64em) {
+  .brand-note {
+    max-width: 13em;   /* breaks after OF: two lines, never three */
+    white-space: normal;
+  }
+}
+
 .wordmark {
+  --wm-size: 1.5rem;   /* the footer lockup sets its own */
+  --wm-track: 0.34;    /* unitless so the sub-line can do arithmetic with it */
+  /* shrink-wrapped in every context, so the justified sub-line stretches to
+     the width of FROZI and never to the width of the column around it */
+  display: inline-block;
   font-family: var(--font-brand);
-  font-size: 1.5rem;
+  font-size: var(--wm-size);
   line-height: 1;
-  letter-spacing: 0.34em;
+  letter-spacing: calc(var(--wm-track) * 1em);
   text-transform: uppercase;
   transition: letter-spacing 0.6s var(--ease-out);
 }
 
 .wordmark:hover {
-  letter-spacing: 0.42em;
+  --wm-track: 0.42;
 }
 
-/* maison lockup: FROZI over a hairline of FINE GEMS */
+/* maison lockup: FROZI over a hairline of FINE GEMS.
+   The sub-line is justified to both edges of the word above it, so the S of
+   GEMS lands under the I of FROZI. Both lines carry trailing letter-spacing
+   after their last glyph (0.34em of 1.5rem vs 0.6em of 0.5625rem); the
+   margin-right is that difference, so the two INK edges align, not the boxes. */
 .wordmark span {
   display: block;
   margin-top: 0.35rem;
+  margin-right: calc(var(--wm-track) * var(--wm-size) - 0.6 * 0.5625rem);
   font-family: var(--font-ui);
   font-size: 0.5625rem;
   font-weight: 500;
   letter-spacing: 0.6em;
   color: var(--sage);
+  text-align: justify;
+  text-align-last: justify;
+  transition: margin-right 0.6s var(--ease-out);
 }
 
 .nav-links {
@@ -592,9 +657,15 @@ body.no-intro .intro {
     linear-gradient(rgba(10, 12, 11, 0.25), rgba(10, 12, 11, 0.2) 70%, var(--noir));
 }
 
-.hero > .wrap,
-.hero .scroll-cue {
+.hero > .wrap {
   position: relative;
+  z-index: 2;
+}
+
+/* z-index only — the cue sets its own position:absolute below, and a
+   `position: relative` here would win on specificity, dropping the cue back
+   into flow where its `bottom` offset lifts it over the hero CTAs. */
+.hero .scroll-cue {
   z-index: 2;
 }
 
@@ -645,6 +716,7 @@ body.no-intro .intro {
   bottom: 2.25rem;
   left: 50%;
   translate: -50% 0;
+  pointer-events: none; /* decorative (aria-hidden): never eat a CTA click */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -661,6 +733,15 @@ body.no-intro .intro {
   height: 3.25rem;
   background: linear-gradient(var(--sage), transparent);
   animation: cue-drop 2.6s var(--ease-out) infinite;
+}
+
+/* On a short, narrowish window the hero's foot band is where the CTAs land,
+   and the cue ends up beside them (8px of air at 1100x700, none at 1024x640).
+   Wider windows keep 90px+ of clearance, so this is the only zone it goes. */
+@media (max-width: 75em) and (max-height: 46em) {
+  .scroll-cue {
+    display: none;
+  }
 }
 
 @keyframes cue-drop {
@@ -1577,7 +1658,7 @@ form.is-hidden {
 }
 
 .footer-grid .wordmark {
-  font-size: 1.3rem;
+  --wm-size: 1.3rem;
 }
 
 .footer-tag {
@@ -2949,8 +3030,10 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 /* ---- Commerce refinements ---------------------------------------------------- */
 
+/* no backdrop-filter while a scroll-scrubbed canvas is on screen (it costs a
+   full-viewport readback each frame); the flat veil carries the same colour */
 .has-scroll-cinema .site-header.is-scrolled {
-  background: rgba(10, 12, 11, 0.96);
+  background: var(--header-veil-flat);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -3151,4 +3234,173 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   .detail-list li span:last-child {
     overflow-wrap: anywhere;
   }
+}
+
+/* ==========================================================================
+   The moonlit home — scoped to <body class="home">
+   --------------------------------------------------------------------------
+   The interior pages stay in the maison's emerald. The front page is the
+   Panjshir valley at night instead: snow-slate ground, cold ivory light off
+   the mountain, steel-blue mid-tones, and green kept back so it only appears
+   where there is actually a stone (the vitrine cases, the CTA, hover). The
+   emerald tokens are deliberately NOT touched here — the accent has to stay
+   the maison's green for the two to read as one house.
+   ========================================================================== */
+
+body.home {
+  --noir: #07090a;
+  --noir-soft: #0e1416;
+  --ivory: #f2f4f5;
+  --ivory-dim: #dbe3e6;
+  --sage: #9fb0b6;
+  --moss: #48555a;
+  --line-on-dark: rgba(226, 238, 240, 0.15);
+  --header-veil: linear-gradient(rgba(24, 38, 43, 0.95), rgba(13, 22, 26, 0.92));
+  --header-veil-flat: rgba(22, 35, 40, 0.97);
+  --header-edge: rgba(190, 214, 220, 0.3);
+  --photo-wash: linear-gradient(rgba(7, 9, 10, 0.72), rgba(21, 41, 50, 0.8));
+}
+
+/* the velvet in the photograph is warm emerald; cool it toward slate and let
+   the ring's own stone keep the only green in the frame */
+body.home .hero-bg img {
+  filter: saturate(0.42) hue-rotate(14deg) brightness(0.86) contrast(1.08);
+}
+
+/* moonlight, not studio light: the key rakes in from the upper left, the text
+   zone stays cold and dark, and the foot closes into the page */
+body.home .hero-scrim {
+  background:
+    radial-gradient(120% 90% at 12% -10%, rgba(178, 205, 214, 0.16), transparent 55%),
+    linear-gradient(100deg, rgba(7, 9, 10, 0.94) 24%, rgba(9, 14, 17, 0.6) 56%, rgba(26, 48, 58, 0.4)),
+    linear-gradient(rgba(7, 9, 10, 0.3), rgba(7, 9, 10, 0.22) 68%, var(--noir));
+}
+
+/* the eyebrow and the scroll cue are the coldest type on the page */
+body.home .hero .eyebrow,
+body.home .scroll-cue {
+  color: #b7cbd2;
+}
+
+body.home .scroll-cue::after {
+  background: linear-gradient(#b7cbd2, transparent);
+}
+
+/* ---- The tray of five stones (the maison page) ---------------------------
+   One WebGL canvas holds all five: a single context spends far less than
+   five, and the stones have to share a lamp anyway for their colours to be
+   comparable. The key list below is the content — the canvas is decoration
+   over it, so if WebGL is missing nothing is lost but the turning.
+-------------------------------------------------------------------------- */
+
+.stones-note {
+  max-width: 26rem;
+  font-size: var(--size-small);
+  color: var(--ivory-dim);
+}
+
+/* shown only once js/gem.js has a live context — the same gate .gem-mount
+   uses, so a page without WebGL shows the key list and no empty shelf */
+.stone-tray {
+  display: none;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 1.8;
+  margin-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.has-gem .stone-tray {
+  display: block;
+}
+
+/* the felt: the pool of light the stones are laid out on */
+.stone-tray::before {
+  content: "";
+  position: absolute;
+  inset: 12% 0 8%;
+  background:
+    radial-gradient(60% 120% at 50% 55%, rgba(151, 178, 186, 0.09), transparent 72%);
+  filter: blur(6px);
+}
+
+.stone-key {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 clamp(0.75rem, 2vw, 2rem);
+  margin: clamp(1rem, 2.5vw, 1.75rem) 0 0;
+  padding: 1.1rem 0 0;
+  border-top: 1px solid var(--line-on-dark);
+  list-style: none;
+}
+
+.stone-key li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.stone-key b {
+  font-size: var(--size-micro);
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+
+.stone-key span {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--sage);
+}
+
+/* narrow: the stones fold to 3 over 2 (js/gem.js layout()), so the tray
+   needs the height to hold two rows and the key becomes two columns */
+@media (max-width: 46em) {
+  .stone-tray {
+    aspect-ratio: 3 / 2;
+  }
+
+  .stone-key {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem clamp(0.75rem, 2vw, 2rem);
+  }
+}
+
+/* ==========================================================================
+   No JavaScript — the safety net
+   --------------------------------------------------------------------------
+   Every entrance animation on this site starts from a hidden state and waits
+   for js/main.js to add .is-visible. If the script does not run — blocked,
+   failed request, content blocker — the page keeps its content hidden and
+   reads as broken or blank. An inline script in <head> stamps html.js, so
+   these rules apply ONLY when scripting really is unavailable, and they put
+   every choreographed element straight into its finished state. Additive by
+   design: html.js never matches them, so the animated path is untouched.
+   ========================================================================== */
+
+html:not(.js) .reveal {
+  opacity: 1;
+  transform: none;
+}
+
+html:not(.js) .lm > span {
+  transform: none;
+}
+
+html:not(.js) .img-frame {
+  clip-path: none;
+}
+
+html:not(.js) .img-frame img {
+  transform: none;
+}
+
+html:not(.js) .draw {
+  stroke-dashoffset: 0;
+}
+
+/* WebGL hosts have nothing to show without their script: collapse them
+   rather than leave a hole where a stone should be */
+html:not(.js) .stone-tray,
+html:not(.js) .gem-mount {
+  display: none;
 }
