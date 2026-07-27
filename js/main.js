@@ -287,6 +287,10 @@
   var chipRow = document.querySelector("[data-filter]");
   if (chipRow) {
     var chips = chipRow.querySelectorAll(".chip");
+    /* the home page's form strip links here as collections.html?cat=rings:
+       arriving with a category pre-applies its chip */
+    var wantCat = null;
+    try { wantCat = new URLSearchParams(location.search).get("cat"); } catch (e) {}
     var items = document.querySelectorAll("[data-category]");
     chipRow.addEventListener("click", function (e) {
       var chip = e.target.closest(".chip");
@@ -311,6 +315,35 @@
         });
       }
     });
+    if (wantCat) {
+      var preChip = chipRow.querySelector('.chip[data-value="' + CSS.escape(wantCat) + '"]');
+      if (preChip) preChip.click();
+    }
+  }
+
+  /* ---- A piece travels into its appointment ----
+     The product page's viewing link carries the plate reference; the
+     appointment form, seeing it arrive, sets the subject and opens the
+     note with the reference already written. */
+  var refcode = document.querySelector('[data-p="refcode"]');
+  if (refcode) {
+    var viewingLink = document.querySelector('.product-actions a[href*="contact.html"]');
+    if (viewingLink) {
+      var ref = (refcode.textContent || "").trim().replace(/[^\w-]/g, "");
+      if (ref) viewingLink.href = viewingLink.href.split("?")[0] + "?piece=" + ref;
+    }
+  }
+  var apptForm = document.querySelector("[data-appointment]");
+  if (apptForm) {
+    var pieceRef = null;
+    try { pieceRef = new URLSearchParams(location.search).get("piece"); } catch (e) {}
+    if (pieceRef) {
+      pieceRef = pieceRef.replace(/[^\w-]/g, "");
+      var interest = apptForm.querySelector("#f-interest");
+      if (interest) interest.value = "A piece from the collection";
+      var note = apptForm.querySelector("#f-message");
+      if (note && !note.value && pieceRef) note.value = "About " + pieceRef + " — ";
+    }
   }
 
   /* ---- Size selector (product page) ---- */
