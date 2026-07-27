@@ -704,12 +704,20 @@ body.no-intro .intro {
   object-fit: cover;
   /* rich, not washed: the stones have to look expensive */
   filter: saturate(1.06) contrast(1.05) brightness(0.94);
-  animation: kenburns 12s var(--ease-out) both;
+  /* the arrival settle, then a breath that never quite stops — the valley
+     as a living view, not a poster (reduced-motion zeroes both) */
+  animation: kenburns 12s var(--ease-out) both,
+    hero-breathe 46s ease-in-out 12s infinite alternate;
 }
 
 @keyframes kenburns {
   from { transform: scale(1.16); }
   to { transform: scale(1.02); }
+}
+
+@keyframes hero-breathe {
+  from { transform: scale(1.02); }
+  to { transform: scale(1.08) translateY(-1.2%); }
 }
 
 /* graded scrim: pulls the photo emerald-cool and keeps the text zone dark */
@@ -923,44 +931,78 @@ body.no-intro .intro {
   border-block: 1px solid var(--line-on-dark);
 }
 
-/* shop by form: four named doors with hairline jambs, no wallpaper */
+/* shop by form: four doors, each glazed with a photograph of what waits
+   behind it — the name sits on the glass, hairline jambs between */
 .form-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: var(--space-block);
-  border-block: 1px solid var(--line-on-dark);
+  border: 1px solid var(--line-on-dark);
 }
 
 .form-strip a {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 2.5vw, 2rem);
+  justify-content: flex-end;
+  gap: 0.45rem;
+  min-height: clamp(16rem, 26vw, 22rem);
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+  overflow: hidden;
   text-decoration: none;
-  transition: background 0.35s var(--ease-out);
 }
 
 .form-strip a + a {
   border-inline-start: 1px solid var(--line-on-dark);
 }
 
-.form-strip a:hover,
-.form-strip a:focus-visible {
-  background: rgba(194, 162, 92, 0.07);
+.form-media {
+  position: absolute;
+  inset: 0;
+}
+
+.form-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.78) brightness(0.82);
+  transition: transform 1.3s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.9s var(--ease-out);
+}
+
+/* legibility grade: dark at the sill where the name sits */
+.form-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(16, 21, 28, 0.44),
+    rgba(16, 21, 28, 0.14) 42%,
+    rgba(16, 21, 28, 0.82)
+  );
+}
+
+.form-strip a:hover .form-media img,
+.form-strip a:focus-visible .form-media img {
+  transform: scale(1.06);
+  filter: saturate(0.94) brightness(0.94);
 }
 
 .form-name {
+  position: relative;
   font-family: var(--font-display);
   font-size: var(--size-h3);
   color: var(--ivory);
   transition: color 0.35s var(--ease-out);
 }
 
-.form-strip a:hover .form-name {
+.form-strip a:hover .form-name,
+.form-strip a:focus-visible .form-name {
   color: var(--gold-lit);
 }
 
 .form-count {
+  position: relative;
   font-size: var(--size-micro);
   letter-spacing: var(--track-micro);
   text-transform: uppercase;
@@ -970,6 +1012,10 @@ body.no-intro .intro {
 @media (max-width: 46em) {
   .form-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-strip a {
+    min-height: clamp(10rem, 42vw, 14rem);
   }
 
   .form-strip a:nth-child(3),
@@ -1063,15 +1109,49 @@ body.no-intro .intro {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.88);
+  filter: saturate(0.84) contrast(1.03) brightness(0.96);
   will-change: transform;
   transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1),
     filter 0.9s var(--ease-out);
 }
 
+/* the photographs arrive from different benches — a navy glaze (multiply:
+   it pulls bright backdrops down without crushing the dark ones) and a
+   corner vignette seat them all in the same tray */
+.vitrine-media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #1b2a3a;
+  mix-blend-mode: multiply;
+  opacity: 0.32;
+  pointer-events: none;
+  transition: opacity 0.9s var(--ease-out);
+}
+
+.vitrine-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(
+    135% 115% at 50% 38%,
+    transparent 54%,
+    rgba(16, 21, 28, 0.44) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(241, 239, 232, 0.05);
+  pointer-events: none;
+}
+
 .vitrine:hover .vitrine-media img {
   transform: scale(1.14);
-  filter: saturate(1.05) brightness(1.06);
+  filter: saturate(1.02) brightness(1.04);
+}
+
+/* leaning in lifts the glass off the glaze */
+.vitrine:hover .vitrine-media::before {
+  opacity: 0.16;
 }
 
 .vitrine-name {
@@ -1390,6 +1470,31 @@ body.no-intro .intro {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: saturate(0.88) contrast(1.03) brightness(0.97);
+}
+
+/* the same glaze + vignette as the vitrines, so the hero photograph of a
+   piece sits in the house navy instead of its studio backdrop */
+.stage-photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #1b2a3a;
+  mix-blend-mode: multiply;
+  opacity: 0.26;
+  pointer-events: none;
+}
+
+.stage-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    130% 115% at 50% 40%,
+    transparent 56%,
+    rgba(16, 21, 28, 0.4) 100%
+  );
+  pointer-events: none;
 }
 
 .stage-plate {
@@ -1660,10 +1765,12 @@ body.no-intro .intro {
 .field textarea {
   width: 100%;
   padding: 0.95rem 1rem;
-  background: transparent;
+  /* a breath of ivory so the writing surface reads against the navy */
+  background: rgba(241, 239, 232, 0.04);
   border: 1px solid var(--line-on-dark);
   border-radius: 0;
-  transition: border-color 0.35s var(--ease-out);
+  transition: border-color 0.35s var(--ease-out),
+    background 0.35s var(--ease-out);
 }
 
 .field input:hover,
@@ -1676,7 +1783,7 @@ body.no-intro .intro {
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: var(--jade-bright);
+  border-color: var(--gold-lit);
 }
 
 .field textarea {
@@ -1913,6 +2020,16 @@ form.is-hidden {
     grid-template-columns: 1fr;
   }
 
+  /* the desktop scrim grades left-to-right for a left-set headline; a
+     stacked screen grades top-to-bottom so the valley itself stays visible */
+  .hero-scrim {
+    background: linear-gradient(
+      rgba(16, 21, 28, 0.8),
+      rgba(16, 21, 28, 0.48) 55%,
+      var(--noir)
+    );
+  }
+
   .hero-art {
     display: none;
   }
@@ -2037,12 +2154,12 @@ form.is-hidden {
   margin-inline-start: 0.5em;
   min-width: 1.5em;
   padding: 0.1em 0.35em;
-  border: 1px solid var(--jade);
+  border: 1px solid var(--line-on-dark);
   border-radius: 999px;
   font-size: 0.6875rem;
   letter-spacing: 0;
   text-align: center;
-  color: var(--jade-bright);
+  color: var(--gold-lit);
   vertical-align: 0.2em;
 }
 
