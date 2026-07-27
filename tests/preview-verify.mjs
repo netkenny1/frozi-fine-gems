@@ -129,6 +129,12 @@ const browser = await chromium.launch({
   const mpage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   await mpage.goto(`${BASE}/about.html`, { waitUntil: "networkidle" });
   await mpage.locator(".method-tri").scrollIntoViewIfNeeded();
+  /* the plates reveal on a stagger — wait for all three to land before
+     reading their positions, or a slow network fails the one-row check */
+  await mpage.waitForFunction(() => {
+    const steps = [...document.querySelectorAll(".method-step")];
+    return steps.length === 3 && steps.every((s) => s.classList.contains("is-visible"));
+  }, { timeout: 8000 }).catch(() => {});
   await mpage.waitForTimeout(900);
   const tri = await mpage.evaluate(() => {
     const steps = [...document.querySelectorAll(".method-step")];
