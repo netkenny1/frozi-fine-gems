@@ -42,7 +42,7 @@
   --font-display: "DM Serif Display", "Didot", "Bodoni MT", serif;
   --font-brand: "Bodoni Moda", "Didot", serif;
   --font-ui: "Jost", "Futura", "Avenir Next", sans-serif;
-  --size-hero: clamp(3rem, 8.5vw, 7.25rem);
+  --size-hero: clamp(2.75rem, 6.5vw, 5.5rem);
   --size-h2: clamp(2.25rem, 4.5vw, 3.75rem);
   --size-h3: clamp(1.5rem, 2.2vw, 1.9375rem);
   --size-body: 1.125rem;
@@ -313,7 +313,7 @@ h3 {
   display: grid;
   place-items: center;
   background: var(--noir);
-  animation: intro-lift 0.9s cubic-bezier(0.7, 0, 0.2, 1) 1.5s both;
+  animation: intro-lift 0.8s cubic-bezier(0.7, 0, 0.2, 1) 0.7s both;
 }
 
 @keyframes intro-lift {
@@ -333,8 +333,8 @@ h3 {
 .intro-mark span {
   display: block;
   transform: translateY(110%);
-  animation: intro-rise 0.9s var(--ease-out) forwards;
-  animation-delay: calc(var(--i) * 0.055s + 0.15s);
+  animation: intro-rise 0.7s var(--ease-out) forwards;
+  animation-delay: calc(var(--i) * 0.04s + 0.05s);
 }
 
 .intro-line {
@@ -344,7 +344,7 @@ h3 {
   height: 1px;
   background: var(--jade);
   transform: scaleX(0);
-  animation: intro-line 1s var(--ease-out) 0.7s forwards;
+  animation: intro-line 0.8s var(--ease-out) 0.25s forwards;
 }
 
 @keyframes intro-rise {
@@ -432,10 +432,10 @@ body.no-intro .intro {
   align-items: center;
   padding-inline-start: clamp(0.9rem, 1.6vw, 1.6rem);
   border-inline-start: 1px solid var(--line-on-dark);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 400;
-  line-height: 1.35;
-  letter-spacing: 0.2em;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--sage);
@@ -604,23 +604,23 @@ body.no-intro .intro {
 }
 
 .wm-mark {
-  height: clamp(2.6rem, 3.4vw, 3.25rem);
+  height: clamp(3.1rem, 4.2vw, 4rem);
   width: auto;
 }
 
 /* FROZI alone in the nav: the printed tagline is unreadable at nav scale, and
    the provenance line already sits beside it */
 .wm-word {
-  height: clamp(1.05rem, 1.5vw, 1.4rem);
+  height: clamp(1.3rem, 1.85vw, 1.75rem);
   width: auto;
 }
 
 .is-scrolled .wm-mark {
-  height: clamp(2.2rem, 2.8vw, 2.6rem);
+  height: clamp(2.6rem, 3.3vw, 3.1rem);
 }
 
 .is-scrolled .wm-word {
-  height: clamp(0.9rem, 1.2vw, 1.15rem);
+  height: clamp(1.1rem, 1.45vw, 1.4rem);
 }
 
 /* the footer carries the logo as drawn: mark over wordmark */
@@ -629,13 +629,13 @@ body.no-intro .intro {
 }
 
 .wm-lockup {
-  width: clamp(8rem, 11vw, 10.5rem);
+  width: clamp(11.5rem, 16vw, 15rem);
   height: auto;
 }
 
 @media (max-width: 46em) {
-  .wm-mark { height: 2.35rem; }
-  .wm-word { height: 1rem; }
+  .wm-mark { height: 2.8rem; }
+  .wm-word { height: 1.2rem; }
 }
 
 .text-link {
@@ -745,6 +745,11 @@ body.no-intro .intro {
 
 .hero .display {
   margin-bottom: 2.25rem;
+  /* set in caps at the same order of magnitude as the section heads —
+     the old lowercase 7rem line dwarfed everything under it */
+  font-size: clamp(2.5rem, 4.7vw, 4.25rem);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .hero .lede {
@@ -1203,16 +1208,21 @@ body.no-intro .intro {
   aspect-ratio: 4 / 5;
 }
 
-.split-figure .illus {
+/* a gallery mat: the photograph sits on an offset gold hairline frame —
+   quieter company for the copy than the old drawing overlay was.
+   Drawn on .split-figure, not .img-frame, which clips its children. */
+.split-figure::after {
+  content: "";
   position: absolute;
-  right: -8%;
-  bottom: -9%;
-  width: 52%;
-  color: var(--emerald);
+  inset: 0;
+  translate: clamp(0.75rem, 1.6vw, 1.4rem) clamp(0.75rem, 1.6vw, 1.4rem);
+  border: 1px solid var(--line-on-dark);
+  pointer-events: none;
+  z-index: -1;
 }
 
-.section--dark .split-figure .illus {
-  color: var(--ivory);
+.split-figure .illus {
+  display: none;
 }
 
 /* ---- Quote ---------------------------------------------------------------- */
@@ -1778,53 +1788,24 @@ form.is-hidden {
   transform: none;
 }
 
-/* ---- Custom cursor ----------------------------------------------------------------- */
+/* ---- Hover highlight --------------------------------------------------------------- */
 
-/* Both layers move on the compositor only: JS writes translate3d, size
-   change happens as a scale on the ring's ::before. Nothing repaints. */
-.cursor-dot,
-.cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 600;
-  pointer-events: none;
-  translate: -50% -50%;
-  opacity: 0;
-  will-change: transform;
-  transition: opacity 0.3s;
+/* The cursor is the system cursor: the page answers it instead of
+   replacing it. Anything interactive lifts toward the light on hover. */
+.btn {
+  transition: border-color 0.35s var(--ease-out), color 0.35s var(--ease-out),
+    box-shadow 0.35s var(--ease-out);
 }
 
-.cursor-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--jade-bright);
+.btn:hover,
+.btn:focus-visible {
+  box-shadow: 0 8px 30px -10px rgba(194, 162, 92, 0.55);
 }
 
-.cursor-ring {
-  width: 34px;
-  height: 34px;
-}
-
-.cursor-ring::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--jade-bright);
-  border-radius: 50%;
-  transform: scale(1);
-  transition: transform 0.35s var(--ease-out), border-color 0.35s;
-}
-
-.has-cursor .cursor-dot,
-.has-cursor .cursor-ring {
-  opacity: 1;
-}
-
-.cursor-on-link .cursor-ring::before {
-  transform: scale(1.7);
-  border-color: var(--sage);
+.vitrine:hover,
+.category-tile:hover {
+  box-shadow: 0 18px 44px -22px rgba(0, 0, 0, 0.85),
+    0 0 0 1px var(--line-on-dark);
 }
 
 /* ---- Responsive --------------------------------------------------------------------- */
@@ -1950,11 +1931,6 @@ form.is-hidden {
   }
 
   .intro {
-    display: none;
-  }
-
-  .cursor-dot,
-  .cursor-ring {
     display: none;
   }
 }
@@ -2458,7 +2434,7 @@ form.is-hidden {
 /* the constellation needs room: the house stone with five set around it */
 .gem-mount--intro {
   width: 100%;
-  height: clamp(20rem, 46vh, 30rem);
+  height: clamp(16rem, 38vh, 24rem);
   margin: 0;
 }
 
@@ -2691,183 +2667,51 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 
 /* ---- The method cinema (scroll-scrubbed editorial triptych) -------------- */
-/* Default (no JS / reduced motion): one full-bleed photograph, steps stacked.
-   With js/cinema.js live, the section grows into a 340vh runway; later frames
-   rise as compositor curtains and the steps crossfade. */
+/* ---- Method, three plates ------------------------------------------------
+   The scrubbed 340vh cinema is retired: three photographs in a row, each
+   with its step beneath, revealed once. Direct, and the collection's four
+   forms arrive two screens sooner. */
 
-.method-cinema {
-  position: relative;
-  background: var(--noir);
-  color: var(--ivory);
-}
-
-.method-cinema.mc-live {
-  height: 340vh;
-}
-
-.mc-sticky {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  overflow: hidden;
+.method-tri {
   display: grid;
-  /* keep the full-bleed clip-path wipes from repainting the rest of the page */
-  contain: paint;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.5rem, 3.5vw, 3rem);
+  margin-top: var(--space-block);
 }
 
-.mc-frame {
-  position: absolute;
-  inset: 0;
+.method-step {
   margin: 0;
-  overflow: hidden;
 }
 
-.mc-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transform: scale(1.04);
+.method-step .img-frame {
+  aspect-ratio: 3 / 4;
 }
 
-/* static fallback: first photograph only */
-.mc-frame + .mc-frame {
-  opacity: 0;
+.method-step figcaption {
+  margin-top: 1.4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line-on-dark);
 }
 
-/* live: the later frames become rising curtains */
-.mc-live .mc-frame + .mc-frame {
-  opacity: 1;
+.method-step .h3 {
+  margin: 0.4rem 0 0.65rem;
 }
 
-.mc-live .mc-frame[data-mc-frame="1"] {
-  transform: translate3d(0, 100%, 0);
-}
-
-/* The later frames travel as compositor layers. A translated curtain keeps
-   the full-screen transition off the paint path on fast touch/trackpad input. */
-.mc-live .mc-frame[data-mc-frame="1"],
-.mc-live .mc-frame[data-mc-frame="2"] {
-  will-change: transform;
-  backface-visibility: hidden;
-  contain: paint;
-}
-
-.mc-live .mc-frame[data-mc-frame="1"] img {
-  transform: scale(1.04);
-}
-
-.mc-live .mc-frame[data-mc-frame="2"] {
-  transform: translate3d(0, 100%, 0);
-}
-
-.mc-live .mc-frame[data-mc-frame="2"] img {
-  transform: scale(1.04);
-}
-
-/* legibility scrim under the copy column */
-.mc-scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(7, 12, 10, 0.82), rgba(7, 12, 10, 0.35) 42%, rgba(7, 12, 10, 0) 68%),
-    linear-gradient(0deg, rgba(7, 12, 10, 0.75), rgba(7, 12, 10, 0) 38%);
-}
-
-.mc-copy {
-  position: relative;
-  z-index: 1;
-  align-self: end;
-  width: 100%;
-  padding-bottom: clamp(3rem, 9vh, 6rem);
-  display: grid;
-  gap: 1.6rem;
-}
-
-.mc-head .h2 {
-  margin-top: 0.4rem;
-}
-
-/* steps: stacked in the static fallback, crossfading in live mode */
-.mc-steps {
-  position: relative;
-  max-width: 34rem;
-  display: grid;
-  gap: 1.4rem;
-}
-
-.mc-step .process-numeral {
-  display: inline-block;
-  font-size: 1.4rem;
-  margin: 0 0.6rem 0 0;
-  color: var(--jade-bright);
-}
-
-.mc-step .h3 {
-  display: inline-block;
-  margin-bottom: 0.5rem;
-}
-
-.mc-step p {
-  font-size: var(--size-small);
-  line-height: 1.7;
+.method-step p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
   color: var(--ivory-dim);
-  max-width: 32rem;
 }
 
-.mc-live .mc-steps {
-  min-height: 11.5rem;
-}
-
-.mc-live .mc-step {
-  position: absolute;
-  inset: 0 0 auto 0;
-  opacity: 0;
-  transform: translateY(0.9rem);
-  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
-  pointer-events: none;
-}
-
-.mc-live .mc-step.is-current {
-  opacity: 1;
-  transform: none;
-}
-
-.mc-counter {
-  display: none;
-  align-items: center;
-  gap: 0.7rem;
-  font-size: var(--size-micro);
-  letter-spacing: 0.14em;
-  color: var(--sage);
-}
-
-.mc-live .mc-counter {
-  display: inline-flex;
-}
-
-.mc-counter-sep {
-  width: 3.2rem;
-  height: 1px;
-  background: rgba(170, 189, 178, 0.4);
-}
-
-@media (max-width: 760px) {
-  .mc-scrim {
-    background:
-      linear-gradient(0deg, rgba(7, 12, 10, 0.88), rgba(7, 12, 10, 0.2) 55%, rgba(7, 12, 10, 0) 75%);
+@media (max-width: 60em) {
+  .method-tri {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
   }
-  .mc-live .mc-steps {
-    min-height: 14rem;
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .method-cinema.mc-live {
-    height: auto;
-  }
-  .mc-frame img {
-    transform: none;
+  .method-step .img-frame {
+    aspect-ratio: 16 / 10;
   }
 }
 
@@ -3311,7 +3155,8 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 
 .stone-tray {
   position: relative;
-  width: 100%;
+  width: min(100%, 62rem);
+  margin-inline: auto;
   aspect-ratio: 7 / 2.1;
   margin-top: clamp(1.5rem, 4vw, 3rem);
 }
@@ -3326,32 +3171,38 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   filter: blur(6px);
 }
 
+/* engraved plate labels, one per stone: the name carries the display voice
+   at a size that can actually be read, the spec sits quietly beneath it */
 .stone-key {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0 clamp(0.75rem, 2vw, 2rem);
-  margin: clamp(1rem, 2.5vw, 1.75rem) 0 0;
-  padding: 1.1rem 0 0;
+  width: min(100%, 62rem);
+  margin: clamp(1rem, 2.5vw, 1.75rem) auto 0;
+  padding: 1.25rem 0 0;
   border-top: 1px solid var(--line-on-dark);
   list-style: none;
+  text-align: center;
 }
 
 .stone-key li {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.4rem;
 }
 
 .stone-key b {
-  font-size: var(--size-micro);
-  font-weight: 500;
-  letter-spacing: var(--track-micro);
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--ivory);
 }
 
 .stone-key span {
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--sage);
 }
 
@@ -3406,29 +3257,30 @@ html:not(.js) .draw {
 /* the stone hosts keep their still, so they are NOT hidden without JS */
 
 /* ---- The locale control (currency, and language once copy exists) --------
-   Sits at the end of the nav row. Native selects on purpose: they are
-   keyboard- and screen-reader-correct for free, and on a phone they open the
-   platform picker instead of a bespoke menu nobody can use one-handed.
+   Sits at the end of the nav row. Drawn controls with the full listbox
+   pattern (js/locale.js): a hairline gold button, a small navy panel,
+   arrow keys and Escape — the same materials as the rest of the chrome.
 -------------------------------------------------------------------------- */
 
 .locale {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   margin-inline-start: clamp(0.75rem, 2vw, 1.75rem);
 }
 
 .locale-field {
-  display: block;
+  position: relative;
 }
 
-.locale-select {
-  appearance: none;
+.locale-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   border: 1px solid transparent;
   border-radius: 0;
   background: transparent;
-  padding-block: 0.35rem;
-  padding-inline: 0.5rem 1.15rem;
+  padding: 0.45rem 0.7rem;
   font-family: var(--font-ui);
   font-size: var(--size-micro);
   font-weight: 500;
@@ -3436,42 +3288,98 @@ html:not(.js) .draw {
   text-transform: uppercase;
   color: var(--gold-lit);
   cursor: pointer;
-  /* the chevron, drawn in the brand gold */
-  background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%),
-    linear-gradient(135deg, var(--gold) 50%, transparent 50%);
-  background-position: right 0.5rem top 55%, right 0.22rem top 55%;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
   transition: border-color 0.35s var(--ease-out), color 0.35s var(--ease-out);
 }
 
-.locale-select:hover {
+.locale-btn:hover {
   border-color: var(--line-on-dark);
   color: var(--ivory);
 }
 
-.locale-select:focus-visible {
+.locale-btn:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
-.locale-select option {
-  background: var(--navy);
-  color: var(--ivory);
+.locale-chev {
+  width: 9px;
+  height: 6px;
+  transition: rotate 0.3s var(--ease-out);
 }
 
-.section--light .locale-select {
-  color: var(--gold-deep);
+.is-open .locale-chev {
+  rotate: 180deg;
+}
+
+.locale-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  inset-inline-end: 0;
+  z-index: 260;
+  min-width: 8.5rem;
+  margin: 0;
+  padding: 0.4rem 0;
+  list-style: none;
+  background: var(--header-veil-flat);
+  border: 1px solid var(--line-on-dark);
+  box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  translate: 0 -0.35rem;
+  visibility: hidden;
+  transition: opacity 0.25s var(--ease-out), translate 0.25s var(--ease-out),
+    visibility 0.25s;
+}
+
+.locale-field.is-open .locale-menu {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+}
+
+.locale-menu li {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-ui);
+  font-size: var(--size-micro);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.locale-menu li:hover,
+.locale-menu li:focus-visible {
+  background: rgba(194, 162, 92, 0.12);
+  color: var(--ivory);
+  outline: none;
+}
+
+/* the chosen line is gold, marked with a small set stone */
+.locale-menu li[aria-selected="true"] {
+  color: var(--gold-lit);
+}
+
+.locale-menu li[aria-selected="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-inline-end: 0.5rem;
+  vertical-align: 2px;
+  rotate: 45deg;
+  background: var(--gold);
 }
 
 @media (max-width: 46em) {
   .locale {
     margin-inline-start: auto;
     margin-inline-end: 0.5rem;
+    gap: 0.15rem;
   }
 
-  .locale-select {
-    padding-inline: 0.35rem 1rem;
+  .locale-btn {
+    padding: 0.4rem 0.45rem;
     font-size: 0.6875rem;
   }
 }
@@ -3569,7 +3477,3 @@ html.is-rtl .nav-link[aria-current="page"]::after {
   transform-origin: right;
 }
 
-/* the select chevron is a background image: move it to the inline end */
-html.is-rtl .locale-select {
-  background-position: left 0.22rem top 55%, left 0.5rem top 55%;
-}

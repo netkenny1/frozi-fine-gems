@@ -18,3 +18,9 @@ free for commercial use, no attribution required. Attribution kept here anyway.
 | emeralds.jpg | 13613422 | Sorting loose emeralds at a desk |
 | rings-trio.jpg | 17068456 | Three emerald rings on dark blue |
 | glove.jpg | 35528689 | Rings on a black glove under green light |
+
+## valley.jpg / valley.webp / valley.avif
+"Panjshir River Valley in May 2011" by Master Sgt. Michael O'Connor
+(U.S. armed forces), via Wikimedia Commons, CC BY 2.0
+https://commons.wikimedia.org/wiki/File:Panjshir_River_Valley_in_May_2011.jpg
+Changes: resized to 1920px, re-encoded as JPEG/WebP/AVIF.

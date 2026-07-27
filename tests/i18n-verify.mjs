@@ -37,13 +37,14 @@ await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
 await page.waitForTimeout(INTRO_MS);
 
 /* ---- the toggle exists and offers both languages ------------------------ */
-const langSel = page.locator(".locale-field select").nth(1);
-check(await langSel.count() === 1, "the language control renders next to the currency control");
-const options = await langSel.locator("option").allTextContents();
+const langField = page.locator(".locale-field--lang");
+check(await langField.count() === 1, "the language control renders next to the currency control");
+const options = await langField.locator("[role='option']").allTextContents();
 check(options.join(",") === "EN,العربية", `it offers EN and العربية (got: ${options.join(",")})`);
 
 /* ---- switching to Arabic ------------------------------------------------ */
-await langSel.selectOption("ar");
+await langField.locator(".locale-btn").click();
+await langField.locator("[role='option'][data-value='ar']").click();
 await page.waitForTimeout(400);
 
 const dir = await page.evaluate(() => document.documentElement.getAttribute("dir"));
@@ -89,7 +90,8 @@ const brandNote2 = await page.locator(".brand-note").textContent();
 check(brandNote2.trim() === "موطن زمرّد بنجشير", "the Arabic chrome survives the reload");
 
 /* ---- and English comes back intact -------------------------------------- */
-await page.locator(".locale-field select").nth(1).selectOption("en");
+await page.locator(".locale-field--lang .locale-btn").click();
+await page.locator(".locale-field--lang [role='option'][data-value='en']").click();
 await page.waitForTimeout(400);
 const dirBack = await page.evaluate(() => document.documentElement.getAttribute("dir"));
 const heroBack = await page.locator(".display").textContent();

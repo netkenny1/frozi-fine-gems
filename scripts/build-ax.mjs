@@ -343,7 +343,6 @@ const sitemapPages = [
   "",
   "collections.html",
   "about.html",
-  "jewelry-dubai.html",
   "contact.html",
   "policies.html",
   "catalog.json",

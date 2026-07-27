@@ -25,7 +25,6 @@ function jsonLd(html) {
 const home = await text("index.html");
 const collection = await text("collections.html");
 const contact = await text("contact.html");
-const dubai = await text("jewelry-dubai.html");
 const robots = await text("robots.txt");
 const sitemap = await text("sitemap.xml");
 const publicCatalog = JSON.parse(await text("catalog.json"));
@@ -35,7 +34,6 @@ const indexablePages = [
   "index.html",
   "collections.html",
   "about.html",
-  "jewelry-dubai.html",
   "contact.html",
   "policies.html",
   ...productPages
@@ -44,7 +42,6 @@ const indexablePages = [
 check(home.includes("Fine Jewelry in Dubai"), "home title names the Dubai offer");
 check(home.includes("private fine-jewelry maison serving clients in Dubai"), "home visibly identifies the Dubai service area");
 check(contact.includes("Private appointments in Dubai"), "contact page visibly states the appointment location");
-check(dubai.includes('type="application/ld+json"'), "Dubai guide includes structured data");
 check(home.includes('rel="canonical"'), "home has a canonical URL");
 check(home.includes('type="application/json" href="catalog.json"'), "home advertises the machine-readable catalog");
 check(robots.includes("OAI-SearchBot") && robots.includes("Sitemap:"), "crawler policy names OAI-SearchBot and the sitemap");

@@ -249,29 +249,20 @@ const browser = await chromium.launch({
     `manifesto scrubs mid-runway (first ${ink.first}, last ${ink.last})`
   );
 
-  // Method cinema: counter walks and photographs change
-  const cin = await page.evaluate(() => {
-    const s = document.querySelector("[data-cinema]");
-    const r = s.getBoundingClientRect();
-    return { top: r.top + scrollY, span: s.offsetHeight - innerHeight };
+  // Method triptych: three plates in one row, no scroll-jack runway
+  await page.locator(".method-tri").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(900);
+  const tri = await page.evaluate(() => {
+    const steps = [...document.querySelectorAll(".method-step")];
+    const tops = steps.map((s) => Math.round(s.getBoundingClientRect().top));
+    const shown = steps.filter((s) => s.classList.contains("is-visible")).length;
+    const section = document.querySelector(".method-tri").closest("section");
+    return { n: steps.length, oneRow: new Set(tops).size === 1, shown,
+             runway: section.offsetHeight < innerHeight * 2 };
   });
-  check(await page.locator(".method-cinema.mc-live").count() === 1, "cinema section is live (JS enhanced)");
-  const counters = [];
-  const frames = [];
-  for (const f of [0.15, 0.5, 0.85]) {
-    await page.evaluate((y) => scrollTo(0, y), Math.round(cin.top + cin.span * f));
-    await page.waitForTimeout(900);
-    counters.push(await page.locator("[data-mc-counter]").innerText());
-    frames.push(await page.screenshot({ clip: { x: 0, y: 0, width: 1440, height: 900 } }));
-  }
-  check(
-    counters.join(",") === "01,02,03",
-    `cinema counter walks 01 -> 02 -> 03 (got ${counters.join(",")})`
-  );
-  check(
-    Buffer.compare(frames[0], frames[1]) !== 0 && Buffer.compare(frames[1], frames[2]) !== 0,
-    "cinema photographs change between acts (frame pixels differ)"
-  );
+  check(tri.n === 3 && tri.oneRow, `method is a single row of three plates (${tri.n})`);
+  check(tri.shown === 3, "all three method plates reveal");
+  check(tri.runway, "method section has no sticky runway");
 
   check(errors.length === 0, "desktop: no console errors");
   if (errors.length) console.log("  errors:", errors.slice(0, 3));
@@ -291,7 +282,6 @@ const browser = await chromium.launch({
   await page.waitForTimeout(1200);
   check(await page.locator(".rotator.rt-live").count() === 0, "reduced-motion: rotator static (no rt-live)");
   check(await page.locator(".manifesto.mf-live").count() === 0, "reduced-motion: manifesto static (no mf-live)");
-  check(await page.locator(".method-cinema.mc-live").count() === 0, "reduced-motion: cinema static (no mc-live)");
   check(errors.length === 0, "reduced-motion: no console errors");
   await page.close();
   await ctx.close();
@@ -358,18 +348,12 @@ const browser = await chromium.launch({
     mobileRotationFrames <= 1,
     `mobile: live gem loads only its static fallback (${mobileRotationFrames} image)`
   );
-  const mobileCinemaMid = await page.evaluate(() => {
-    const section = document.querySelector("[data-cinema]");
-    const rect = section.getBoundingClientRect();
-    return rect.top + scrollY + (section.offsetHeight - innerHeight) * 0.33;
+  const mobileTri = await page.evaluate(() => {
+    const tops = [...document.querySelectorAll(".method-step")]
+      .map((s) => Math.round(s.getBoundingClientRect().top));
+    return new Set(tops).size;
   });
-  await page.evaluate((y) => scrollTo(0, y), mobileCinemaMid);
-  await page.waitForTimeout(200);
-  const curtainStyle = await page.locator('[data-mc-frame="1"]').getAttribute("style");
-  check(
-    Boolean(curtainStyle && curtainStyle.includes("translate3d")),
-    "mobile: cinema curtain uses a compositor transform"
-  );
+  check(mobileTri === 3, "mobile: the three method plates stack in one column");
   check(
     await page.locator(".rt-gem canvas").evaluate((canvas) => getComputedStyle(canvas).touchAction === "none"),
     "mobile: gem accepts unrestricted two-axis touch manipulation"
@@ -494,19 +478,19 @@ const browser = await chromium.launch({
     `the house logo loads in header and footer (${lockup.srcs.join(" + ")}, mark ${lockup.markHeight}px)`
   );
   check(
-    (await page.locator(".brand-note").innerText()).trim().toLowerCase() === "home of panjshir emeralds",
-    "the provenance line sits beside the lockup"
+    (await page.locator(".brand-note").textContent()).trim().toLowerCase() === "home of panjshir emeralds",
+    "the provenance line ships in the chrome (folded away at phone width)"
   );
 
   /* six stones, six different cuts, in one straight evenly spaced row */
   const currency = await page.evaluate(() => {
-    const sel = document.querySelector(".locale-select");
-    const price = document.querySelector(".vitrine-price, [data-p=\"price\"]");
-    return { control: !!sel, options: sel ? [...sel.options].map((o) => o.value) : [] };
+    const menu = document.querySelector(".locale-field--currency .locale-menu");
+    return { control: !!menu,
+             options: menu ? [...menu.querySelectorAll("[role='option']")].map((o) => o.dataset.value) : [] };
   });
   check(
-    currency.control && currency.options.join(",") === "AED,USD,EUR,GBP,SAR",
-    `the currency control offers the five currencies (${currency.options.join(", ")})`
+    currency.control && currency.options.join(",") === "AED,USD,EUR,GBP,SAR,RUB",
+    `the currency control offers the six currencies (${currency.options.join(", ")})`
   );
 
   await page.locator(".stone-tray").scrollIntoViewIfNeeded();

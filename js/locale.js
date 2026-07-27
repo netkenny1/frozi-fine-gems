@@ -25,9 +25,10 @@
     USD: { rate: 0.2723, symbol: "USD", step: 50, pegged: true },
     SAR: { rate: 1.0211, symbol: "SAR", step: 50, pegged: true },
     EUR: { rate: 0.2532, symbol: "EUR", step: 50, pegged: false },
-    GBP: { rate: 0.2153, symbol: "GBP", step: 25, pegged: false }
+    GBP: { rate: 0.2153, symbol: "GBP", step: 25, pegged: false },
+    RUB: { rate: 23.4, symbol: "RUB", step: 500, pegged: false }
   };
-  var ORDER = ["AED", "USD", "EUR", "GBP", "SAR"];
+  var ORDER = ["AED", "USD", "EUR", "GBP", "SAR", "RUB"];
   var CUR_KEY = "frozi-currency";
 
   function currency() {
@@ -149,40 +150,130 @@
 
   /* ---- the control ------------------------------------------------------- */
 
+  /* The pickers are drawn, not native: a hairline gold button opening a
+     small navy panel, the same materials as the rest of the chrome. The
+     button carries the listbox pattern (aria-haspopup/expanded, arrow keys,
+     Escape, click-away), so a keyboard or screen reader loses nothing. */
   function control() {
     var host = document.querySelector("[data-locale]");
     if (!host) return;
     var cur = currency(), lang = language();
+    var openMenu = null;
 
-    function select(kind, options, value, onPick, label) {
-      var wrap = document.createElement("label");
-      wrap.className = "locale-field";
-      var name = document.createElement("span");
-      name.className = "u-hidden";
-      name.textContent = label;
-      var sel = document.createElement("select");
-      sel.className = "locale-select";
-      options.forEach(function (opt) {
-        var o = document.createElement("option");
-        o.value = opt.value;
-        o.textContent = opt.text;
-        if (opt.value === value) o.selected = true;
-        sel.appendChild(o);
+    function closeOpen() {
+      if (!openMenu) return;
+      openMenu.btn.setAttribute("aria-expanded", "false");
+      openMenu.wrap.classList.remove("is-open");
+      openMenu = null;
+    }
+    document.addEventListener("click", function (e) {
+      if (openMenu && !openMenu.wrap.contains(e.target)) closeOpen();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && openMenu) {
+        var btn = openMenu.btn;
+        closeOpen();
+        btn.focus();
+      }
+    });
+
+    function picker(kind, options, value, onPick, label) {
+      var wrap = document.createElement("div");
+      wrap.className = "locale-field locale-field--" + kind;
+
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "locale-btn";
+      btn.setAttribute("aria-haspopup", "listbox");
+      btn.setAttribute("aria-expanded", "false");
+      btn.setAttribute("aria-label", label);
+
+      var current = options.filter(function (o) { return o.value === value; })[0];
+      var valueSpan = document.createElement("span");
+      valueSpan.className = "locale-value";
+      valueSpan.textContent = current ? current.text : value;
+      var SVG = "http://www.w3.org/2000/svg";
+      var chev = document.createElementNS(SVG, "svg");
+      chev.setAttribute("class", "locale-chev");
+      chev.setAttribute("viewBox", "0 0 10 6");
+      chev.setAttribute("aria-hidden", "true");
+      chev.setAttribute("focusable", "false");
+      var path = document.createElementNS(SVG, "path");
+      path.setAttribute("d", "M1 1l4 4 4-4");
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "currentColor");
+      chev.appendChild(path);
+      btn.appendChild(valueSpan);
+      btn.appendChild(chev);
+
+      var menu = document.createElement("ul");
+      menu.className = "locale-menu";
+      menu.setAttribute("role", "listbox");
+      menu.setAttribute("aria-label", label);
+      menu.tabIndex = -1;
+
+      var items = options.map(function (opt) {
+        var li = document.createElement("li");
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", opt.value === value ? "true" : "false");
+        li.tabIndex = -1;
+        li.dataset.value = opt.value;
+        li.textContent = opt.text;
+        menu.appendChild(li);
+        return li;
       });
-      sel.addEventListener("change", function () { onPick(sel.value); });
-      wrap.appendChild(name);
-      wrap.appendChild(sel);
+
+      function pick(li) {
+        items.forEach(function (o) {
+          o.setAttribute("aria-selected", o === li ? "true" : "false");
+        });
+        btn.querySelector(".locale-value").textContent = li.textContent;
+        closeOpen();
+        btn.focus();
+        onPick(li.dataset.value);
+      }
+
+      btn.addEventListener("click", function () {
+        var isOpen = openMenu && openMenu.wrap === wrap;
+        closeOpen();
+        if (isOpen) return;
+        wrap.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        openMenu = { wrap: wrap, btn: btn };
+        var sel = items.filter(function (o) {
+          return o.getAttribute("aria-selected") === "true";
+        })[0];
+        (sel || items[0]).focus();
+      });
+
+      menu.addEventListener("click", function (e) {
+        var li = e.target.closest("[role='option']");
+        if (li) pick(li);
+      });
+      menu.addEventListener("keydown", function (e) {
+        var i = items.indexOf(document.activeElement);
+        if (e.key === "ArrowDown") { e.preventDefault(); items[Math.min(i + 1, items.length - 1)].focus(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); items[Math.max(i - 1, 0)].focus(); }
+        else if (e.key === "Home") { e.preventDefault(); items[0].focus(); }
+        else if (e.key === "End") { e.preventDefault(); items[items.length - 1].focus(); }
+        else if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (i >= 0) pick(items[i]);
+        }
+      });
+
+      wrap.appendChild(btn);
+      wrap.appendChild(menu);
       host.appendChild(wrap);
-      return sel;
     }
 
-    select("currency", ORDER.map(function (c) { return { value: c, text: c }; }), cur,
+    picker("currency", ORDER.map(function (c) { return { value: c, text: c }; }), cur,
       function (v) { window.FroziMoney.set(v); }, "Currency");
     /* the language control only appears once translated copy is loaded —
        a toggle that flips direction but leaves English behind is worse than
        no toggle at all */
     if (window.FROZI_AR) {
-      select("lang", Object.keys(LANGS).map(function (l) {
+      picker("lang", Object.keys(LANGS).map(function (l) {
         return { value: l, text: LANGS[l].label };
       }), lang, function (v) { window.FroziLang.set(v); }, "Language");
     }

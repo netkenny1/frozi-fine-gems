@@ -47,7 +47,9 @@
     if (hasParts) {
       /* photographs drift inside their clipped frames; the slight
          over-scale provides the bleed the drift moves through */
-      document.querySelectorAll(".img-frame:not(.stage-photo) img, .category-tile img")
+      /* category tiles are excluded: their photographs hold still, so the
+         row reads instantly instead of drifting */
+      document.querySelectorAll(".img-frame:not(.stage-photo) img")
         .forEach(function (img) {
           img.style.scale = "1.12";
           pxImgs.push({ img: img, frame: img.parentElement, active: false });
@@ -90,9 +92,22 @@
       progress.style.transform = "scaleX(" + (max > 0 ? Math.min(y / max, 1) : 0) + ")";
     }
 
+    /* read every rect first, then write: interleaving the two forces a
+       synchronous re-layout per layer, which is exactly the jank this
+       frame exists to avoid */
     var i, r, t;
+    var layerRects = [];
     for (i = 0; i < layers.length; i++) {
-      r = layers[i].el.getBoundingClientRect();
+      layerRects[i] = layers[i].el.getBoundingClientRect();
+    }
+    var pxRects = [];
+    for (i = 0; i < pxImgs.length; i++) {
+      pxRects[i] = pxImgs[i].active ? pxImgs[i].frame.getBoundingClientRect() : null;
+    }
+    var scrubRect = scrub ? scrub.section.getBoundingClientRect() : null;
+
+    for (i = 0; i < layers.length; i++) {
+      r = layerRects[i];
       var mid = r.top + r.height / 2 - vh / 2;
       layers[i].el.style.transform = "translateY(" + (-mid * layers[i].speed).toFixed(1) + "px)";
       if (layers[i].zoom) {
@@ -102,9 +117,8 @@
     }
 
     for (i = 0; i < pxImgs.length; i++) {
-      if (!pxImgs[i].active) continue;
-      r = pxImgs[i].frame.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > vh) continue;
+      r = pxRects[i];
+      if (!r || r.bottom < 0 || r.top > vh) continue;
       t = (vh - r.top) / (vh + r.height);
       pxImgs[i].img.style.translate = "0 " + ((0.5 - t) * r.height * 0.1).toFixed(1) + "px";
     }
@@ -120,7 +134,7 @@
 
     /* the ledger plate draws at the pace of the reader's own scroll */
     if (scrub) {
-      r = scrub.section.getBoundingClientRect();
+      r = scrubRect;
       if (r.bottom >= 0 && r.top <= vh) {
         var sp = Math.min(Math.max(((vh - r.top) / (vh + r.height) - 0.1) / 0.55, 0), 1);
         for (i = 0; i < scrub.paths.length; i++) {
@@ -188,7 +202,9 @@
             }
           });
         },
-        { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
+        /* fire while the element is still 12% below the fold: the reveal
+           finishes as the reader arrives instead of after */
+        { threshold: 0.01, rootMargin: "0px 0px 12% 0px" }
       );
       observed.forEach(function (el) {
         io.observe(el);
@@ -201,69 +217,13 @@
   }
   var introPlaying = intro && !document.body.classList.contains("no-intro") && !reduceMotion;
   if (introPlaying) {
-    setTimeout(startObserving, 1450);
+    setTimeout(startObserving, 800);
   } else {
     startObserving();
   }
 
-  /* ---- Custom cursor: dot leads, ring follows ---- */
-  if (finePointer && !reduceMotion) {
-    var dot = document.createElement("div");
-    var ring = document.createElement("div");
-    dot.className = "cursor-dot";
-    ring.className = "cursor-ring";
-    dot.setAttribute("aria-hidden", "true");
-    ring.setAttribute("aria-hidden", "true");
-    document.body.appendChild(dot);
-    document.body.appendChild(ring);
-
-    var mx = -100, my = -100, rx = -100, ry = -100;
-    var shown = false;
-
-    document.addEventListener("mousemove", function (e) {
-      mx = e.clientX;
-      my = e.clientY;
-      if (!shown) {
-        shown = true;
-        rx = mx;
-        ry = my;
-        document.body.classList.add("has-cursor");
-      }
-    }, { passive: true });
-
-    document.addEventListener("mouseleave", function () {
-      shown = false;
-      document.body.classList.remove("has-cursor");
-    });
-
-    var HOT = "a, button, summary, input, select, textarea, label, [role='button']";
-    document.addEventListener("mouseover", function (e) {
-      document.body.classList.toggle("cursor-on-link", !!e.target.closest(HOT));
-    }, { passive: true });
-
-    var cursorRaf = 0;
-    function paintCursor() {
-      cursorRaf = 0;
-      if (!shown) return;
-      rx += (mx - rx) * 0.18;
-      ry += (my - ry) * 0.18;
-      if (Math.abs(mx - rx) < 0.1) rx = mx;
-      if (Math.abs(my - ry) < 0.1) ry = my;
-      dot.style.transform = "translate3d(" + mx + "px," + my + "px,0)";
-      ring.style.transform = "translate3d(" + rx + "px," + ry + "px,0)";
-      if (rx !== mx || ry !== my) cursorRaf = requestAnimationFrame(paintCursor);
-    }
-
-    function requestCursorFrame() {
-      if (!cursorRaf) cursorRaf = requestAnimationFrame(paintCursor);
-    }
-
-    document.addEventListener("mousemove", requestCursorFrame, { passive: true });
-    document.addEventListener("mouseleave", function () {
-      if (cursorRaf) cancelAnimationFrame(cursorRaf);
-      cursorRaf = 0;
-    });
-  }
+  /* The cursor is the system cursor. Hover states live in CSS
+     (.btn glow, card lift) — nothing chases the pointer. */
 
   /* ---- 3D tilt: vitrines lean toward the pointer ---- */
   if (finePointer && !reduceMotion) {
@@ -283,26 +243,6 @@
       card.addEventListener("mouseleave", function () {
         card.style.setProperty("--rx", "0deg");
         card.style.setProperty("--ry", "0deg");
-      });
-    });
-  }
-
-  /* ---- Magnetic buttons: drift a few px toward the pointer ---- */
-  if (finePointer && !reduceMotion) {
-    document.querySelectorAll(".btn").forEach(function (btn) {
-      var raf = null;
-      btn.addEventListener("mousemove", function (e) {
-        if (raf) return;
-        raf = requestAnimationFrame(function () {
-          var r = btn.getBoundingClientRect();
-          var x = ((e.clientX - r.left) / r.width - 0.5) * 8;
-          var y = ((e.clientY - r.top) / r.height - 0.5) * 6;
-          btn.style.translate = x.toFixed(1) + "px " + y.toFixed(1) + "px";
-          raf = null;
-        });
-      });
-      btn.addEventListener("mouseleave", function () {
-        btn.style.translate = "0px 0px";
       });
     });
   }
