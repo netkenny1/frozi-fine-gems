@@ -76,6 +76,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* short and long pages keep the same gutter, so the page-to-page
+     crossfade never side-steps when a scrollbar appears */
+  scrollbar-gutter: stable;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -2651,10 +2654,20 @@ form.is-hidden {
   align-items: center;
 }
 
+/* the maison opens on the stone at full height: the turning gem owns the
+   first screen, and the story begins only when the reader leaves it */
+.page-intro--maison {
+  display: grid;
+  align-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding-block: clamp(8rem, 16vh, 11rem) clamp(3.5rem, 9vh, 6rem);
+}
+
 /* the constellation needs room: the house stone with five set around it */
 .gem-mount--intro {
   width: 100%;
-  height: clamp(16rem, 38vh, 24rem);
+  height: clamp(20rem, 56vh, 34rem);
   margin: 0;
 }
 
@@ -2666,7 +2679,7 @@ form.is-hidden {
   /* the constellation is the point of this page now, so it stays on a phone
      (it used to be hidden here when it was a single ambient stone) */
   .gem-mount--intro {
-    height: min(74vw, 22rem);
+    height: min(74vw, 24rem);
     margin-top: 2.5rem;
   }
 }
@@ -3684,6 +3697,43 @@ body::after {
   background-repeat: no-repeat, no-repeat;
   background-position: right -11rem top -9rem, center;
   background-size: 44rem 44rem, auto;
+}
+
+/* ---- Passage between pages ------------------------------------------------
+   Cross-document view transitions: same-origin navigations crossfade
+   instead of cutting. Chrome 126+ / Safari 18.2+; anything else keeps the
+   instant navigation it has today. The global reduced-motion kill-switch
+   can't reach these pseudo-elements, so they get their own off-switch. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
+/* ---- Typesetting the modern way ------------------------------------------
+   balance keeps multi-line headings from stranding one word on the last
+   line; pretty does the same for the paragraphs that matter most. */
+.h2,
+.h3,
+.prov-line,
+.cta-band .h2 {
+  text-wrap: balance;
+}
+
+.lede,
+.vitrine-sub,
+.product-desc {
+  text-wrap: pretty;
 }
 
 /* the same mark on the light band, in the deeper gold the ivory needs */
