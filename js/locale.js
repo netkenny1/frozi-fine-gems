@@ -99,8 +99,21 @@
     return LANGS[saved] ? saved : "en";
   }
 
+  /* Amiri and Tajawal carry the Arabic set the way DM Serif Display and
+     Jost carry the Latin one. Loaded only when Arabic is actually chosen;
+     the inline head snippet does the same for a returning Arabic client,
+     and this guard keeps the link single. */
+  function ensureArabicFonts() {
+    if (document.querySelector('link[href*="Tajawal"]')) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@300;400;500;700&display=swap";
+    document.head.appendChild(link);
+  }
+
   function applyLanguage(code) {
     var lang = LANGS[code] || LANGS.en;
+    if (code === "ar") ensureArabicFonts();
     var root = document.documentElement;
     root.setAttribute("lang", lang.tag);
     root.setAttribute("dir", lang.dir);

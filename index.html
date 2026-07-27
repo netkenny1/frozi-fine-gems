@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-AE">
 <head>
-  <script>document.documentElement.classList.add("js")</script>
+  <script>document.documentElement.classList.add("js");try{if(localStorage.getItem("frozi-lang")==="ar"){var d=document.documentElement;d.setAttribute("lang","ar-AE");d.setAttribute("dir","rtl");d.classList.add("is-rtl");var l=document.createElement("link");l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@300;400;500;700&display=swap";document.head.appendChild(l)}}catch(e){}</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fine Jewelry in Dubai | Frozi Fine Gems</title>
@@ -57,7 +57,7 @@
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body class="home">
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main" data-t="skip">Skip to content</a>
 
   <div class="intro" aria-hidden="true">
     <div class="intro-mark">
@@ -76,17 +76,17 @@
           <img class="wm-word" src="assets/brand/frozi-word.png" alt="" width="759" height="194" decoding="async">
           <span class="u-hidden">Frozi Fine Gems &amp; Jewelry</span>
         </a>
-        <p class="brand-note">Home of Panjshir Emeralds</p>
+        <p class="brand-note" data-t="brand-note">Home of Panjshir Emeralds</p>
       </div>
       <nav aria-label="Main">
         <button class="nav-toggle" aria-expanded="false" aria-label="Menu">
           <span></span><span></span><span></span>
         </button>
         <ul class="nav-links">
-          <li><a class="nav-link" href="collections.html">Collection</a></li>
-          <li><a class="nav-link" href="about.html">The Maison</a></li>
-          <li><a class="nav-link" href="contact.html">Appointments</a></li>
-          <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
+          <li><a class="nav-link" href="collections.html" data-t="nav-collection">Collection</a></li>
+          <li><a class="nav-link" href="about.html" data-t="nav-maison">The Maison</a></li>
+          <li><a class="nav-link" href="contact.html" data-t="nav-appointments">Appointments</a></li>
+          <li><a class="nav-link" href="bag.html"><span data-t="nav-bag">Bag</span><span class="bag-count" data-bag-count hidden>0</span></a></li>
         </ul>
       </nav>
       <div class="locale" data-locale></div>
@@ -107,19 +107,19 @@
       <div class="hero-scrim" aria-hidden="true"></div>
       <div class="wrap hero-grid">
         <div>
-          <span class="eyebrow reveal">Dubai · Panjshir · Made to order</span>
+          <span class="eyebrow reveal" data-t="hero-eyebrow">Dubai · Panjshir · Made to order</span>
           <h1 class="display masked">
-            <span class="lm"><span>Emeralds from</span></span>
-            <span class="lm" style="--i:1"><span>our <em>own</em> valley.</span></span>
+            <span class="lm"><span data-t="hero-l1">Emeralds from</span></span>
+            <span class="lm" style="--i:1"><span data-t="hero-l2">our <em>own</em> valley.</span></span>
           </h1>
-          <p class="lede reveal" style="--i:2">Frozi Fine Gems is a private house in Dubai. Our emeralds come out of the Panjshir, the valley our family is from, and are cut and set here in recycled platinum, one commission at a time.</p>
+          <p class="lede reveal" style="--i:2" data-t="hero-lede">Frozi Fine Gems is a private house in Dubai. Our emeralds come out of the Panjshir, the valley our family is from, and are cut and set here in recycled platinum, one commission at a time.</p>
           <div class="hero-actions reveal" style="--i:3">
-            <a class="btn btn--solid" href="collections.html">View the collection</a>
-            <a class="text-link" href="jewelry-dubai.html">Jewelry in Dubai</a>
+            <a class="btn btn--solid" href="collections.html" data-t="hero-cta">View the collection</a>
+            <a class="text-link" href="jewelry-dubai.html" data-t="link-dubai">Jewelry in Dubai</a>
           </div>
         </div>
       </div>
-      <div class="scroll-cue" aria-hidden="true">Scroll</div>
+      <div class="scroll-cue" aria-hidden="true" data-t="scroll-cue">Scroll</div>
     </section>
 
     <!-- ================= Featured vitrines ================= -->
@@ -127,10 +127,10 @@
       <div class="wrap">
         <div class="section-head reveal">
           <div>
-            <span class="eyebrow">The vitrines</span>
-            <h2 class="h2" id="featured-title">From the current <em>drawings</em></h2>
+            <span class="eyebrow" data-t="vit-eyebrow">The vitrines</span>
+            <h2 class="h2" id="featured-title" data-t="vit-title">From the current <em>drawings</em></h2>
           </div>
-          <a class="text-link" href="collections.html">View all pieces</a>
+          <a class="text-link" href="collections.html" data-t="vit-all">View all pieces</a>
         </div>
 
         <div class="vitrine-grid">
@@ -138,64 +138,64 @@
           <article class="vitrine reveal" data-tilt>
             <div class="vitrine-top">
               <span class="ref">Ref. FG-011</span>
-              <span class="ref">Ring</span>
+              <span class="ref" data-t="ref-ring">Ring</span>
             </div>
             <div class="vitrine-media">
               <img src="assets/img/vipera.jpg" alt="The Vipera Ring, a step-cut emerald in a diamond halo, photographed on white" width="1200" height="1600" loading="lazy" decoding="async">
             </div>
             <h3 class="vitrine-name"><a href="pieces/vipera-emerald-ring/">Vipera Ring</a></h3>
-            <p class="vitrine-sub">Step-cut emerald, diamond halo</p>
+            <p class="vitrine-sub" data-t="vipera-sub">Step-cut emerald, diamond halo</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">AED 12,500</span>
-              <span class="vitrine-cta">View piece</span>
+              <span class="vitrine-cta" data-t="view-piece">View piece</span>
             </div>
           </article>
 
           <article class="vitrine reveal" style="--i:1" data-tilt>
             <div class="vitrine-top">
               <span class="ref">Ref. FG-021</span>
-              <span class="ref">Necklace</span>
+              <span class="ref" data-t="ref-necklace">Necklace</span>
             </div>
             <div class="vitrine-media">
               <img src="assets/img/lumen.jpg" alt="The Lumen Pendant, an emerald drop on a fine chain, resting on deep green cloth" width="1200" height="1200" loading="lazy" decoding="async">
             </div>
             <h3 class="vitrine-name"><a href="pieces/lumen-emerald-pendant/">Lumen Pendant</a></h3>
-            <p class="vitrine-sub">Emerald drop, hand-drawn chain</p>
+            <p class="vitrine-sub" data-t="lumen-sub">Emerald drop, hand-drawn chain</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">AED 10,650</span>
-              <span class="vitrine-cta">View piece</span>
+              <span class="vitrine-cta" data-t="view-piece">View piece</span>
             </div>
           </article>
 
           <article class="vitrine reveal" style="--i:2" data-tilt>
             <div class="vitrine-top">
               <span class="ref">Ref. FG-031</span>
-              <span class="ref">Earrings</span>
+              <span class="ref" data-t="ref-earrings">Earrings</span>
             </div>
             <div class="vitrine-media">
               <img src="assets/img/eos.jpg" alt="The Eos Earrings, pavé chevron drops photographed on black" width="1200" height="800" loading="lazy" decoding="async">
             </div>
             <h3 class="vitrine-name"><a href="pieces/eos-diamond-earrings/">Eos Earrings</a></h3>
-            <p class="vitrine-sub">Chevron pavé, recycled platinum</p>
+            <p class="vitrine-sub" data-t="eos-sub">Chevron pavé, recycled platinum</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">AED 4,250</span>
-              <span class="vitrine-cta">View piece</span>
+              <span class="vitrine-cta" data-t="view-piece">View piece</span>
             </div>
           </article>
 
           <article class="vitrine reveal" style="--i:3" data-tilt>
             <div class="vitrine-top">
               <span class="ref">Ref. FG-041</span>
-              <span class="ref">Bracelet</span>
+              <span class="ref" data-t="ref-bracelet">Bracelet</span>
             </div>
             <div class="vitrine-media">
               <img src="assets/img/sable.jpg" alt="The Sable Cuff, an open pavé cuff on a black reflective surface" width="1200" height="800" loading="lazy" decoding="async">
             </div>
             <h3 class="vitrine-name"><a href="pieces/sable-blackened-platinum-cuff/">Sable Cuff</a></h3>
-            <p class="vitrine-sub">Pavé open cuff, blackened platinum</p>
+            <p class="vitrine-sub" data-t="sable-sub">Pavé open cuff, blackened platinum</p>
             <div class="vitrine-meta">
               <span class="vitrine-price">AED 7,900</span>
-              <span class="vitrine-cta">View piece</span>
+              <span class="vitrine-cta" data-t="view-piece">View piece</span>
             </div>
           </article>
 
@@ -219,8 +219,8 @@
           </div>
         </figure>
         <div class="rt-text">
-          <span class="eyebrow rt-eyebrow">The stone</span>
-          <p class="mf-line rt-manifesto">A small house with a <em>deep</em> green. Every piece drawn by hand, made for the person who asked.</p>
+          <span class="eyebrow rt-eyebrow" data-t="stone-eyebrow">The stone</span>
+          <p class="mf-line rt-manifesto" data-t="manifesto">A small house with a <em>deep</em> green. Every piece drawn by hand, made for the person who asked.</p>
         </div>
       </div>
     </section>
@@ -244,24 +244,24 @@
         <div class="mc-scrim" aria-hidden="true"></div>
         <div class="wrap mc-copy">
           <header class="mc-head">
-            <span class="eyebrow">The method</span>
-            <h2 class="h2" id="method-title">Drawn first, <em>then</em> made</h2>
+            <span class="eyebrow" data-t="method-eyebrow">The method</span>
+            <h2 class="h2" id="method-title" data-t="method-title">Drawn first, <em>then</em> made</h2>
           </header>
           <div class="mc-steps">
             <div class="mc-step" data-mc-step="0">
               <span class="process-numeral" aria-hidden="true">I.</span>
-              <h3 class="h3">The drawing</h3>
-              <p>Each commission starts on paper, graphite then ink. The drawing is numbered, dated, and entered in the maison ledger before any metal is touched. If the drawing isn't right, the piece is never made.</p>
+              <h3 class="h3" data-t="step1-title">The drawing</h3>
+              <p data-t="step1-body">Each commission starts on paper, graphite then ink. The drawing is numbered, dated, and entered in the maison ledger before any metal is touched. If the drawing isn't right, the piece is never made.</p>
             </div>
             <div class="mc-step" data-mc-step="1">
               <span class="process-numeral" aria-hidden="true">II.</span>
-              <h3 class="h3">The setting</h3>
-              <p>Stones are cut to the drawing, not the other way round. We work in Panjshir emeralds and recycled platinum, two materials known deeply, rather than a catalogue known thinly.</p>
+              <h3 class="h3" data-t="step2-title">The setting</h3>
+              <p data-t="step2-body">Stones are cut to the drawing, not the other way round. We work in Panjshir emeralds and recycled platinum, two materials known deeply, rather than a catalogue known thinly.</p>
             </div>
             <div class="mc-step" data-mc-step="2">
               <span class="process-numeral" aria-hidden="true">III.</span>
-              <h3 class="h3">The signature</h3>
-              <p>Every finished piece is engraved with its plate number, the same reference written on its original drawing. Bring the piece back at any time; the ledger remembers it.</p>
+              <h3 class="h3" data-t="step3-title">The signature</h3>
+              <p data-t="step3-body">Every finished piece is engraved with its plate number, the same reference written on its original drawing. Bring the piece back at any time; the ledger remembers it.</p>
             </div>
           </div>
           <div class="mc-counter" aria-hidden="true">
@@ -276,30 +276,30 @@
       <div class="wrap">
         <div class="section-head reveal">
           <div>
-            <span class="eyebrow">The collection</span>
-            <h2 class="h2" id="collection-title">Four forms, <em>one</em> hand</h2>
+            <span class="eyebrow" data-t="coll-eyebrow">The collection</span>
+            <h2 class="h2" id="collection-title" data-t="coll-title">Four forms, <em>one</em> hand</h2>
           </div>
         </div>
         <div class="category-row">
           <a class="category-tile reveal" href="collections.html">
             <img src="assets/img/rings-trio.jpg" alt="Three emerald rings on dark blue" width="1920" height="2886" loading="lazy" decoding="async">
-            <span>Rings</span>
-            <span class="category-count">II pieces</span>
+            <span data-t="cat-rings">Rings</span>
+            <span class="category-count" data-t="cat-count">II pieces</span>
           </a>
           <a class="category-tile reveal" style="--i:1" href="collections.html">
             <img src="assets/img/voss.jpg" alt="A diamond fringe necklace with emerald drops" width="1200" height="800" loading="lazy" decoding="async">
-            <span>Necklaces</span>
-            <span class="category-count">II pieces</span>
+            <span data-t="cat-necklaces">Necklaces</span>
+            <span class="category-count" data-t="cat-count">II pieces</span>
           </a>
           <a class="category-tile reveal" style="--i:2" href="collections.html">
             <img src="assets/img/thalis.jpg" alt="Green teardrop earrings in silver settings" width="1200" height="1200" loading="lazy" decoding="async">
-            <span>Earrings</span>
-            <span class="category-count">II pieces</span>
+            <span data-t="cat-earrings">Earrings</span>
+            <span class="category-count" data-t="cat-count">II pieces</span>
           </a>
           <a class="category-tile reveal" style="--i:3" href="collections.html">
             <img src="assets/img/rill.jpg" alt="A fine diamond line bracelet on black" width="1200" height="675" loading="lazy" decoding="async">
-            <span>Bracelets</span>
-            <span class="category-count">II pieces</span>
+            <span data-t="cat-bracelets">Bracelets</span>
+            <span class="category-count" data-t="cat-count">II pieces</span>
           </a>
         </div>
       </div>
@@ -311,17 +311,17 @@
         <img src="assets/img/glove.jpg" alt="" width="1920" height="2880" loading="lazy" decoding="async">
       </div>
       <div class="wrap quote reveal">
-        <blockquote>“A stone doesn't need to shout. Set it well, and it speaks at exactly the right volume.”</blockquote>
-        <cite>The founder's notebook, p. 14</cite>
+        <blockquote data-t="quote-line">“A stone doesn't need to shout. Set it well, and it speaks at exactly the right volume.”</blockquote>
+        <cite data-t="quote-cite">The founder's notebook, p. 14</cite>
       </div>
     </section>
 
     <!-- ================= Appointment CTA ================= -->
     <section class="section section--light cta-band">
       <div class="wrap reveal">
-        <span class="eyebrow">Appointments</span>
-        <h2 class="h2">The atelier sees six clients a week. <em>Take an hour of it.</em></h2>
-        <a class="btn" href="contact.html">Book an appointment</a>
+        <span class="eyebrow" data-t="cta-eyebrow">Appointments</span>
+        <h2 class="h2" data-t="cta-title">The atelier sees six clients a week. <em>Take an hour of it.</em></h2>
+        <a class="btn" href="contact.html" data-t="cta-btn">Book an appointment</a>
       </div>
     </section>
 
@@ -334,44 +334,45 @@
           <a class="wordmark wordmark--stacked" href="index.html" aria-label="Frozi Fine Gems &amp; Jewelry, home">
             <img class="wm-lockup" src="assets/brand/frozi-lockup.png" alt="Frozi Fine Gems &amp; Jewelry" width="759" height="839" loading="lazy" decoding="async">
           </a>
-          <p class="footer-tag">Fine jewelry in Dubai, quietly made. Emeralds and recycled platinum, drawn and set in a single atelier.</p>
+          <p class="footer-tag" data-t="footer-tag">Fine jewelry in Dubai, quietly made. Emeralds and recycled platinum, drawn and set in a single atelier.</p>
         </div>
         <div class="footer-col">
-          <h4>Visit</h4>
+          <h4 data-t="foot-visit">Visit</h4>
           <ul>
-            <li><a href="collections.html">Collection</a></li>
-            <li><a href="about.html">The Maison</a></li>
-            <li><a href="contact.html">Appointments</a></li>
-            <li><a href="jewelry-dubai.html">Jewelry in Dubai</a></li>
-            <li><a href="policies.html">Orders &amp; care</a></li>
+            <li><a href="collections.html" data-t="nav-collection">Collection</a></li>
+            <li><a href="about.html" data-t="nav-maison">The Maison</a></li>
+            <li><a href="contact.html" data-t="nav-appointments">Appointments</a></li>
+            <li><a href="jewelry-dubai.html" data-t="link-dubai">Jewelry in Dubai</a></li>
+            <li><a href="policies.html" data-t="foot-orders">Orders &amp; care</a></li>
           </ul>
         </div>
         <div class="footer-col">
-          <h4>Pieces</h4>
+          <h4 data-t="foot-pieces">Pieces</h4>
           <ul>
-            <li><a href="collections.html">Rings</a></li>
-            <li><a href="collections.html">Necklaces</a></li>
-            <li><a href="collections.html">Earrings</a></li>
-            <li><a href="collections.html">Bracelets</a></li>
+            <li><a href="collections.html" data-t="cat-rings">Rings</a></li>
+            <li><a href="collections.html" data-t="cat-necklaces">Necklaces</a></li>
+            <li><a href="collections.html" data-t="cat-earrings">Earrings</a></li>
+            <li><a href="collections.html" data-t="cat-bracelets">Bracelets</a></li>
           </ul>
         </div>
         <div class="footer-col">
-          <h4>Atelier</h4>
+          <h4 data-t="foot-atelier">Atelier</h4>
           <ul>
-            <li>Private appointments in Dubai</li>
-            <li>Tue–Sat, 10:00–18:00</li>
+            <li data-t="foot-private">Private appointments in Dubai</li>
+            <li data-t="foot-hours">Tue–Sat, 10:00–18:00</li>
             <li><a href="mailto:atelier@frozifinegems.com">atelier@frozifinegems.com</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-legal">
-        <span>© MMXXVI Frozi Fine Gems. Every piece made to order.</span>
-        <span>Site hand-built. No trackers, no cookies.</span>
+        <span data-t="legal-made">© MMXXVI Frozi Fine Gems. Every piece made to order.</span>
+        <span data-t="legal-built">Site hand-built. No trackers, no cookies.</span>
       </div>
     </div>
   </footer>
 
   <script src="js/store.js" defer></script>
+  <script src="js/i18n-ar.js" defer></script>
   <script src="js/locale.js" defer></script>
   <script src="js/main.js" defer></script>
   <script src="js/gem-model.js" defer></script>

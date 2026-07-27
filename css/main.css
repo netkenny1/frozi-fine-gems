@@ -120,7 +120,7 @@ a {
 .skip-link {
   position: absolute;
   top: -100%;
-  left: 1rem;
+  inset-inline-start: 1rem;
   z-index: 400;
   padding: 0.75rem 1.25rem;
   background: var(--emerald);
@@ -419,13 +419,19 @@ body.no-intro .intro {
   gap: clamp(0.9rem, 1.6vw, 1.6rem);
 }
 
+/* the lockup is images: if the row runs out of room the anchor must not
+   shrink under them, or they'd overflow beneath the provenance line */
+.brand .wordmark {
+  flex-shrink: 0;
+}
+
 /* provenance, not decoration: the valley the emeralds actually come from */
 .brand-note {
   align-self: stretch;
   display: flex;
   align-items: center;
-  padding-left: clamp(0.9rem, 1.6vw, 1.6rem);
-  border-left: 1px solid var(--line-on-dark);
+  padding-inline-start: clamp(0.9rem, 1.6vw, 1.6rem);
+  border-inline-start: 1px solid var(--line-on-dark);
   font-size: 0.625rem;
   font-weight: 400;
   line-height: 1.35;
@@ -441,6 +447,14 @@ body.no-intro .intro {
   .brand-note {
     max-width: 13em;   /* breaks after OF: two lines, never three */
     white-space: normal;
+  }
+}
+
+/* at phone width the toggle, the locale controls and the lockup leave no
+   honest room for the line — it goes, rather than sitting on the logo */
+@media (max-width: 46em) {
+  .brand-note {
+    display: none;
   }
 }
 
@@ -1347,7 +1361,7 @@ body.no-intro .intro {
 .lightbox-close {
   position: absolute;
   top: 1.25rem;
-  right: 1.75rem;
+  inset-inline-end: 1.75rem;
   background: none;
   border: 0;
   padding: 0.5rem;
@@ -1641,7 +1655,7 @@ form.is-hidden {
 
 .detail-list li span:last-child,
 .detail-list > div dd {
-  text-align: right;
+  text-align: end;
   margin: 0;
 }
 
@@ -1845,7 +1859,7 @@ form.is-hidden {
 
   .detail-list li span:last-child,
   .detail-list > div dd {
-    text-align: left;
+    text-align: start;
   }
 
   .detail-list li,
@@ -1949,7 +1963,7 @@ form.is-hidden {
 
 .bag-count {
   display: inline-block;
-  margin-left: 0.5em;
+  margin-inline-start: 0.5em;
   min-width: 1.5em;
   padding: 0.1em 0.35em;
   border: 1px solid var(--jade);
@@ -2096,7 +2110,7 @@ form.is-hidden {
 .bag-row-price {
   font-size: var(--size-small);
   letter-spacing: 0.04em;
-  text-align: right;
+  text-align: end;
 }
 
 .bag-summary {
@@ -2198,7 +2212,7 @@ form.is-hidden {
 
   .bag-row-price {
     grid-column: 2;
-    text-align: left;
+    text-align: start;
   }
 
   .nav-links .bag-count {
@@ -2396,7 +2410,6 @@ form.is-hidden {
    section .has-gem; without WebGL the drawn plate stays. */
 
 .gem-mount {
-  display: none;
   position: relative;
   width: min(26rem, 82vw);
   height: clamp(14rem, 34vh, 20rem);
@@ -2424,10 +2437,6 @@ form.is-hidden {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--sage);
-}
-
-.has-gem .gem-mount {
-  display: block;
 }
 
 .notfound.has-gem .illus {
@@ -2956,7 +2965,7 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   display: grid;
   gap: clamp(1rem, 2.4vh, 1.6rem);
   max-width: 24rem;
-  text-align: left;
+  text-align: start;
 }
 
 .rt-eyebrow {
@@ -3000,7 +3009,7 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
    .mf-line so these values win. */
 .rt-manifesto {
   margin-inline: 0;
-  text-align: left;
+  text-align: start;
   max-width: 18ch;
   font-size: clamp(1.25rem, 2.2vw, 2.1rem);
   line-height: 1.28;
@@ -3105,7 +3114,7 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
 }
 
 .product-assurances > div + div {
-  border-left: 1px solid var(--line-on-dark);
+  border-inline-start: 1px solid var(--line-on-dark);
 }
 
 .product-assurances dt {
@@ -3300,18 +3309,11 @@ body.is-immersive .chapter[data-chapter="5"] .vitrine.is-hot .vitrine-name a {
   color: var(--ivory-dim);
 }
 
-/* shown only once js/gem.js has a live context — the same gate .gem-mount
-   uses, so a page without WebGL shows the key list and no empty shelf */
 .stone-tray {
-  display: none;
   position: relative;
   width: 100%;
   aspect-ratio: 7 / 2.1;
   margin-top: clamp(1.5rem, 4vw, 3rem);
-}
-
-.has-gem .stone-tray {
-  display: block;
 }
 
 /* the felt: the pool of light the stones are laid out on */
@@ -3401,10 +3403,7 @@ html:not(.js) .draw {
 
 /* WebGL hosts have nothing to show without their script: collapse them
    rather than leave a hole where a stone should be */
-html:not(.js) .stone-tray,
-html:not(.js) .gem-mount {
-  display: none;
-}
+/* the stone hosts keep their still, so they are NOT hidden without JS */
 
 /* ---- The locale control (currency, and language once copy exists) --------
    Sits at the end of the nav row. Native selects on purpose: they are
@@ -3428,7 +3427,8 @@ html:not(.js) .gem-mount {
   border: 1px solid transparent;
   border-radius: 0;
   background: transparent;
-  padding: 0.35rem 1.15rem 0.35rem 0.5rem;
+  padding-block: 0.35rem;
+  padding-inline: 0.5rem 1.15rem;
   font-family: var(--font-ui);
   font-size: var(--size-micro);
   font-weight: 500;
@@ -3474,4 +3474,102 @@ html:not(.js) .gem-mount {
     padding-inline: 0.35rem 1rem;
     font-size: 0.6875rem;
   }
+}
+
+/* ---- The stones' still fallback -----------------------------------------
+   The 3D stones are an enhancement, not the content. The still sits in the
+   host from the first paint, so the space is never empty: on a device with no
+   WebGL, a failed shader compile, or a context the browser has dropped, the
+   client still sees the stones. js/gem.js adds .has-gem only once a context
+   is actually live, and that is what hides the still.
+------------------------------------------------------------------------- */
+
+.gem-still {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* the hosts are visible by default now — the still is inside them */
+.gem-mount,
+.stone-tray {
+  display: block;
+}
+
+/* the 404's mount carries no still — its drawn plate below is the fallback
+   there, so that one mount stays hidden until a context is actually live */
+.notfound .gem-mount {
+  display: none;
+}
+
+.notfound.has-gem .gem-mount {
+  display: block;
+}
+
+/* once the canvas is live, the still steps aside (kept in the DOM so it can
+   come back if the context is lost) */
+.has-gem .gem-still {
+  visibility: hidden;
+}
+
+/* no script at all: the still is all there is, and it must show */
+html:not(.js) .gem-still {
+  visibility: visible;
+}
+
+/* ---- Arabic ---------------------------------------------------------------
+   js/locale.js sets dir="rtl" and .is-rtl on the root when the client picks
+   العربية; the inline head snippet restores both before first paint on a
+   return visit. Layout mirrors itself through dir + the logical properties
+   above — what follows is only what CSS cannot mirror on its own.
+
+   Amiri carries the display voice the way DM Serif Display does in Latin;
+   Tajawal carries the chrome the way Jost does. Both arrive via the same
+   Google Fonts origin the Latin faces already use.
+--------------------------------------------------------------------------- */
+
+html.is-rtl {
+  --font-display: "Amiri", "DM Serif Display", serif;
+  --font-ui: "Tajawal", "Jost", sans-serif;
+}
+
+/* Arabic is a joined script: tracking pulls its letters apart mid-word.
+   Zeroed with !important because tracking is set in two dozen rules at
+   every specificity; the intro's FROZI letters stay Latin and keep theirs. */
+html.is-rtl *:not(.intro-mark span) {
+  letter-spacing: 0 !important;
+}
+
+/* Arabic emphasis is not a slant — the accent colour on em carries it */
+html.is-rtl em {
+  font-style: normal;
+}
+
+/* Amiri sits lower on the line than DM Serif Display; give the display
+   sizes a touch more leading so ascenders and dots don't clip */
+html.is-rtl .display,
+html.is-rtl .h2 {
+  line-height: 1.25;
+}
+
+/* transform-origin has no logical form: mirror the reading-direction cues
+   by hand — the scroll progress bar and the nav underline sweep */
+html.is-rtl .progress {
+  transform-origin: right;
+}
+
+html.is-rtl .nav-link::after {
+  transform-origin: left;
+}
+
+html.is-rtl .nav-link:hover::after,
+html.is-rtl .nav-link[aria-current="page"]::after {
+  transform-origin: right;
+}
+
+/* the select chevron is a background image: move it to the inline end */
+html.is-rtl .locale-select {
+  background-position: left 0.22rem top 55%, left 0.5rem top 55%;
 }

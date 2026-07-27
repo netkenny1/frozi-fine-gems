@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en-AE">
 <head>
-  <script>document.documentElement.classList.add("js")</script>
+  <script>document.documentElement.classList.add("js");try{if(localStorage.getItem("frozi-lang")==="ar"){var d=document.documentElement;d.setAttribute("lang","ar-AE");d.setAttribute("dir","rtl");d.classList.add("is-rtl");var l=document.createElement("link");l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@300;400;500;700&display=swap";document.head.appendChild(l)}}catch(e){}</script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Not in the Ledger · Frozi Fine Gems</title>
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main" data-t="skip">Skip to content</a>
 
   <header class="site-header">
     <div class="wrap nav">
@@ -24,17 +24,17 @@
           <img class="wm-word" src="assets/brand/frozi-word.png" alt="" width="759" height="194" decoding="async">
           <span class="u-hidden">Frozi Fine Gems &amp; Jewelry</span>
         </a>
-        <p class="brand-note">Home of Panjshir Emeralds</p>
+        <p class="brand-note" data-t="brand-note">Home of Panjshir Emeralds</p>
       </div>
       <nav aria-label="Main">
         <button class="nav-toggle" aria-expanded="false" aria-label="Menu">
           <span></span><span></span><span></span>
         </button>
         <ul class="nav-links">
-          <li><a class="nav-link" href="collections.html">Collection</a></li>
-          <li><a class="nav-link" href="about.html">The Maison</a></li>
-          <li><a class="nav-link" href="contact.html">Appointments</a></li>
-          <li><a class="nav-link" href="bag.html">Bag<span class="bag-count" data-bag-count hidden>0</span></a></li>
+          <li><a class="nav-link" href="collections.html" data-t="nav-collection">Collection</a></li>
+          <li><a class="nav-link" href="about.html" data-t="nav-maison">The Maison</a></li>
+          <li><a class="nav-link" href="contact.html" data-t="nav-appointments">Appointments</a></li>
+          <li><a class="nav-link" href="bag.html"><span data-t="nav-bag">Bag</span><span class="bag-count" data-bag-count hidden>0</span></a></li>
         </ul>
       </nav>
       <div class="locale" data-locale></div>
@@ -64,6 +64,7 @@
   </main>
 
   <script src="js/store.js" defer></script>
+  <script src="js/i18n-ar.js" defer></script>
   <script src="js/locale.js" defer></script>
   <script src="js/main.js" defer></script>
   <script src="js/gem-model.js" defer></script>
