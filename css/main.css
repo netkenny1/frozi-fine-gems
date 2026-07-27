@@ -108,12 +108,12 @@ a {
 }
 
 ::selection {
-  background: var(--jade);
+  background: rgba(194, 162, 92, 0.32);
   color: var(--ivory);
 }
 
 :focus-visible {
-  outline: 2px solid var(--jade-bright);
+  outline: 2px solid var(--gold);
   outline-offset: 3px;
 }
 
@@ -123,8 +123,8 @@ a {
   inset-inline-start: 1rem;
   z-index: 400;
   padding: 0.75rem 1.25rem;
-  background: var(--emerald);
-  color: var(--ivory);
+  background: var(--gold-lit);
+  color: var(--navy-deep);
   font-size: var(--size-small);
 }
 
@@ -342,7 +342,7 @@ h3 {
   bottom: calc(50% - 3.5em);
   width: min(20rem, 50vw);
   height: 1px;
-  background: var(--jade);
+  background: var(--gold);
   transform: scaleX(0);
   animation: intro-line 0.8s var(--ease-out) 0.25s forwards;
 }
@@ -375,7 +375,7 @@ body.no-intro .intro {
   z-index: 250;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, var(--emerald), var(--jade-bright));
+  background: linear-gradient(90deg, var(--gold), var(--gold-lit));
   transform: scaleX(0);
   transform-origin: left;
   pointer-events: none;
@@ -545,19 +545,22 @@ body.no-intro .intro {
   transition: color 0.45s var(--ease-out), border-color 0.45s var(--ease-out);
 }
 
+/* hover previews the action: the outline fills with the house metal and
+   the label flips to navy. One material per control — the old green fill
+   under a gold border put three colours on one surface */
 .btn::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--emerald);
+  background: var(--gold-lit);
   transform: translateY(101%);
   transition: transform 0.55s var(--ease-out);
 }
 
 .btn:hover {
   border-color: var(--gold-lit);
-  color: var(--ivory);
+  color: var(--navy-deep);
 }
 
 .btn:hover::before {
@@ -588,8 +591,8 @@ body.no-intro .intro {
 }
 
 .section--light .btn:hover {
-  border-color: var(--emerald);
-  color: var(--ivory);
+  border-color: var(--gold-deep);
+  color: var(--navy-deep);
 }
 
 /* ---- The lockup ---------------------------------------------------------
@@ -661,7 +664,7 @@ body.no-intro .intro {
   bottom: 0;
   width: 100%;
   height: 1px;
-  background: var(--jade);
+  background: var(--gold);
   transform-origin: left;
   transition: transform 0.5s var(--ease-out);
 }
@@ -1160,12 +1163,12 @@ body.no-intro .intro {
 }
 
 .chip:hover {
-  border-color: var(--jade);
+  border-color: var(--gold-lit);
 }
 
 .chip[aria-pressed="true"] {
-  background: var(--emerald);
-  border-color: var(--emerald);
+  background: rgba(194, 162, 92, 0.14);
+  border-color: var(--gold-lit);
   color: var(--ivory);
 }
 
@@ -1501,7 +1504,7 @@ body.no-intro .intro {
   content: "";
   width: 2.25rem;
   height: 1px;
-  background: var(--jade);
+  background: var(--gold);
 }
 
 .product-info .eyebrow {
@@ -1554,12 +1557,12 @@ body.no-intro .intro {
 }
 
 .size:hover {
-  border-color: var(--jade);
+  border-color: var(--gold-lit);
 }
 
 .size[aria-pressed="true"] {
-  background: var(--emerald);
-  border-color: var(--emerald);
+  background: rgba(194, 162, 92, 0.14);
+  border-color: var(--gold-lit);
 }
 
 .product-actions {
@@ -1850,7 +1853,7 @@ form.is-hidden {
 }
 
 .footer-col a:hover {
-  color: var(--jade-bright);
+  color: var(--gold-lit);
 }
 
 .footer-legal {
@@ -3517,6 +3520,80 @@ html:not(.js) .draw {
 /* no script at all: the still is all there is, and it must show */
 html:not(.js) .gem-still {
   visibility: visible;
+}
+
+/* ---- The cloth ------------------------------------------------------------
+   Flat hex navy reads as a screen; a house reads as a material. Three
+   quiet layers fix that: a fine grain over everything (paper, not pixels),
+   a slow band of gold glare drifting like light across silk, and a depth
+   vignette so no two screens sit at the same flat value. All of it is
+   pointer-transparent, compositor-only, and off for reduced motion.
+--------------------------------------------------------------------------- */
+
+/* the grain: a turbulence tile at whisper opacity, over chrome and photos
+   alike — one surface, like film. Below the floating panels (250+). */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -1%;
+  z-index: 140;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
+  opacity: 0.05;
+}
+
+/* the glare: a soft gold band that crosses the page the way a lamp moves
+   over satin. One oversized fixed layer, one transform, nothing repaints. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% -40%;
+  z-index: 139;
+  pointer-events: none;
+  background: linear-gradient(112deg,
+    transparent 44%,
+    rgba(194, 162, 92, 0.05) 50%,
+    rgba(232, 214, 168, 0.03) 53%,
+    transparent 60%);
+  animation: glare-drift 36s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes glare-drift {
+  from { transform: translate3d(-14%, 0, 0); }
+  to { transform: translate3d(14%, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+/* the depth: dark sections lighten faintly toward their top edge, so the
+   page has near and far instead of one continuous value */
+.section--dark:not(.section--vitrine) {
+  background-image: radial-gradient(140% 110% at 50% -30%,
+    rgba(46, 56, 70, 0.5), transparent 62%);
+}
+
+/* the watermark: the house's own emerald-cut bezel, drawn once, faint,
+   bleeding off the collection tray like a press mark in the paper */
+.section--vitrine {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M11 7h10l6 6v6l-6 6H11l-6-6v-6z' fill='none' stroke='%23C2A25C' stroke-opacity='0.05' stroke-width='0.3'/%3E%3Cpath d='M14 12h4l3 3v2l-3 3h-4l-3-3v-2z' fill='none' stroke='%23C2A25C' stroke-opacity='0.04' stroke-width='0.25'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, var(--noir-soft), var(--noir));
+  background-repeat: no-repeat, no-repeat;
+  background-position: right -11rem top -9rem, center;
+  background-size: 44rem 44rem, auto;
+}
+
+/* the same mark on the light band, in the deeper gold the ivory needs */
+.cta-band {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M11 7h10l6 6v6l-6 6H11l-6-6v-6z' fill='none' stroke='%23A8863F' stroke-opacity='0.09' stroke-width='0.3'/%3E%3Cpath d='M14 12h4l3 3v2l-3 3h-4l-3-3v-2z' fill='none' stroke='%23A8863F' stroke-opacity='0.07' stroke-width='0.25'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left -10rem bottom -12rem;
+  background-size: 38rem 38rem;
 }
 
 /* ---- Arabic ---------------------------------------------------------------
