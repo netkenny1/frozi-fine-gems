@@ -14,7 +14,9 @@
   --navy: #191f28;          /* measured off the bag */
   --navy-deep: #10151c;
   --gold: #c2a25c;          /* the foil, measured at #b49646, lifted for screen */
-  --gold-deep: #8e7433;
+  --gold-deep: #7d662d; /* solved for 4.76:1 on ivory (AA at button-label
+                           size); same 87° hue, chroma held — was #8e7433
+                           at a failing 3.86:1 */
   --gold-lit: #e8d6a8;      /* the highlight edge of the foil */
 
   --noir: var(--navy);      /* the ground: kept under its old name */
@@ -940,12 +942,17 @@ body.no-intro .intro {
   border: 1px solid var(--line-on-dark);
 }
 
+/* centered label over a veiled photograph — the maisons' category-tile
+   grammar, and visibly NOT the grammar of the product cards above (which
+   anchor name/ref/price to their corners) */
 .form-strip a {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 0.45rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
   min-height: clamp(16rem, 26vw, 22rem);
   padding: clamp(1.25rem, 2vw, 1.75rem);
   overflow: hidden;
@@ -970,15 +977,16 @@ body.no-intro .intro {
     filter 0.9s var(--ease-out);
 }
 
-/* legibility grade: dark at the sill where the name sits */
+/* legibility veil: even in the middle where the name sits, deeper at the
+   edges so each door keeps its own depth */
 .form-media::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    rgba(16, 21, 28, 0.44),
-    rgba(16, 21, 28, 0.14) 42%,
-    rgba(16, 21, 28, 0.82)
+  background: radial-gradient(
+    120% 120% at 50% 50%,
+    rgba(16, 21, 28, 0.36) 30%,
+    rgba(16, 21, 28, 0.68) 100%
   );
 }
 
@@ -991,7 +999,7 @@ body.no-intro .intro {
 .form-name {
   position: relative;
   font-family: var(--font-display);
-  font-size: var(--size-h3);
+  font-size: clamp(1.75rem, 2.8vw, 2.5rem);
   color: var(--ivory);
   transition: color 0.35s var(--ease-out);
 }
@@ -3640,11 +3648,12 @@ html:not(.js) .gem-still {
 }
 
 /* ---- The cloth ------------------------------------------------------------
-   Flat hex navy reads as a screen; a house reads as a material. Three
-   quiet layers fix that: a fine grain over everything (paper, not pixels),
-   a slow band of gold glare drifting like light across silk, and a depth
-   vignette so no two screens sit at the same flat value. All of it is
-   pointer-transparent, compositor-only, and off for reduced motion.
+   Flat hex navy reads as a screen; a house reads as a material. Two quiet
+   layers fix that: a fine grain over everything (paper, not pixels) and a
+   depth vignette so no two screens sit at the same flat value. A drifting
+   gold glare band was tried here and retired — on real content it read as
+   a smudge crossing the page, not as light. All of it is
+   pointer-transparent and compositor-only.
 --------------------------------------------------------------------------- */
 
 /* the grain: a turbulence tile at whisper opacity, over chrome and photos
@@ -3657,34 +3666,6 @@ body::after {
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
   opacity: 0.05;
-}
-
-/* the glare: a soft gold band that crosses the page the way a lamp moves
-   over satin. One oversized fixed layer, one transform, nothing repaints. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -20% -40%;
-  z-index: 139;
-  pointer-events: none;
-  background: linear-gradient(112deg,
-    transparent 44%,
-    rgba(194, 162, 92, 0.05) 50%,
-    rgba(232, 214, 168, 0.03) 53%,
-    transparent 60%);
-  animation: glare-drift 36s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-@keyframes glare-drift {
-  from { transform: translate3d(-14%, 0, 0); }
-  to { transform: translate3d(14%, 0, 0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  body::before {
-    animation: none;
-  }
 }
 
 /* the depth: dark sections lighten faintly toward their top edge, so the
