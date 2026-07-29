@@ -14,6 +14,9 @@
   --navy: #191f28;          /* measured off the bag */
   --navy-deep: #10151c;
   --gold: #c2a25c;          /* the foil, measured at #b49646, lifted for screen */
+  --gold-foil: #b49645;     /* the logo's own gold, sampled off frozi-mark.png —
+                               filled controls wear exactly this so a button
+                               and the lockup read as the same metal */
   --gold-deep: #7d662d; /* solved for 4.76:1 on ivory (AA at button-label
                            size); same 87° hue, chroma held — was #8e7433
                            at a failing 3.86:1 */
@@ -558,13 +561,13 @@ body.no-intro .intro {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--gold-lit);
+  background: var(--gold-foil);
   transform: translateY(101%);
   transition: transform 0.55s var(--ease-out);
 }
 
 .btn:hover {
-  border-color: var(--gold-lit);
+  border-color: var(--gold-foil);
   color: var(--navy-deep);
 }
 
@@ -576,18 +579,19 @@ body.no-intro .intro {
    Green belongs to the stones, not to controls — the old green-with-a-
    gold-edge treatment made the two brand colours compete on one surface */
 .btn--solid {
-  background: var(--gold-lit);
-  border-color: var(--gold-lit);
+  background: var(--gold-foil);
+  border-color: var(--gold-foil);
   color: var(--navy-deep);
 }
 
+/* hover lifts the same foil toward the light — one metal, two angles */
 .btn--solid::before {
-  background: var(--gold-bright, #d8bc7e);
+  background: var(--gold);
 }
 
 .btn--solid:hover {
   color: var(--navy-deep);
-  border-color: #d8bc7e;
+  border-color: var(--gold);
 }
 
 .section--light .btn {
