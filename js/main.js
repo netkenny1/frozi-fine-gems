@@ -247,6 +247,69 @@
     });
   }
 
+  /* ---- Hero plates ---------------------------------------------------
+     Four featured pieces, one per form, crossfading in the hero. The
+     order is curated, not ranked: the house has no sales or review data
+     yet, and inventing "most bought" would be a claim we cannot stand
+     behind. When real order counts exist, sort PLATES by them here.
+     Inactive plates carry `inert`, so they leave the tab order and the
+     accessibility tree instead of lurking invisibly behind the top one. */
+  var rotator = document.querySelector("[data-hero-rotator]");
+  if (rotator) {
+    var plates = [].slice.call(rotator.querySelectorAll(".hero-piece"));
+    var dots = [].slice.call(rotator.querySelectorAll(".hero-dot"));
+    var shownAt = 0;
+    var turn = null;
+    var HOLD = 5400;
+
+    var showPlate = function (next) {
+      shownAt = (next + plates.length) % plates.length;
+      plates.forEach(function (plate, i) {
+        var on = i === shownAt;
+        plate.classList.toggle("is-on", on);
+        if (on) plate.removeAttribute("inert");
+        else plate.setAttribute("inert", "");
+      });
+      dots.forEach(function (dot, i) {
+        dot.classList.toggle("is-on", i === shownAt);
+      });
+    };
+
+    var startTurning = function () {
+      if (reduceMotion || turn) return;
+      turn = setInterval(function () {
+        showPlate(shownAt + 1);
+      }, HOLD);
+    };
+    var stopTurning = function () {
+      if (turn) {
+        clearInterval(turn);
+        turn = null;
+      }
+    };
+
+    dots.forEach(function (dot, i) {
+      dot.addEventListener("click", function () {
+        stopTurning(); /* a deliberate choice outranks the rotation */
+        showPlate(i);
+      });
+    });
+
+    /* hold still while it is being read, and while the tab is in the
+       background — a carousel ticking in a hidden tab is wasted work */
+    rotator.addEventListener("mouseenter", stopTurning);
+    rotator.addEventListener("mouseleave", startTurning);
+    rotator.addEventListener("focusin", stopTurning);
+    rotator.addEventListener("focusout", startTurning);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) stopTurning();
+      else startTurning();
+    });
+
+    showPlate(0);
+    startTurning();
+  }
+
   /* ---- Product stage: photograph <-> plate toggle ---- */
   var stage = document.querySelector(".product-stage");
   var stageToggle = document.querySelector(".stage-toggle");
@@ -287,6 +350,19 @@
   var chipRow = document.querySelector("[data-filter]");
   if (chipRow) {
     var chips = chipRow.querySelectorAll(".chip");
+
+    /* the row swipes sideways on a phone under a feathered trailing edge
+       (see .chip-row mask); drop the feather once there is nothing left
+       to reach, so the last chip is not dimmed for no reason */
+    var markScrollEnd = function () {
+      var atEnd =
+        chipRow.scrollWidth - chipRow.clientWidth - chipRow.scrollLeft <= 1;
+      if (atEnd) chipRow.setAttribute("data-scroll-end", "");
+      else chipRow.removeAttribute("data-scroll-end");
+    };
+    chipRow.addEventListener("scroll", markScrollEnd, { passive: true });
+    window.addEventListener("resize", markScrollEnd);
+    markScrollEnd();
     /* the home page's form strip links here as collections.html?cat=rings:
        arriving with a category pre-applies its chip */
     var wantCat = null;

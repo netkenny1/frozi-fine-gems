@@ -20,7 +20,14 @@ free for commercial use, no attribution required. Attribution kept here anyway.
 | glove.jpg | 35528689 | Rings on a black glove under green light |
 
 ## valley.jpg / valley.webp / valley.avif
+"Panjsher" by Ahmad5shiry (own work), via Wikimedia Commons, CC BY-SA 3.0
+https://commons.wikimedia.org/wiki/File:Panjsher.jpg
+https://creativecommons.org/licenses/by-sa/3.0
+Photographed from Mount Aspeyana, 2012. Changes: resized to 1920px,
+re-encoded as JPEG/WebP/AVIF. As a derivative of a ShareAlike work, these
+three files are themselves offered under CC BY-SA 3.0.
+
+Previously used here (kept for reference, no longer shipped):
 "Panjshir River Valley in May 2011" by Master Sgt. Michael O'Connor
 (U.S. armed forces), via Wikimedia Commons, CC BY 2.0
 https://commons.wikimedia.org/wiki/File:Panjshir_River_Valley_in_May_2011.jpg
-Changes: resized to 1920px, re-encoded as JPEG/WebP/AVIF.
