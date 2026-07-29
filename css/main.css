@@ -810,6 +810,97 @@ body.no-intro .intro {
   filter: drop-shadow(0 0 30px rgba(10, 12, 11, 0.9));
 }
 
+/* ---- The hero plate -------------------------------------------------------
+   The headline claims a valley; this shows what the valley becomes. One
+   piece from the current collection, framed like a vitrine card and held
+   against the landscape. Deliberately no backdrop-filter: the hero photo
+   is animating behind it, and blurring a moving source repaints every
+   frame. A flat navy panel costs nothing and reads the same.
+--------------------------------------------------------------------------- */
+.hero-piece {
+  position: relative;
+  justify-self: end;
+  width: min(100%, 21rem);
+  padding: 0.85rem 0.85rem 1.1rem;
+  background: rgba(16, 21, 28, 0.82);
+  border: 1px solid var(--line-on-dark);
+  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.92);
+  text-decoration: none;
+  transition: transform 0.6s var(--ease-out),
+    border-color 0.4s var(--ease-out);
+}
+
+.hero-piece-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--noir-soft);
+}
+
+.hero-piece-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.84) contrast(1.03) brightness(0.96);
+  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-piece-cap {
+  display: block;
+  padding-top: 0.9rem;
+}
+
+.hero-piece-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.hero-piece-name {
+  display: block;
+  margin: 0.35rem 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--ivory);
+}
+
+.hero-piece-price {
+  font-size: var(--size-small);
+  color: var(--ivory);
+}
+
+.hero-piece-cta {
+  font-size: var(--size-micro);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sage);
+  transition: color 0.4s var(--ease-out);
+}
+
+.hero-piece:hover,
+.hero-piece:focus-visible {
+  transform: translateY(-6px);
+  border-color: var(--gold);
+}
+
+.hero-piece:hover .hero-piece-media img,
+.hero-piece:focus-visible .hero-piece-media img {
+  transform: scale(1.06);
+}
+
+.hero-piece:hover .hero-piece-media::before,
+.hero-piece:focus-visible .hero-piece-media::before {
+  opacity: 0.16;
+}
+
+.hero-piece:hover .hero-piece-cta,
+.hero-piece:focus-visible .hero-piece-cta {
+  color: var(--gold-lit);
+}
+
 .scroll-cue {
   position: absolute;
   bottom: 2.25rem;
@@ -1133,7 +1224,8 @@ body.no-intro .intro {
 /* the photographs arrive from different benches — a navy glaze (multiply:
    it pulls bright backdrops down without crushing the dark ones) and a
    corner vignette seat them all in the same tray */
-.vitrine-media::before {
+.vitrine-media::before,
+.hero-piece-media::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1145,7 +1237,8 @@ body.no-intro .intro {
   transition: opacity 0.9s var(--ease-out);
 }
 
-.vitrine-media::after {
+.vitrine-media::after,
+.hero-piece-media::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -2049,6 +2142,34 @@ form.is-hidden {
     display: none;
   }
 
+  /* stacked, the portrait plate would push the hero past the fold — so it
+     lies down into a featured strip: square crop beside its own caption */
+  .hero-piece {
+    display: grid;
+    grid-template-columns: 6.75rem minmax(0, 1fr);
+    gap: 1.1rem;
+    align-items: center;
+    justify-self: start;
+    width: min(100%, 25rem);
+    margin-top: 2.5rem;
+    padding: 0.7rem;
+  }
+
+  /* the crop stays portrait so a pendant or a ring still reads at
+     thumbnail size — a square crop of a landscape frame loses the piece */
+  .hero-piece-media {
+    aspect-ratio: 4 / 5;
+  }
+
+  .hero-piece-cap {
+    padding-top: 0;
+  }
+
+  .hero-piece-name {
+    margin: 0.2rem 0 0.35rem;
+    font-size: 1.25rem;
+  }
+
   .product-stage-wrap {
     position: static;
   }
@@ -2074,6 +2195,61 @@ form.is-hidden {
   .detail-list > div {
     flex-direction: column;
     gap: 0.2rem;
+  }
+}
+
+/* Phone hero rhythm: the desktop spacing scale, applied to a 390px screen,
+   ran the hero 800px tall inside a 664px viewport — the CTA and the piece
+   both fell below the fold. Tightened here so eyebrow, headline, lede,
+   button and plate all land on the first screen. */
+@media (max-width: 46em) {
+  .hero {
+    padding-block: clamp(6.5rem, 13vh, 8rem) clamp(2.5rem, 6vh, 3.5rem);
+  }
+
+  .hero .eyebrow {
+    margin-bottom: 1.25rem;
+  }
+
+  .hero .display {
+    margin-bottom: 1.4rem;
+  }
+
+  .hero .lede {
+    margin-bottom: 1.75rem;
+    font-size: 1.0625rem;
+  }
+
+  .hero-piece {
+    margin-top: 1.75rem;
+  }
+}
+
+/* Short phones (an old SE is 568px tall): compress the type scale further.
+   The plate still ends a little under the fold on the very smallest
+   screens — that is left deliberately, since a half-seen card is a better
+   invitation to scroll than a hidden one. */
+@media (max-width: 46em) and (max-height: 40em) {
+  .hero {
+    padding-block: 5.25rem 1.75rem;
+  }
+
+  .hero .eyebrow {
+    margin-bottom: 0.85rem;
+  }
+
+  .hero .display {
+    margin-bottom: 1rem;
+    font-size: clamp(1.9rem, 8.5vw, 2.35rem);
+  }
+
+  .hero .lede {
+    margin-bottom: 1.25rem;
+    font-size: 1rem;
+  }
+
+  .hero-piece {
+    margin-top: 1.25rem;
   }
 }
 
