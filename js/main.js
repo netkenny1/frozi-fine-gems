@@ -248,21 +248,32 @@
   }
 
   /* ---- Hero plates ---------------------------------------------------
-     Four featured pieces, one per form, crossfading in the hero. The
-     order is curated, not ranked: the house has no sales or review data
-     yet, and inventing "most bought" would be a claim we cannot stand
-     behind. When real order counts exist, sort PLATES by them here.
-     Inactive plates carry `inert`, so they leave the tab order and the
-     accessibility tree instead of lurking invisibly behind the top one. */
+     Four featured pieces, one per form, running as a deck in the hero.
+     Left to itself it glides one card every few seconds; under a hand it
+     becomes a strip you can pull. The order is curated, not ranked: the
+     house has no sales or review data yet, and inventing "most bought"
+     would be a claim we cannot stand behind. When real order counts
+     exist, sort the plates by them here. Inactive plates carry `inert`,
+     so they leave the tab order and the accessibility tree instead of
+     lurking invisibly behind the top one. */
   var rotator = document.querySelector("[data-hero-rotator]");
   if (rotator) {
     var plates = [].slice.call(rotator.querySelectorAll(".hero-piece"));
     var dots = [].slice.call(rotator.querySelectorAll(".hero-dot"));
     var shownAt = 0;
     var turn = null;
+    var spent = null;
     var HOLD = 5400;
+    /* a pointer resting on the deck holds it still, and has to keep
+       holding it — the settle at the end of a drag asks the rotation to
+       resume, and without a standing flag it would resume under a hand
+       that never left. Only honoured where hover is real: a tap on a
+       phone fires mouseenter too, and would stop the deck for good. */
+    var hovering = false;
+    var canHover = !window.matchMedia || window.matchMedia("(hover: hover)").matches;
 
     var showPlate = function (next) {
+      var leaving = plates[shownAt];
       shownAt = (next + plates.length) % plates.length;
       plates.forEach(function (plate, i) {
         var on = i === shownAt;
@@ -273,10 +284,23 @@
       dots.forEach(function (dot, i) {
         dot.classList.toggle("is-on", i === shownAt);
       });
+
+      /* mark the plate that just stepped down, so CSS can carry it off the
+         way it was travelling instead of dropping it where it stood */
+      plates.forEach(function (plate) {
+        plate.classList.remove("is-off");
+      });
+      if (leaving && leaving !== plates[shownAt]) {
+        leaving.classList.add("is-off");
+        clearTimeout(spent);
+        spent = setTimeout(function () {
+          leaving.classList.remove("is-off");
+        }, 900);
+      }
     };
 
     var startTurning = function () {
-      if (reduceMotion || turn) return;
+      if (reduceMotion || turn || hovering || grabbedAt !== null) return;
       turn = setInterval(function () {
         showPlate(shownAt + 1);
       }, HOLD);
@@ -302,24 +326,34 @@
       });
     });
 
-    /* ---- drag the stack ------------------------------------------------
-       A deck you can push through, not a slider. One pointer path covers
-       mouse, pen and touch:
+    /* ---- drag the strip ------------------------------------------------
+       Two plates laid side by side, a card and a gap apart, moved as one
+       piece of film. One pointer path covers mouse, pen and touch:
 
-         - the held plate follows the hand at half its travel, tilting a
-           degree or two, while the plate you are reaching for slides in
-           from the far edge and grows to size. Both are written on
-           `transform`, leaving the `translate` property free for the idle
-           float so the two never have to be recombined by hand.
+         - the held plate and the one arriving travel together, so the
+           spent piece slides out of the frame and dims on the way rather
+           than tucking in behind the next. Nothing overlaps, which is what
+           kept the old stacked version reading as a printing fault.
+         - the hand is not held to a rail. Vertical movement is followed at
+           a third of its size and eased to a stop, and pulling past a full
+           card meets resistance instead of a wall, so the strip has give
+           in every direction without ever wandering off.
          - release is decided by speed as well as distance: a quick flick
            carries even a short drag, a slow push has to pass roughly a
            fifth of the card.
          - the settle runs on a spring with a little overshoot, so the
-           deck lands rather than stops.
+           strip lands rather than stops.
 
-       CSS `touch-action: pan-y` keeps vertical scrolling intact. */
+       Everything is written on `transform`, leaving the `translate`
+       property free for the idle float so the two never have to be
+       recombined by hand. CSS `touch-action: pan-y` keeps vertical
+       scrolling intact, and `overflow-x: clip` on the stage is what stops
+       an arriving plate from crossing the headline on its way in. */
     var grabbedAt = null;
+    var grabbedUp = 0;
+    var grabbedId = null;
     var travel = 0;
+    var lift = 0;
     var isDragging = false;
     var wasDragged = false;
     var incoming = null;
@@ -329,9 +363,26 @@
     var DRAG_SLOP = 6;
     var FLICK = 0.32;   /* px per ms — above this, direction alone decides */
     var THROW_CAP = 64; /* a long card should not demand a longer push */
+    var GAP = 24;       /* the air between plates on the strip */
+    var RISE = 0.4;     /* how much of a vertical hand movement is followed */
 
     var plateWidth = function () {
       return rotator.clientWidth || 320;
+    };
+
+    /* one card plus its gap: the distance between neighbours on the strip */
+    var stride = function () {
+      return plateWidth() + GAP;
+    };
+
+    /* past `limit` the strip keeps moving but gives ground, approaching
+       limit + give and never reaching it. A hard clamp reads as a broken
+       gesture; this reads as something with weight on the end of it. */
+    var band = function (value, limit, give) {
+      var size = Math.abs(value);
+      if (size <= limit) return value;
+      var over = size - limit;
+      return (value < 0 ? -1 : 1) * (limit + (over * give) / (over + give));
     };
 
     var stepFor = function (delta) {
@@ -346,13 +397,23 @@
       plate.style.zIndex = "";
     };
 
+    var place = function (plate, x, y, tilt, size) {
+      plate.style.transform =
+        "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) rotate(" +
+        tilt.toFixed(2) + "deg) scale(" + size.toFixed(3) + ")";
+    };
+
     var paintDrag = function () {
       paintPending = false;
       if (!isDragging) return;
 
-      var width = plateWidth();
-      var reach = Math.max(-1, Math.min(1, travel / width));
-      var depth = Math.abs(reach);
+      var reach = stride();
+      var way = travel < 0 ? -1 : 1;
+      var slid = band(travel, reach, 130);
+      var risen = band(lift * RISE, 20, 26);
+      var depth = Math.min(1, Math.abs(slid) / reach);
+      var tilt = (slid / reach) * -1.7;
+
       var held = plates[shownAt];
       var wanted = plates[(shownAt + stepFor(travel) + plates.length) % plates.length];
 
@@ -360,28 +421,21 @@
       if (incoming && incoming !== wanted) bareStyle(incoming);
       incoming = wanted;
 
-      /* the held plate is lifted clear; the one beneath is revealed as it
-         goes, rising to size. Both are opaque while dragging (see CSS), so
-         the top card occludes the one under it instead of bleeding
-         through it — two half-transparent cards read as a printing
-         error, not as a deck. */
-      /* the held plate stays solid and simply travels: fading it would let
-         the card underneath read straight through it, which looks like a
-         printing fault rather than a deck. The next piece is uncovered by
-         geometry, and only fades up over the first moment so it does not
-         pop in at the slop threshold. */
+      /* the piece being sent away: solid while it is still the one you are
+         looking at, then dissolving as it goes, so it leaves rather than
+         merely exits. Nothing is stacked under it, so the fade shows the
+         valley through it — the reason the old version could not do this
+         is that it had another card directly behind. */
       held.style.zIndex = "3";
-      held.style.transform =
-        "translate3d(" + (travel * 0.78).toFixed(1) + "px,0,0) rotate(" +
-        (reach * -2.2).toFixed(2) + "deg)";
-      held.style.opacity = "1";
+      place(held, slid, risen, tilt, 1 - depth * 0.04);
+      held.style.opacity = Math.max(0, 1 - Math.max(0, depth - 0.25) * 1.6).toFixed(3);
 
+      /* and the piece arriving, a full card behind it on the same strip.
+         It is opaque the whole way — the frame is what reveals it. */
       if (incoming !== held) {
         incoming.style.zIndex = "2";
-        incoming.style.transform =
-          "translate3d(" + (-travel * 0.06).toFixed(1) + "px,0,0) scale(" +
-          (0.94 + depth * 0.06).toFixed(3) + ")";
-        incoming.style.opacity = Math.min(1, depth * 6).toFixed(3);
+        place(incoming, slid - way * reach, risen, tilt, 0.96 + depth * 0.04);
+        incoming.style.opacity = "1";
       }
     };
 
@@ -395,21 +449,37 @@
 
     rotator.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      grabbedId = e.pointerId;
       grabbedAt = e.clientX;
+      grabbedUp = e.clientY;
       travel = 0;
+      lift = 0;
       isDragging = false;
       recent = [{ x: e.clientX, t: e.timeStamp }];
+      /* catching a strip mid-settle picks it up where it is, rather than
+         waiting for it to finish arriving somewhere */
       if (settleTimer) {
         clearTimeout(settleTimer);
         settleTimer = null;
         rotator.classList.remove("is-settling");
+        plates.forEach(bareStyle);
+        incoming = null;
       }
       stopTurning();
     });
 
-    rotator.addEventListener("pointermove", function (e) {
-      if (grabbedAt === null) return;
+    /* The move and release live on the window, not the deck. A hand moving
+       fast enough can put its first pointermove well outside the card, and
+       pointer capture cannot be claimed until that move arrives — so a
+       listener on the deck alone would miss the quickest throws entirely,
+       and would never hear the release if the hand left the card first,
+       leaving the rotation stopped for good. Capture is still taken once
+       the gesture is real, so the plates keep following a pointer that
+       wanders off the page. */
+    window.addEventListener("pointermove", function (e) {
+      if (grabbedAt === null || e.pointerId !== grabbedId) return;
       travel = e.clientX - grabbedAt;
+      lift = e.clientY - grabbedUp;
 
       /* a short tail of samples is all a throw needs to be measured */
       recent.push({ x: e.clientX, t: e.timeStamp });
@@ -428,8 +498,8 @@
       }
     });
 
-    var releaseDrag = function () {
-      if (grabbedAt === null) return;
+    var releaseDrag = function (e) {
+      if (grabbedAt === null || (e && e.pointerId !== grabbedId)) return;
 
       var thrown = travel;
       var flung = isDragging;
@@ -445,28 +515,73 @@
       recent = [];
       wasDragged = flung && Math.abs(thrown) > DRAG_SLOP;
 
-      /* hand the plates back to CSS and let the spring carry them home */
+      if (!flung) {
+        /* a tap, not a throw: nothing moved, so nothing has to land */
+        startTurning();
+        return;
+      }
+
+      /* Distance decides a slow push; speed decides a quick one. A flick
+         is judged on where the hand was going, not where it stopped — so
+         a fast throw that eases off at the end still commits, and a flick
+         back against the drag is the hand changing its mind and pulls the
+         strip home however far it had already gone. Reading direction from
+         the drag rather than the flick also keeps the landing honest: the
+         plate that slides in has to be the one that was on screen. */
+      var far = Math.abs(thrown) > Math.min(plateWidth() * 0.2, THROW_CAP);
+      var quick = Math.abs(speed) > FLICK && Math.abs(thrown) > DRAG_SLOP;
+      var agrees = (speed < 0) === (thrown < 0);
+      var carried =
+        (quick ? agrees : far) && incoming && incoming !== plates[shownAt];
+
+      /* The spring finishes the journey the hand started. The strip is
+         still one piece, so both plates are given their landing places and
+         CSS carries them there together — the spent one continuing out of
+         the frame, the arriving one coming to rest in the middle. Letting
+         go of the styles here instead would send the spent plate sliding
+         backwards to where it started, which is the one thing a deck must
+         never do. */
+      var reach = stride();
+      var way = thrown < 0 ? -1 : 1;
+      var held = plates[shownAt];
       rotator.classList.remove("is-dragging");
       rotator.classList.add("is-settling");
-      plates.forEach(bareStyle);
-      incoming = null;
+
+      if (carried) {
+        var landing = incoming;
+        place(held, way * reach, 0, 0, 0.96);
+        held.style.opacity = "0";
+        place(landing, 0, 0, 0, 1);
+        landing.style.opacity = "1";
+        /* the labelling — dots, tab order, the accessibility tree —
+           changes now, with the movement, not after it */
+        showPlate(plates.indexOf(landing));
+      } else {
+        place(held, 0, 0, 0, 1);
+        held.style.opacity = "1";
+        if (incoming && incoming !== held) {
+          place(incoming, -way * reach, 0, 0, 0.96);
+          incoming.style.opacity = "0";
+        }
+      }
+
       settleTimer = setTimeout(function () {
+        /* hand the plates back to CSS without the handover itself being
+           animated: cut transitions, clear, force the recalculation, and
+           restore — all inside one tick, so nothing visible changes */
         rotator.classList.remove("is-settling");
+        rotator.classList.add("is-cut");
+        plates.forEach(bareStyle);
+        void rotator.offsetWidth;
+        rotator.classList.remove("is-cut");
+        incoming = null;
         settleTimer = null;
-      }, 700);
-
-      var far = Math.abs(thrown) > Math.min(plateWidth() * 0.2, THROW_CAP);
-      var fast = Math.abs(speed) > FLICK && Math.abs(thrown) > DRAG_SLOP;
-      /* a flick is judged on where the hand was going, not where it ended.
-         Speed carries the same sign as travel, so it is read directly. */
-      var delta = fast ? speed : thrown;
-
-      if (flung && (far || fast)) restartFrom(shownAt + stepFor(delta));
-      else startTurning();
+        startTurning();
+      }, 660);
     };
 
-    rotator.addEventListener("pointerup", releaseDrag);
-    rotator.addEventListener("pointercancel", releaseDrag);
+    window.addEventListener("pointerup", releaseDrag);
+    window.addEventListener("pointercancel", releaseDrag);
 
     /* the same deck by keyboard: arrows step it, and focus follows so the
        next press continues from where you are */
@@ -494,8 +609,15 @@
 
     /* hold still while it is being read, and while the tab is in the
        background — a carousel ticking in a hidden tab is wasted work */
-    rotator.addEventListener("mouseenter", stopTurning);
-    rotator.addEventListener("mouseleave", startTurning);
+    rotator.addEventListener("mouseenter", function () {
+      if (!canHover) return;
+      hovering = true;
+      stopTurning();
+    });
+    rotator.addEventListener("mouseleave", function () {
+      hovering = false;
+      startTurning();
+    });
     rotator.addEventListener("focusin", stopTurning);
     rotator.addEventListener("focusout", startTurning);
     document.addEventListener("visibilitychange", function () {

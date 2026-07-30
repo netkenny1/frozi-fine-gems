@@ -838,6 +838,23 @@ body.no-intro .intro {
   user-select: none;
   -webkit-user-select: none;
   cursor: grab;
+  /* the frame. Cards travel a full width off either side, so without this
+     an incoming plate would cross the headline on its way in. Clipping the
+     horizontal axis only (`clip`, not `hidden`, which would force the other
+     axis to `auto`) leaves the drop shadow and the hover lift free above
+     and below; the margin is wider than the shadow's 7px lateral reach and
+     narrower than the strip's gap, so nothing peeks at rest. */
+  overflow-x: clip;
+  overflow-y: visible;
+  overflow-clip-margin: 0.75rem;
+  /* which way the deck runs. Latin reads left to right, so the next piece
+     arrives from the right and the spent one leaves to the left; Arabic
+     mirrors both. Held as a property so nothing has to fight the cascade. */
+  --glide: 6%;
+}
+
+[dir="rtl"] .hero-plates {
+  --glide: -6%;
 }
 
 .hero-plates img {
@@ -848,14 +865,22 @@ body.no-intro .intro {
   cursor: grabbing;
 }
 
+/* waiting in the wings, a short way off to the arriving side */
 .hero-plates .hero-piece {
   grid-row: 1;
   grid-column: 1;
   opacity: 0;
-  transform: scale(0.985);
+  transform: translate3d(var(--glide), 0, 0) scale(0.985);
   pointer-events: none;
   transition: opacity 0.85s var(--ease-out), transform 0.85s var(--ease-out),
     border-color 0.4s var(--ease-out);
+}
+
+/* the plate the rotation just spent: it carries on the way it was going
+   instead of sinking back where it stood, so an unattended hero still
+   reads as a deck running one direction rather than a dissolve */
+.hero-plates .hero-piece.is-off {
+  transform: translate3d(calc(var(--glide) * -1), 0, 0) scale(0.99);
 }
 
 .hero-plates .hero-piece.is-on {
@@ -888,7 +913,14 @@ body.no-intro .intro {
 
 /* ---- Deck in hand ---------------------------------------------------
    These sit after the resting rules on purpose: they have to outrank the
-   idle float and the hover lift, and equal specificity means last wins. */
+   idle float and the hover lift, and equal specificity means last wins.
+
+   Under the hand the two plates are one strip: the held piece and the one
+   arriving are laid side by side, a full card apart, and the whole strip
+   moves with the pointer. Nothing is ever stacked behind anything, so the
+   spent plate slides out of the frame and dims on its way rather than
+   tucking away underneath — and two cards can never read through one
+   another, which was the failure the earlier stack kept producing. */
 
 /* while a hand is on the deck the script writes every frame — no easing,
    and no float of the plates' own to fight it */
@@ -914,6 +946,15 @@ body.no-intro .intro {
      mid-drag two translucent cards would read through one another, so the
      stack goes solid for as long as it is in motion */
   background-color: var(--navy-deep);
+}
+
+/* the single frame where the script hands the inline styles back. Without
+   it the retired plate would spend 0.85s animating, invisibly, from off
+   stage back to the wings — work nobody sees and the compositor still
+   does. Applied, flushed, and gone in the same tick. */
+.hero-plates.is-cut .hero-piece,
+.hero-plates.is-cut .hero-piece.is-on {
+  transition: none;
 }
 
 .hero-dots {
@@ -958,7 +999,11 @@ html.js .hero-dots {
   padding: 0.85rem 0.85rem 1.1rem;
   background: rgba(16, 21, 28, 0.82);
   border: 1px solid var(--line-on-dark);
-  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.92);
+  /* the cast shadow, then a hairline of light along the top edge — the way
+     a card lying on cloth catches the room. One inset line, no gradient:
+     enough to give the plate a thickness it did not have. */
+  box-shadow: 0 30px 70px -28px rgba(0, 0, 0, 0.92),
+    inset 0 1px 0 rgba(241, 239, 232, 0.07);
   text-decoration: none;
   transition: transform 0.6s var(--ease-out),
     border-color 0.4s var(--ease-out);
@@ -4049,13 +4094,45 @@ html:not(.js) .gem-still {
 }
 
 /* ---- The cloth ------------------------------------------------------------
-   Flat hex navy reads as a screen; a house reads as a material. Two quiet
-   layers fix that: a fine grain over everything (paper, not pixels) and a
-   depth vignette so no two screens sit at the same flat value. A drifting
-   gold glare band was tried here and retired — on real content it read as
-   a smudge crossing the page, not as light. All of it is
-   pointer-transparent and compositor-only.
+   Flat hex navy reads as a screen; a house reads as a material. Three quiet
+   layers fix that: a fine grain over everything (paper, not pixels), a
+   slow weave drifting beneath it, and a depth vignette so no two screens
+   sit at the same flat value. A drifting gold glare band was tried here
+   and retired — on real content it read as a smudge crossing the page, not
+   as light. All of it is pointer-transparent and compositor-only.
 --------------------------------------------------------------------------- */
+
+/* the weave: coarse turbulence, stretched flat so it striates across the
+   screen the way light lies along a bolt of silk, drifting one tile every
+   hundred seconds. Read the retirement note above before touching this —
+   the difference is that the glare was a gold luminance band sweeping
+   through, which the eye tracks as a smudge, and this is neutral, evenly
+   distributed, and never brighter in one place than another. At 0.045 it
+   is below the threshold of notice standing still and only registers as
+   the surface being alive. The tile repeats, and the drift is exactly one
+   tile in each axis, so the loop has no seam and no restart. */
+body::before {
+  content: "";
+  position: fixed;
+  /* a tile of extra material on every side, so translating by one tile
+     can never expose an edge */
+  inset: -240px;
+  z-index: 139;
+  pointer-events: none;
+  /* the filter region is pinned to the tile, not left to the default 10%
+     bleed — `stitchTiles` matches the noise across the region's edges, so
+     if the region is larger than the tile the seams reappear at every
+     repeat, which is exactly what happened the first time */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='w' x='0' y='0' width='240' height='240' filterUnits='userSpaceOnUse'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.007 0.085' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23w)'/%3E%3C/svg%3E");
+  opacity: 0.055;
+  will-change: transform;
+  animation: cloth-drift 100s linear infinite;
+}
+
+@keyframes cloth-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-240px, -240px, 0); }
+}
 
 /* the grain: a turbulence tile at whisper opacity, over chrome and photos
    alike — one surface, like film. Below the floating panels (250+). */

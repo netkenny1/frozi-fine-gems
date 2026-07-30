@@ -154,6 +154,151 @@ const browser = await chromium.launch({
   await page.close();
 }
 
+/* ---- The hero deck, and the cloth behind it -----------------------------
+   The deck is a strip: the held plate and the arriving one sit a card
+   apart and travel together, so the spent piece leaves the frame and
+   dissolves instead of tucking behind the next. Several of the things
+   that make that work are invisible in the source — a cascade order, an
+   SVG filter region, listeners on the window rather than the deck — and
+   each has already been got wrong once. They are pinned here.           */
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.goto(URL);
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => document.body.classList.add("no-intro"));
+  await page.waitForTimeout(600);
+
+  const stage = page.locator("[data-hero-rotator]");
+  const box = await stage.boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  const plates = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll(".hero-piece")].map((p) => {
+        const r = p.getBoundingClientRect();
+        return {
+          on: p.classList.contains("is-on"),
+          left: +r.left.toFixed(1),
+          right: +r.right.toFixed(1),
+          top: +r.top.toFixed(1),
+          opacity: +getComputedStyle(p).opacity,
+        };
+      })
+    );
+  const litIndex = async () => (await plates()).findIndex((p) => p.on);
+
+  /* The frame clips sideways only. `hidden` would force the other axis to
+     `auto` and cut the drop shadow and the hover lift clean off. */
+  const frame = await stage.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { x: s.overflowX, y: s.overflowY };
+  });
+  check(frame.x === "clip" && frame.y === "visible",
+    `the deck frame clips sideways only (${frame.x}/${frame.y})`);
+
+  // Mid-drag: two plates, side by side, never one behind the other
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 9; i++) {
+    await page.mouse.move(cx - i * 20, cy + i * 5);
+    await page.waitForTimeout(20);
+  }
+  const mid = (await plates()).filter((p) => p.opacity > 0.05).sort((a, b) => a.left - b.left);
+  check(mid.length === 2, `two plates are on the strip mid-drag (${mid.length})`);
+  check(mid.length === 2 && mid[0].right <= mid[1].left + 1,
+    "the two never overlap, so neither can read through the other");
+  const lifted = (await plates()).find((p) => p.on).top;
+  check(Math.abs(lifted - box.y) > 3,
+    `the strip gives vertically as well (${(lifted - box.y).toFixed(1)}px)`);
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+
+  const landed = (await plates()).filter((p) => p.opacity > 0.05);
+  check(landed.length === 1 && Math.abs(landed[0].left - box.x) < 2,
+    "the strip lands one plate, centred in the frame");
+  const pinned = await page.evaluate(() =>
+    [...document.querySelectorAll(".hero-piece")].filter((p) => p.getAttribute("style")).length);
+  check(pinned === 0, `the settle hands every plate back to CSS (${pinned} pinned)`);
+
+  /* A hand moving fast enough puts its first pointermove outside the card
+     before capture can be claimed, and may release outside it too. Both
+     are why move and release listen on the window. */
+  const far0 = await litIndex();
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx - 900, cy);
+  await page.waitForTimeout(80);
+  const yanked = (await plates()).find((p) => p.on);
+  const pulled = box.x - yanked.left;
+  check(pulled > 120 && pulled < box.width + 150,
+    `a yank past the card moves the strip but meets resistance (${pulled.toFixed(0)}px)`);
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  check((await litIndex()) === (far0 + 1) % 4,
+    "a throw begun and released away from the card still lands");
+
+  // A flick carries a short drag; a flick back against it pulls home
+  const f0 = await litIndex();
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 4; i++) { await page.mouse.move(cx - i * 11, cy); await page.waitForTimeout(8); }
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  check((await litIndex()) === (f0 + 1) % 4, "a quick flick carries even a short drag");
+
+  const b0 = await litIndex();
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 6; i++) { await page.mouse.move(cx - i * 14, cy); await page.waitForTimeout(16); }
+  for (let i = 5; i >= 1; i--) { await page.mouse.move(cx - i * 14, cy); await page.waitForTimeout(5); }
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  check((await litIndex()) === b0, "a flick back against the drag pulls the strip home");
+
+  /* The cloth: neutral, all but invisible, drifting exactly one tile so
+     the loop has no seam, and never in the way of a pointer. A gold
+     luminance band was tried in this slot once and read as a smudge. */
+  const cloth = await page.evaluate(() => {
+    const s = getComputedStyle(document.body, "::before");
+    const sheet = [...document.styleSheets].find((x) => (x.href || "").includes("main.css"));
+    const kf = [...sheet.cssRules].find(
+      (r) => r.type === CSSRule.KEYFRAMES_RULE && r.name === "cloth-drift");
+    return {
+      opacity: +s.opacity,
+      events: s.pointerEvents,
+      name: s.animationName,
+      seconds: parseFloat(s.animationDuration),
+      gold: /C2A25C|b49645/i.test(s.backgroundImage),
+      region: /filterUnits='userSpaceOnUse'/.test(decodeURIComponent(s.backgroundImage)),
+      loop: kf ? [...kf.cssRules].map((k) => k.style.transform).join(" ") : "",
+    };
+  });
+  check(cloth.opacity > 0 && cloth.opacity <= 0.06,
+    `the cloth stays under the threshold of notice (${cloth.opacity})`);
+  check(cloth.events === "none", "the cloth never intercepts a pointer");
+  check(cloth.name === "cloth-drift" && cloth.seconds >= 60,
+    `the cloth drifts, and slowly (${cloth.seconds}s)`);
+  check(!cloth.gold, "the cloth is neutral — not the gold band that was retired here");
+  check(cloth.region,
+    "the turbulence filter region is pinned to the tile, or the repeat shows seams");
+  check(/-240px,\s*-240px/.test(cloth.loop),
+    `the drift travels exactly one tile, so the loop has no seam (${cloth.loop})`);
+
+  const sideways = await page.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth,
+  }));
+  check(sideways.scroll <= sideways.client + 1,
+    `nothing on the strip pushes the page sideways (${sideways.scroll}/${sideways.client})`);
+
+  check(errors.length === 0, "hero deck: no console errors");
+  if (errors.length) console.log("  errors:", errors.slice(0, 3));
+  await page.close();
+}
+
 /* ---- Reduced motion: everything static, no errors ---------------------- */
 {
   const ctx = await browser.newContext({
