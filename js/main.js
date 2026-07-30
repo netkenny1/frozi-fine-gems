@@ -288,12 +288,96 @@
       }
     };
 
+    /* a deliberate choice wins the moment, then the rotation picks back
+       up from there — it never stops for good */
+    var restartFrom = function (next) {
+      stopTurning();
+      showPlate(next);
+      startTurning();
+    };
+
     dots.forEach(function (dot, i) {
       dot.addEventListener("click", function () {
-        stopTurning(); /* a deliberate choice outranks the rotation */
-        showPlate(i);
+        restartFrom(i);
       });
     });
+
+    /* ---- drag the stack ------------------------------------------------
+       One pointer path covers mouse, pen and touch. The plate follows the
+       hand at a third of its travel (enough to feel connected, not enough
+       to leave its frame), and past 40px it hands over to the next piece.
+       CSS `touch-action: pan-y` keeps vertical scrolling intact. */
+    var grabbedAt = null;
+    var travel = 0;
+    var isDragging = false;
+    var wasDragged = false;
+    var DRAG_SLOP = 6;
+    var DRAG_THROW = 40;
+
+    /* Each plate is a link wrapped round an image, so the browser starts
+       its own native drag as soon as the pointer moves — which fires
+       pointercancel and kills the gesture before it begins. Refusing
+       dragstart is what makes the whole drag possible. */
+    rotator.addEventListener("dragstart", function (e) {
+      e.preventDefault();
+    });
+
+    rotator.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      grabbedAt = e.clientX;
+      travel = 0;
+      isDragging = false;
+      stopTurning();
+    });
+
+    rotator.addEventListener("pointermove", function (e) {
+      if (grabbedAt === null) return;
+      travel = e.clientX - grabbedAt;
+      if (!isDragging && Math.abs(travel) > DRAG_SLOP) {
+        isDragging = true;
+        rotator.classList.add("is-dragging");
+        if (rotator.setPointerCapture) {
+          try { rotator.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+      }
+      if (isDragging) {
+        plates[shownAt].style.translate = (travel * 0.33).toFixed(1) + "px 0";
+      }
+    });
+
+    var releaseDrag = function () {
+      if (grabbedAt === null) return;
+      var thrown = travel;
+      plates[shownAt].style.translate = "";
+      rotator.classList.remove("is-dragging");
+      grabbedAt = null;
+      wasDragged = isDragging && Math.abs(thrown) > DRAG_SLOP;
+      isDragging = false;
+
+      if (Math.abs(thrown) > DRAG_THROW) {
+        /* dragging left reaches for the next plate — mirrored in Arabic */
+        var forward = document.documentElement.dir === "rtl" ? thrown > 0 : thrown < 0;
+        restartFrom(shownAt + (forward ? 1 : -1));
+      } else {
+        startTurning();
+      }
+    };
+
+    rotator.addEventListener("pointerup", releaseDrag);
+    rotator.addEventListener("pointercancel", releaseDrag);
+
+    /* a throw must not also follow the link it started on */
+    rotator.addEventListener(
+      "click",
+      function (e) {
+        if (wasDragged) {
+          e.preventDefault();
+          e.stopPropagation();
+          wasDragged = false;
+        }
+      },
+      true
+    );
 
     /* hold still while it is being read, and while the tab is in the
        background — a carousel ticking in a hidden tab is wasted work */

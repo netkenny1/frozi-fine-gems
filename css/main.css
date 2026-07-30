@@ -830,6 +830,19 @@ body.no-intro .intro {
   gap: 1rem;
   justify-self: end;
   width: min(100%, 21rem);
+  /* horizontal drags turn the stack; vertical ones still scroll the page */
+  touch-action: pan-y;
+  /* nothing to select or ghost-drag while the stack is being turned */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hero-plates img {
+  -webkit-user-drag: none;
+}
+
+.hero-plates.is-dragging {
+  cursor: grabbing;
 }
 
 .hero-plates .hero-piece {
@@ -846,12 +859,34 @@ body.no-intro .intro {
   opacity: 1;
   transform: none;
   pointer-events: auto;
+  /* the lit plate breathes on its own, the way something held loosely
+     never sits perfectly still. This rides the `translate` property, not
+     `transform` — so the crossfade's scale and the hover lift keep their
+     own channel and nothing has to be recombined by hand. */
+  animation: plate-float 7.5s ease-in-out infinite alternate;
+}
+
+@keyframes plate-float {
+  from { translate: 0 -3px; }
+  to { translate: 0 3px; }
+}
+
+/* settle the moment it is touched, held, or dragged */
+.hero-plates .hero-piece.is-on:hover,
+.hero-plates .hero-piece.is-on:focus-visible,
+.hero-plates.is-dragging .hero-piece.is-on {
+  animation-play-state: paused;
 }
 
 /* the hover lift has to out-specify the resting transform above */
 .hero-plates .hero-piece.is-on:hover,
 .hero-plates .hero-piece.is-on:focus-visible {
   transform: translateY(-6px);
+}
+
+/* while a drag is in hand the plate answers the pointer directly */
+.hero-plates.is-dragging .hero-piece.is-on {
+  transition: none;
 }
 
 .hero-dots {
@@ -952,10 +987,12 @@ html.js .hero-dots {
   transition: color 0.4s var(--ease-out);
 }
 
+/* the edge only warms — a full-strength gold line here read as a
+   highlighter stroke around the card */
 .hero-piece:hover,
 .hero-piece:focus-visible {
   transform: translateY(-6px);
-  border-color: var(--gold);
+  border-color: rgba(194, 162, 92, 0.46);
 }
 
 .hero-piece:hover .hero-piece-media img,
