@@ -345,6 +345,10 @@ const sitemapPages = [
   "about.html",
   "contact.html",
   "policies.html",
+  "terms.html",
+  "privacy.html",
+  "returns.html",
+  "shipping.html",
   "catalog.json",
   ...products.map((product) => `pieces/${product.slug}/`)
 ];

@@ -36,6 +36,10 @@ const indexablePages = [
   "about.html",
   "contact.html",
   "policies.html",
+  "terms.html",
+  "privacy.html",
+  "returns.html",
+  "shipping.html",
   ...productPages
 ];
 
@@ -95,6 +99,55 @@ for (const page of indexablePages) {
   }
 }
 check(brokenLinks === 0, "all indexable pages reference existing local files");
+
+/* ---- The legal set ------------------------------------------------------
+   These four carry statements a buyer is entitled to rely on, so they are
+   checked for the specific disclosures rather than merely for existing. */
+const legalPages = ["terms.html", "privacy.html", "returns.html", "shipping.html"];
+for (const page of legalPages) {
+  const body = await text(page);
+  check(
+    body.includes(`<link rel="canonical" href="https://netkenny1.github.io/frozi-fine-gems/${page}">`),
+    `${page} declares its own canonical URL`
+  );
+  check(sitemap.includes(`/${page}<`), `${page} is listed in the sitemap`);
+  check(
+    legalPages.every((other) => page === other || body.includes(`href="${other}"`)),
+    `${page} links to the rest of the legal set`
+  );
+}
+
+/* source HTML wraps mid-sentence, so prose checks read the flattened text */
+const flat = (html) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+
+const terms = flat(await text("terms.html"));
+check(/laws of the United Arab Emirates/i.test(terms) && /Dubai courts/i.test(terms),
+  "terms name the governing law and forum");
+check(/contract is formed when you accept that invoice/i.test(terms),
+  "terms say when a contract is actually formed");
+
+const privacy = await text("privacy.html");
+check(["frozi-bag-v1", "frozi-currency", "frozi-lang"].every((k) => privacy.includes(k)),
+  "privacy names every local-storage key the site writes");
+check(/GitHub Pages/.test(privacy) && /Google Fonts/.test(privacy),
+  "privacy discloses the two third parties that receive an IP address");
+check(/Federal Decree-Law No\. 45 of 2021/.test(privacy),
+  "privacy cites the UAE personal data law it grants rights under");
+
+const returns = await text("returns.html");
+check(/Federal Law No\. 15 of 2020/.test(returns),
+  "returns preserve statutory consumer rights explicitly");
+
+/* the site writes no cookies — the footer claim has to stay true */
+const cookieWriters = [];
+for (const file of ["js/main.js", "js/store.js", "js/locale.js", "js/gem.js"]) {
+  const src = await text(file).catch(() => "");
+  if (/document\.cookie\s*=/.test(src)) cookieWriters.push(file);
+}
+check(cookieWriters.length === 0,
+  cookieWriters.length
+    ? `cookies are set in ${cookieWriters.join(", ")} but the footer says none`
+    : "no script sets a cookie, so the footer claim holds");
 
 console.log(`\n${fail === 0 ? "ALL PASS" : "SOME FAIL"} (${pass} pass, ${fail} fail)`);
 process.exit(fail === 0 ? 0 : 1);

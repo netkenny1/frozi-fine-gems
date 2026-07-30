@@ -4097,6 +4097,78 @@ body::after {
   text-wrap: pretty;
 }
 
+/* ---- Legal pages ----------------------------------------------------------
+   Read, not scanned: one column at a comfortable measure, numbered clauses
+   in the display face, and a standing note at the top for the things that
+   are honestly still open.
+--------------------------------------------------------------------------- */
+.page-intro--legal {
+  padding-bottom: clamp(2rem, 5vh, 3.5rem);
+}
+
+.page-intro--legal .display {
+  font-size: clamp(2.25rem, 4.2vw, 3.5rem);
+}
+
+/* the wrap keeps its own centring and gutters so the column starts exactly
+   under the headline; the measure is held on the blocks inside it */
+.legal-wrap > * {
+  max-width: 44rem;
+}
+
+.legal-note {
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  margin-bottom: clamp(2.5rem, 6vw, 4rem);
+  border: 1px solid var(--line-on-dark);
+  background: rgba(194, 162, 92, 0.05);
+}
+
+.legal-note p + p {
+  margin-top: 0.85rem;
+}
+
+.legal-note strong {
+  color: var(--ivory);
+}
+
+.legal-block + .legal-block {
+  margin-top: clamp(2rem, 4.5vw, 3rem);
+}
+
+.legal-block h2 {
+  margin-bottom: 0.9rem;
+  color: var(--ivory);
+}
+
+.legal-block p + p,
+.legal-block ul + p {
+  margin-top: 0.85rem;
+}
+
+.legal-list {
+  margin: 0.85rem 0 0;
+  padding-inline-start: 1.25rem;
+  list-style: disc;
+}
+
+.legal-list li + li {
+  margin-top: 0.5rem;
+}
+
+.legal-list code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  color: var(--gold-lit);
+}
+
+.legal-updated {
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line-on-dark);
+  font-size: var(--size-small);
+  color: var(--sage);
+}
+
 /* the same mark on the light band, in the deeper gold the ivory needs */
 .cta-band {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M11 7h10l6 6v6l-6 6H11l-6-6v-6z' fill='none' stroke='%23A8863F' stroke-opacity='0.09' stroke-width='0.3'/%3E%3Cpath d='M14 12h4l3 3v2l-3 3h-4l-3-3v-2z' fill='none' stroke='%23A8863F' stroke-opacity='0.07' stroke-width='0.25'/%3E%3C/svg%3E");
