@@ -22,6 +22,19 @@
                            at a failing 3.86:1 */
   --gold-lit: #e8d6a8;      /* the highlight edge of the foil */
 
+  /* Milled gold: the ramp a bar of the metal makes under a light above it.
+     Flat --gold-foil reads as a colour swatch; this reads as a surface.
+     The hue shifts as well as the value — pale and faintly green at the
+     lit edge, warmer and browner in the shadow — because gold lightened
+     and darkened along one hue looks like plastic. The foil's own value
+     sits at 63%, which is where the eye takes the button's colour from,
+     so a filled button and the lockup still read as the same metal. The
+     stops between 36% and 64% are where the label sits: nothing in that
+     band may go dark enough to fail contrast against the navy text. */
+  --gold-milled: linear-gradient(178deg,
+    #e9d3a0 0%, #cdaa62 14%, #bd9e4e 44%,
+    #b49645 63%, #a1833a 84%, #8f7430 100%);
+
   --noir: var(--navy);      /* the ground: kept under its old name */
   --noir-soft: #212934;
   --ivory: #f2eee4;
@@ -563,7 +576,8 @@ body.no-intro .intro {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--gold-foil);
+  background-color: var(--gold-foil);
+  background-image: var(--gold-milled);
   transform: translateY(101%);
   transition: transform 0.55s var(--ease-out);
 }
@@ -577,18 +591,56 @@ body.no-intro .intro {
   transform: translateY(0);
 }
 
-/* the solid button is a bar of the house metal: gold ground, navy text.
+/* The solid button is a bar of the house metal: gold ground, navy text.
    Green belongs to the stones, not to controls — the old green-with-a-
-   gold-edge treatment made the two brand colours compete on one surface */
+   gold-edge treatment made the two brand colours compete on one surface.
+   Three layers make it read as metal rather than as a rectangle of
+   yellow: the milled ramp for the ground, a bevel on the edges, and a
+   specular that crosses it when a cursor does. */
 .btn--solid {
-  background: var(--gold-foil);
+  background-color: var(--gold-foil);
+  background-image: var(--gold-milled);
   border-color: var(--gold-foil);
   color: var(--navy-deep);
 }
 
-/* hover lifts the same foil toward the light — one metal, two angles */
+/* the specular. It replaces the outline button's fill wipe outright —
+   there is nothing to fill here — and sweeps rather than rises, because a
+   highlight travelling across a surface is what tells the eye the surface
+   is polished. Kept to a narrow band and a warm white: a broad one reads
+   as a flash rather than as light. */
 .btn--solid::before {
-  background: var(--gold);
+  background-color: transparent;
+  background-image: linear-gradient(105deg,
+    rgba(255, 249, 231, 0) 28%,
+    rgba(255, 249, 231, 0.4) 41%,
+    rgba(255, 253, 243, 0.82) 50%,
+    rgba(255, 249, 231, 0.4) 59%,
+    rgba(255, 249, 231, 0) 72%);
+  transform: translateX(-118%);
+  /* not --ease-out: that curve is nearly spent in its first third, which
+     sends the highlight across in a blink. A light source passing over a
+     surface travels at something close to an even rate. */
+  transition: transform 0.85s cubic-bezier(0.36, 0.1, 0.28, 1);
+}
+
+.btn--solid:hover::before,
+.btn--solid:focus-visible::before {
+  transform: translateX(118%);
+}
+
+/* the bevel: a hairline of light along the milled top edge and a shadow
+   along the bottom. On its own pseudo-element rather than an inset
+   box-shadow, so the hover glow further down this sheet cannot replace
+   it — box-shadow does not accumulate across rules. */
+.btn--solid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255, 247, 224, 0.5),
+    inset 0 -1px 0 rgba(52, 38, 8, 0.42);
 }
 
 .btn--solid:hover {
@@ -891,12 +943,17 @@ body.no-intro .intro {
      never sits perfectly still. This rides the `translate` property, not
      `transform` — so the crossfade's scale and the hover lift keep their
      own channel and nothing has to be recombined by hand. */
-  animation: plate-float 7.5s ease-in-out infinite alternate;
+  animation: plate-float 9s ease-in-out infinite;
 }
 
+/* the round trip is written into the keyframes rather than left to
+   `alternate`, so the float begins and ends at rest. Starting it away
+   from zero costs a visible hop every time a settle hands the plate back
+   and the animation picks up again mid-air. */
 @keyframes plate-float {
-  from { translate: 0 -3px; }
-  to { translate: 0 3px; }
+  0% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+  100% { translate: 0 0; }
 }
 
 /* settle the moment it is touched or held */
@@ -930,18 +987,25 @@ body.no-intro .intro {
   animation: none;
 }
 
-/* letting go hands them back to CSS: the spring carries a little past the
-   mark and settles, so the deck lands rather than stops */
+/* Letting go hands them back to CSS on three curves, not one. Sideways
+   the strip lands on a spring that carries a little past the mark. The
+   vertical takes noticeably longer and never overshoots — it sinks back
+   rather than snapping, which is what stops the give from reading as a
+   rubber band. It gets its own property, `translate`, purely so it can
+   have its own timing; the two compose without either knowing about the
+   other. Anything changed here must keep the settle window in main.js
+   longer than the slowest of them. */
 .hero-plates.is-settling .hero-piece,
 .hero-plates.is-settling .hero-piece.is-on {
   transition: transform 0.62s var(--ease-spring),
+    translate 0.85s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.42s var(--ease-out);
   animation: none;
 }
 
 .hero-plates.is-dragging .hero-piece,
 .hero-plates.is-settling .hero-piece {
-  will-change: transform, opacity;
+  will-change: transform, translate, opacity;
   /* at rest a plate is faintly translucent and the valley shows through;
      mid-drag two translucent cards would read through one another, so the
      stack goes solid for as long as it is in motion */

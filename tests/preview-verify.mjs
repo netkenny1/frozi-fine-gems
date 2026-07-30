@@ -299,6 +299,97 @@ const browser = await chromium.launch({
   await page.close();
 }
 
+/* ---- The gold button ----------------------------------------------------
+   A filled control is a bar of milled metal: a tonal ramp for the ground
+   and a specular that crosses it on hover. The ramp is the risk — it runs
+   dark toward the bottom edge, and the navy label has to stay legible
+   against every part of it the label actually touches. That is measured
+   here against the real text box rather than eyeballed.               */
+{
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.goto(URL);
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => document.body.classList.add("no-intro"));
+  await page.waitForTimeout(700);
+
+  const gold = await page.evaluate(() => {
+    const el = document.querySelector(".hero-actions .btn--solid");
+    const cs = getComputedStyle(el);
+    const box = el.getBoundingClientRect();
+
+    // where the label really sits, measured rather than assumed
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const text = range.getBoundingClientRect();
+    const from = (text.top - box.top) / box.height;
+    const to = (text.bottom - box.top) / box.height;
+
+    const rgb = (s) => s.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+    const lum = (c) =>
+      c.reduce((acc, v, i) => {
+        const x = v / 255;
+        const l = x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+        return acc + [0.2126, 0.7152, 0.0722][i] * l;
+      }, 0);
+    const ratio = (a, b) => {
+      const [hi, lo] = [Math.max(a, b), Math.min(a, b)];
+      return (hi + 0.05) / (lo + 0.05);
+    };
+
+    // the computed ramp normalises to "rgb(r, g, b) NN%" pairs
+    const stops = [...cs.backgroundImage.matchAll(/rgba?\(([^)]+)\)\s+([\d.]+)%/g)].map((m) => ({
+      colour: rgb(m[1]),
+      at: parseFloat(m[2]) / 100,
+    }));
+    const at = (p) => {
+      if (!stops.length) return null;
+      let lo = stops[0];
+      let hi = stops[stops.length - 1];
+      for (let i = 0; i < stops.length - 1; i++) {
+        if (p >= stops[i].at && p <= stops[i + 1].at) { lo = stops[i]; hi = stops[i + 1]; }
+      }
+      const span = hi.at - lo.at || 1;
+      const t = Math.min(1, Math.max(0, (p - lo.at) / span));
+      return lo.colour.map((c, i) => c + (hi.colour[i] - c) * t);
+    };
+
+    const ink = lum(rgb(cs.color));
+    return {
+      stops: stops.length,
+      band: [+from.toFixed(3), +to.toFixed(3)],
+      top: +ratio(ink, lum(at(from))).toFixed(2),
+      bottom: +ratio(ink, lum(at(to))).toFixed(2),
+      floor: +ratio(ink, lum(at(1))).toFixed(2),
+    };
+  });
+
+  check(gold.stops >= 4, `the filled button carries a milled ramp, not a flat fill (${gold.stops} stops)`);
+  check(gold.top >= 4.5 && gold.bottom >= 4.5,
+    `the label clears AA against the ramp it actually sits on (${gold.top}:1 top, ${gold.bottom}:1 bottom)`);
+
+  /* the specular: parked off one side, crossing to the other on hover,
+     and not on --ease-out, which is all but spent in its first third and
+     fires the highlight across in a blink */
+  const sheen = async () =>
+    page.evaluate(() => {
+      const b = getComputedStyle(document.querySelector(".hero-actions .btn--solid"), "::before");
+      return { x: new DOMMatrix(b.transform).m41, seconds: parseFloat(b.transitionDuration) };
+    });
+  const parked = await sheen();
+  const btnBox = await page.locator(".hero-actions .btn--solid").boundingBox();
+  await page.mouse.move(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
+  await page.waitForTimeout(950);
+  const crossed = await sheen();
+  check(parked.x < -btnBox.width * 0.9,
+    `the specular parks clear of the button (${parked.x.toFixed(0)}px)`);
+  check(crossed.x > btnBox.width * 0.9,
+    `and crosses to the far side on hover (${crossed.x.toFixed(0)}px)`);
+  check(parked.seconds >= 0.6,
+    `the crossing is slow enough to read as light (${parked.seconds}s)`);
+
+  await page.close();
+}
+
 /* ---- Reduced motion: everything static, no errors ---------------------- */
 {
   const ctx = await browser.newContext({

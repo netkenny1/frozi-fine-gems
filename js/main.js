@@ -357,14 +357,18 @@
     var isDragging = false;
     var wasDragged = false;
     var incoming = null;
-    var paintPending = false;
     var settleTimer = null;
+    var frame = null;
+    var lastTick = 0;
+    var wantRise = 0;   /* where the hand has put the vertical */
+    var risen = 0;      /* and where the card has got to, trailing it */
     var recent = [];
     var DRAG_SLOP = 6;
     var FLICK = 0.32;   /* px per ms — above this, direction alone decides */
     var THROW_CAP = 64; /* a long card should not demand a longer push */
     var GAP = 24;       /* the air between plates on the strip */
-    var RISE = 0.4;     /* how much of a vertical hand movement is followed */
+    var RISE = 0.62;    /* how much of a vertical hand movement is followed */
+    var RISE_SPAN = 76; /* and how far it can ever get, approached, not met */
 
     var plateWidth = function () {
       return rotator.clientWidth || 320;
@@ -391,26 +395,47 @@
       return forward ? 1 : -1;
     };
 
+    /* the same idea without the threshold: resistance from the very first
+       pixel, growing smoothly, approaching `span` and never arriving. The
+       banded version above is right for the horizontal, where the card
+       should track the hand exactly until it has gone as far as it can
+       usefully go. Vertically there is no such distance — every pixel is
+       already past useful — so the give has to be there the whole way, or
+       the moment it arrives reads as the card hitting something. */
+    var give = function (value, span) {
+      return (value * span) / (Math.abs(value) + span);
+    };
+
     var bareStyle = function (plate) {
       plate.style.transform = "";
+      /* the vertical rides its own property (see paintDrag); leaving it set
+         would override the idle float, which writes the same one */
+      plate.style.translate = "";
       plate.style.opacity = "";
       plate.style.zIndex = "";
     };
 
-    var place = function (plate, x, y, tilt, size) {
+    /* The two axes are written on two different properties on purpose.
+       `transform` carries the strip — sideways travel, tilt, scale — and
+       `translate` carries the vertical alone, which lets CSS give the
+       vertical its own, slower, softer curve on the way home. They
+       compose without either having to know about the other. */
+    var place = function (plate, x, tilt, size) {
       plate.style.transform =
-        "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) rotate(" +
+        "translate3d(" + x.toFixed(1) + "px,0,0) rotate(" +
         tilt.toFixed(2) + "deg) scale(" + size.toFixed(3) + ")";
     };
 
+    var raise = function (plate, y) {
+      plate.style.translate = "0 " + y.toFixed(1) + "px";
+    };
+
     var paintDrag = function () {
-      paintPending = false;
       if (!isDragging) return;
 
       var reach = stride();
       var way = travel < 0 ? -1 : 1;
       var slid = band(travel, reach, 130);
-      var risen = band(lift * RISE, 20, 26);
       var depth = Math.min(1, Math.abs(slid) / reach);
       var tilt = (slid / reach) * -1.7;
 
@@ -427,16 +452,38 @@
          valley through it — the reason the old version could not do this
          is that it had another card directly behind. */
       held.style.zIndex = "3";
-      place(held, slid, risen, tilt, 1 - depth * 0.04);
+      place(held, slid, tilt, 1 - depth * 0.04);
+      raise(held, risen);
       held.style.opacity = Math.max(0, 1 - Math.max(0, depth - 0.25) * 1.6).toFixed(3);
 
       /* and the piece arriving, a full card behind it on the same strip.
          It is opaque the whole way — the frame is what reveals it. */
       if (incoming !== held) {
         incoming.style.zIndex = "2";
-        place(incoming, slid - way * reach, risen, tilt, 0.96 + depth * 0.04);
+        place(incoming, slid - way * reach, tilt, 0.96 + depth * 0.04);
+        raise(incoming, risen);
         incoming.style.opacity = "1";
       }
+    };
+
+    /* While a hand is down the strip is painted every frame rather than
+       on each pointer event, because the vertical is eased rather than
+       tracked: it runs after the hand with a short time constant, so it
+       flows into place instead of snapping to it, and takes just as long
+       to come back down as it did to rise. That reluctance is the whole
+       feel — a card that returns the instant the hand does reads as
+       rigid. The horizontal is never eased; the axis you are committing
+       on has to stay locked to the finger. */
+    var runDrag = function (now) {
+      if (!isDragging) {
+        frame = null;
+        return;
+      }
+      var since = lastTick ? Math.min(64, now - lastTick) : 16;
+      lastTick = now;
+      risen += (wantRise - risen) * (1 - Math.exp(-since / 95));
+      paintDrag();
+      frame = requestAnimationFrame(runDrag);
     };
 
     /* Each plate is a link wrapped round an image, so the browser starts
@@ -454,6 +501,9 @@
       grabbedUp = e.clientY;
       travel = 0;
       lift = 0;
+      wantRise = 0;
+      risen = 0;
+      lastTick = 0;
       isDragging = false;
       recent = [{ x: e.clientX, t: e.timeStamp }];
       /* catching a strip mid-settle picks it up where it is, rather than
@@ -480,6 +530,7 @@
       if (grabbedAt === null || e.pointerId !== grabbedId) return;
       travel = e.clientX - grabbedAt;
       lift = e.clientY - grabbedUp;
+      wantRise = give(lift * RISE, RISE_SPAN);
 
       /* a short tail of samples is all a throw needs to be measured */
       recent.push({ x: e.clientX, t: e.timeStamp });
@@ -491,10 +542,7 @@
         if (rotator.setPointerCapture) {
           try { rotator.setPointerCapture(e.pointerId); } catch (err) {}
         }
-      }
-      if (isDragging && !paintPending) {
-        paintPending = true;
-        requestAnimationFrame(paintDrag);
+        if (!frame) frame = requestAnimationFrame(runDrag);
       }
     });
 
@@ -514,6 +562,10 @@
       isDragging = false;
       recent = [];
       wasDragged = flung && Math.abs(thrown) > DRAG_SLOP;
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = null;
+      }
 
       if (!flung) {
         /* a tap, not a throw: nothing moved, so nothing has to land */
@@ -547,20 +599,27 @@
       rotator.classList.remove("is-dragging");
       rotator.classList.add("is-settling");
 
+      /* the vertical comes home on its own, slower curve — see the CSS on
+         `.is-settling`. Both plates get it, so the strip stays one piece
+         all the way down. */
+      plates.forEach(function (plate) {
+        if (plate === held || plate === incoming) raise(plate, 0);
+      });
+
       if (carried) {
         var landing = incoming;
-        place(held, way * reach, 0, 0, 0.96);
+        place(held, way * reach, 0, 0.96);
         held.style.opacity = "0";
-        place(landing, 0, 0, 0, 1);
+        place(landing, 0, 0, 1);
         landing.style.opacity = "1";
         /* the labelling — dots, tab order, the accessibility tree —
            changes now, with the movement, not after it */
         showPlate(plates.indexOf(landing));
       } else {
-        place(held, 0, 0, 0, 1);
+        place(held, 0, 0, 1);
         held.style.opacity = "1";
         if (incoming && incoming !== held) {
-          place(incoming, -way * reach, 0, 0, 0.96);
+          place(incoming, -way * reach, 0, 0.96);
           incoming.style.opacity = "0";
         }
       }
@@ -576,8 +635,12 @@
         rotator.classList.remove("is-cut");
         incoming = null;
         settleTimer = null;
+        risen = 0;
+        wantRise = 0;
         startTurning();
-      }, 660);
+        /* held long enough for the vertical to finish, which is the
+           slowest of the three curves the settle runs */
+      }, 900);
     };
 
     window.addEventListener("pointerup", releaseDrag);
