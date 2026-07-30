@@ -303,16 +303,87 @@
     });
 
     /* ---- drag the stack ------------------------------------------------
-       One pointer path covers mouse, pen and touch. The plate follows the
-       hand at a third of its travel (enough to feel connected, not enough
-       to leave its frame), and past 40px it hands over to the next piece.
+       A deck you can push through, not a slider. One pointer path covers
+       mouse, pen and touch:
+
+         - the held plate follows the hand at half its travel, tilting a
+           degree or two, while the plate you are reaching for slides in
+           from the far edge and grows to size. Both are written on
+           `transform`, leaving the `translate` property free for the idle
+           float so the two never have to be recombined by hand.
+         - release is decided by speed as well as distance: a quick flick
+           carries even a short drag, a slow push has to pass roughly a
+           fifth of the card.
+         - the settle runs on a spring with a little overshoot, so the
+           deck lands rather than stops.
+
        CSS `touch-action: pan-y` keeps vertical scrolling intact. */
     var grabbedAt = null;
     var travel = 0;
     var isDragging = false;
     var wasDragged = false;
+    var incoming = null;
+    var paintPending = false;
+    var settleTimer = null;
+    var recent = [];
     var DRAG_SLOP = 6;
-    var DRAG_THROW = 40;
+    var FLICK = 0.32;   /* px per ms — above this, direction alone decides */
+    var THROW_CAP = 64; /* a long card should not demand a longer push */
+
+    var plateWidth = function () {
+      return rotator.clientWidth || 320;
+    };
+
+    var stepFor = function (delta) {
+      /* pushing left reaches for the next plate — mirrored in Arabic */
+      var forward = document.documentElement.dir === "rtl" ? delta > 0 : delta < 0;
+      return forward ? 1 : -1;
+    };
+
+    var bareStyle = function (plate) {
+      plate.style.transform = "";
+      plate.style.opacity = "";
+      plate.style.zIndex = "";
+    };
+
+    var paintDrag = function () {
+      paintPending = false;
+      if (!isDragging) return;
+
+      var width = plateWidth();
+      var reach = Math.max(-1, Math.min(1, travel / width));
+      var depth = Math.abs(reach);
+      var held = plates[shownAt];
+      var wanted = plates[(shownAt + stepFor(travel) + plates.length) % plates.length];
+
+      /* a change of mind mid-drag leaves the old neighbour on screen */
+      if (incoming && incoming !== wanted) bareStyle(incoming);
+      incoming = wanted;
+
+      /* the held plate is lifted clear; the one beneath is revealed as it
+         goes, rising to size. Both are opaque while dragging (see CSS), so
+         the top card occludes the one under it instead of bleeding
+         through it — two half-transparent cards read as a printing
+         error, not as a deck. */
+      /* the held plate stays solid and simply travels: fading it would let
+         the card underneath read straight through it, which looks like a
+         printing fault rather than a deck. The next piece is uncovered by
+         geometry, and only fades up over the first moment so it does not
+         pop in at the slop threshold. */
+      held.style.zIndex = "3";
+      held.style.transform =
+        "translate3d(" + (travel * 0.78).toFixed(1) + "px,0,0) rotate(" +
+        (reach * -2.2).toFixed(2) + "deg)";
+      held.style.opacity = "1";
+
+      if (incoming !== held) {
+        incoming.style.zIndex = "2";
+        incoming.style.transform =
+          "translate3d(" + (-travel * 0.06).toFixed(1) + "px,0,0) scale(" +
+          (0.94 + depth * 0.06).toFixed(3) + ")";
+        incoming.style.opacity = Math.min(1, depth * 6).toFixed(3);
+      }
+    };
 
     /* Each plate is a link wrapped round an image, so the browser starts
        its own native drag as soon as the pointer moves — which fires
@@ -327,12 +398,23 @@
       grabbedAt = e.clientX;
       travel = 0;
       isDragging = false;
+      recent = [{ x: e.clientX, t: e.timeStamp }];
+      if (settleTimer) {
+        clearTimeout(settleTimer);
+        settleTimer = null;
+        rotator.classList.remove("is-settling");
+      }
       stopTurning();
     });
 
     rotator.addEventListener("pointermove", function (e) {
       if (grabbedAt === null) return;
       travel = e.clientX - grabbedAt;
+
+      /* a short tail of samples is all a throw needs to be measured */
+      recent.push({ x: e.clientX, t: e.timeStamp });
+      if (recent.length > 6) recent.shift();
+
       if (!isDragging && Math.abs(travel) > DRAG_SLOP) {
         isDragging = true;
         rotator.classList.add("is-dragging");
@@ -340,31 +422,62 @@
           try { rotator.setPointerCapture(e.pointerId); } catch (err) {}
         }
       }
-      if (isDragging) {
-        plates[shownAt].style.translate = (travel * 0.33).toFixed(1) + "px 0";
+      if (isDragging && !paintPending) {
+        paintPending = true;
+        requestAnimationFrame(paintDrag);
       }
     });
 
     var releaseDrag = function () {
       if (grabbedAt === null) return;
-      var thrown = travel;
-      plates[shownAt].style.translate = "";
-      rotator.classList.remove("is-dragging");
-      grabbedAt = null;
-      wasDragged = isDragging && Math.abs(thrown) > DRAG_SLOP;
-      isDragging = false;
 
-      if (Math.abs(thrown) > DRAG_THROW) {
-        /* dragging left reaches for the next plate — mirrored in Arabic */
-        var forward = document.documentElement.dir === "rtl" ? thrown > 0 : thrown < 0;
-        restartFrom(shownAt + (forward ? 1 : -1));
-      } else {
-        startTurning();
+      var thrown = travel;
+      var flung = isDragging;
+      var oldest = recent[0];
+      var newest = recent[recent.length - 1];
+      var speed = 0;
+      if (oldest && newest && newest.t > oldest.t) {
+        speed = (newest.x - oldest.x) / (newest.t - oldest.t);
       }
+
+      grabbedAt = null;
+      isDragging = false;
+      recent = [];
+      wasDragged = flung && Math.abs(thrown) > DRAG_SLOP;
+
+      /* hand the plates back to CSS and let the spring carry them home */
+      rotator.classList.remove("is-dragging");
+      rotator.classList.add("is-settling");
+      plates.forEach(bareStyle);
+      incoming = null;
+      settleTimer = setTimeout(function () {
+        rotator.classList.remove("is-settling");
+        settleTimer = null;
+      }, 700);
+
+      var far = Math.abs(thrown) > Math.min(plateWidth() * 0.2, THROW_CAP);
+      var fast = Math.abs(speed) > FLICK && Math.abs(thrown) > DRAG_SLOP;
+      /* a flick is judged on where the hand was going, not where it ended.
+         Speed carries the same sign as travel, so it is read directly. */
+      var delta = fast ? speed : thrown;
+
+      if (flung && (far || fast)) restartFrom(shownAt + stepFor(delta));
+      else startTurning();
     };
 
     rotator.addEventListener("pointerup", releaseDrag);
     rotator.addEventListener("pointercancel", releaseDrag);
+
+    /* the same deck by keyboard: arrows step it, and focus follows so the
+       next press continues from where you are */
+    rotator.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      var mirrored = document.documentElement.dir === "rtl";
+      var ahead = mirrored ? e.key === "ArrowLeft" : e.key === "ArrowRight";
+      e.preventDefault();
+      restartFrom(shownAt + (ahead ? 1 : -1));
+      if (dots[shownAt]) dots[shownAt].focus();
+    });
 
     /* a throw must not also follow the link it started on */
     rotator.addEventListener(

@@ -64,6 +64,8 @@
   /* Motion */
   --ease-out: cubic-bezier(0.19, 1, 0.22, 1);
   --ease-draw: cubic-bezier(0.4, 0, 0.2, 1);
+  /* overshoots slightly before settling — for anything thrown by hand */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   --dur-reveal: 1.1s;
   --dur-draw: 1.8s;
 }
@@ -835,6 +837,7 @@ body.no-intro .intro {
   /* nothing to select or ghost-drag while the stack is being turned */
   user-select: none;
   -webkit-user-select: none;
+  cursor: grab;
 }
 
 .hero-plates img {
@@ -871,10 +874,9 @@ body.no-intro .intro {
   to { translate: 0 3px; }
 }
 
-/* settle the moment it is touched, held, or dragged */
+/* settle the moment it is touched or held */
 .hero-plates .hero-piece.is-on:hover,
-.hero-plates .hero-piece.is-on:focus-visible,
-.hero-plates.is-dragging .hero-piece.is-on {
+.hero-plates .hero-piece.is-on:focus-visible {
   animation-play-state: paused;
 }
 
@@ -884,9 +886,34 @@ body.no-intro .intro {
   transform: translateY(-6px);
 }
 
-/* while a drag is in hand the plate answers the pointer directly */
+/* ---- Deck in hand ---------------------------------------------------
+   These sit after the resting rules on purpose: they have to outrank the
+   idle float and the hover lift, and equal specificity means last wins. */
+
+/* while a hand is on the deck the script writes every frame — no easing,
+   and no float of the plates' own to fight it */
+.hero-plates.is-dragging .hero-piece,
 .hero-plates.is-dragging .hero-piece.is-on {
   transition: none;
+  animation: none;
+}
+
+/* letting go hands them back to CSS: the spring carries a little past the
+   mark and settles, so the deck lands rather than stops */
+.hero-plates.is-settling .hero-piece,
+.hero-plates.is-settling .hero-piece.is-on {
+  transition: transform 0.62s var(--ease-spring),
+    opacity 0.42s var(--ease-out);
+  animation: none;
+}
+
+.hero-plates.is-dragging .hero-piece,
+.hero-plates.is-settling .hero-piece {
+  will-change: transform, opacity;
+  /* at rest a plate is faintly translucent and the valley shows through;
+     mid-drag two translucent cards would read through one another, so the
+     stack goes solid for as long as it is in motion */
+  background-color: var(--navy-deep);
 }
 
 .hero-dots {
