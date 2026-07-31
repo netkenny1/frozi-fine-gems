@@ -22,18 +22,23 @@
                            at a failing 3.86:1 */
   --gold-lit: #e8d6a8;      /* the highlight edge of the foil */
 
-  /* Milled gold: the ramp a bar of the metal makes under a light above it.
-     Flat --gold-foil reads as a colour swatch; this reads as a surface.
-     The hue shifts as well as the value — pale and faintly green at the
-     lit edge, warmer and browner in the shadow — because gold lightened
-     and darkened along one hue looks like plastic. The foil's own value
-     sits at 63%, which is where the eye takes the button's colour from,
-     so a filled button and the lockup still read as the same metal. The
-     stops between 36% and 64% are where the label sits: nothing in that
-     band may go dark enough to fail contrast against the navy text. */
-  --gold-milled: linear-gradient(178deg,
-    #e9d3a0 0%, #cdaa62 14%, #bd9e4e 44%,
-    #b49645 63%, #a1833a 84%, #8f7430 100%);
+  /* Polished gold: the bands a bar of the metal makes under a light above
+     it. Flat --gold-foil reads as a colour swatch, and a gentle two-tone
+     ramp reads as matte paint — what makes metal look like metal is the
+     RATE of change, not the range. So the value turns hard and often: a
+     dark lip, a fast climb to a near-white specular in the top quarter, a
+     long fall through the body, then a second weaker bounce low down
+     where light comes back off whatever the bar is sitting on. Hue moves
+     with value, pale and faintly green in the highlight, warm and brown
+     in the shadow; gold moved along one hue looks like plastic.
+     --gold-foil's own value sits at 46%, so a filled button and the
+     lockup still read as the same metal. The stops the label crosses —
+     roughly 33% to 62% — may never go dark enough to fail contrast
+     against the navy text; tests/preview-verify.mjs measures it. */
+  --gold-milled: linear-gradient(174deg,
+    #6f5a20 0%, #a98a3c 7%, #e7d296 17%, #f6ecc4 23%,
+    #cfae5c 33%, #b49645 46%, #a3843a 58%, #c9aa5c 70%,
+    #8a7030 88%, #63501c 100%);
 
   --noir: var(--navy);      /* the ground: kept under its old name */
   --noir-soft: #212934;
@@ -604,29 +609,40 @@ body.no-intro .intro {
   color: var(--navy-deep);
 }
 
-/* the specular. It replaces the outline button's fill wipe outright —
-   there is nothing to fill here — and sweeps rather than rises, because a
-   highlight travelling across a surface is what tells the eye the surface
-   is polished. Kept to a narrow band and a warm white: a broad one reads
-   as a flash rather than as light. */
+/* The glare, and it never stops. A highlight that only appears on hover
+   leaves the button looking painted until someone touches it, which is
+   what read as matte — the thing that says "metal" is light MOVING across
+   a surface while you watch. So it crosses on a long loop: most of the
+   cycle parked off the edge, then one slow, even pass. It replaces the
+   outline button's fill wipe outright, there being nothing here to fill.
+   Kept narrow and warm-white; a broad band reads as a flash, not light.
+   Compositor-only, one small layer, and reduced motion parks it. */
 .btn--solid::before {
   background-color: transparent;
-  background-image: linear-gradient(105deg,
-    rgba(255, 249, 231, 0) 28%,
-    rgba(255, 249, 231, 0.4) 41%,
-    rgba(255, 253, 243, 0.82) 50%,
-    rgba(255, 249, 231, 0.4) 59%,
-    rgba(255, 249, 231, 0) 72%);
-  transform: translateX(-118%);
-  /* not --ease-out: that curve is nearly spent in its first third, which
-     sends the highlight across in a blink. A light source passing over a
-     surface travels at something close to an even rate. */
-  transition: transform 0.85s cubic-bezier(0.36, 0.1, 0.28, 1);
+  background-image: linear-gradient(103deg,
+    rgba(255, 249, 231, 0) 30%,
+    rgba(255, 250, 234, 0.34) 42%,
+    rgba(255, 254, 246, 0.85) 50%,
+    rgba(255, 250, 234, 0.34) 58%,
+    rgba(255, 249, 231, 0) 70%);
+  opacity: 0.72;
+  transform: translateX(-135%);
+  animation: btn-glare 6.5s linear infinite;
+  transition: opacity 0.45s var(--ease-out);
 }
 
+/* the pass takes about two and a half seconds of the six and a half; the
+   rest is the wait, which is what keeps it from reading as a strobe */
+@keyframes btn-glare {
+  0%, 62% { transform: translateX(-135%); }
+  100% { transform: translateX(135%); }
+}
+
+/* hover does not change the speed — retiming an animation mid-cycle makes
+   it jump. It brings the same light up instead. */
 .btn--solid:hover::before,
 .btn--solid:focus-visible::before {
-  transform: translateX(118%);
+  opacity: 1;
 }
 
 /* the bevel: a hairline of light along the milled top edge and a shadow
@@ -639,8 +655,8 @@ body.no-intro .intro {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  box-shadow: inset 0 1px 0 rgba(255, 247, 224, 0.5),
-    inset 0 -1px 0 rgba(52, 38, 8, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 232, 0.72),
+    inset 0 -1px 0 rgba(40, 28, 4, 0.55);
 }
 
 .btn--solid:hover {
@@ -890,15 +906,16 @@ body.no-intro .intro {
   user-select: none;
   -webkit-user-select: none;
   cursor: grab;
-  /* the frame. Cards travel a full width off either side, so without this
-     an incoming plate would cross the headline on its way in. Clipping the
-     horizontal axis only (`clip`, not `hidden`, which would force the other
-     axis to `auto`) leaves the drop shadow and the hover lift free above
-     and below; the margin is wider than the shadow's 7px lateral reach and
-     narrower than the strip's gap, so nothing peeks at rest. */
+  /* The frame. A thrown card carries on the way it was sent, and without
+     this it would sail across the headline on its way out. The margin is
+     the compromise: wide enough that the card visibly clears the frame
+     rather than vanishing at its edge, narrow enough that it never
+     reaches the text. Clipping the horizontal axis only (`clip`, not
+     `hidden`, which would force the other axis to `auto`) leaves the drop
+     shadow, the hover lift, and vertical throws free above and below. */
   overflow-x: clip;
   overflow-y: visible;
-  overflow-clip-margin: 0.75rem;
+  overflow-clip-margin: 2.5rem;
   /* which way the deck runs. Latin reads left to right, so the next piece
      arrives from the right and the spent one leaves to the left; Arabic
      mirrors both. Held as a property so nothing has to fight the cascade. */
@@ -987,25 +1004,31 @@ body.no-intro .intro {
   animation: none;
 }
 
-/* Letting go hands them back to CSS on three curves, not one. Sideways
-   the strip lands on a spring that carries a little past the mark. The
-   vertical takes noticeably longer and never overshoots — it sinks back
-   rather than snapping, which is what stops the give from reading as a
-   rubber band. It gets its own property, `translate`, purely so it can
-   have its own timing; the two compose without either knowing about the
-   other. Anything changed here must keep the settle window in main.js
-   longer than the slowest of them. */
+/* Letting go runs one of two curves, and which one is the whole story.
+   Not thrown: the card comes back under its own weight on a spring that
+   carries a little past centre — it was never going anywhere. Thrown: it
+   leaves, on a curve that starts fast and keeps going, because a card
+   that decelerates into the edge of the frame looks like it was caught
+   rather than released. Both windows are kept shorter than the settle
+   timer in main.js. */
 .hero-plates.is-settling .hero-piece,
 .hero-plates.is-settling .hero-piece.is-on {
-  transition: transform 0.62s var(--ease-spring),
-    translate 0.85s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.42s var(--ease-out);
+  transition: transform 0.5s var(--ease-spring),
+    opacity 0.35s var(--ease-out);
+  animation: none;
+}
+
+.hero-plates.is-throwing .hero-piece,
+.hero-plates.is-throwing .hero-piece.is-on {
+  transition: transform 0.46s cubic-bezier(0.3, 0.05, 0.6, 1),
+    opacity 0.38s ease-out;
   animation: none;
 }
 
 .hero-plates.is-dragging .hero-piece,
-.hero-plates.is-settling .hero-piece {
-  will-change: transform, translate, opacity;
+.hero-plates.is-settling .hero-piece,
+.hero-plates.is-throwing .hero-piece {
+  will-change: transform, opacity;
   /* at rest a plate is faintly translucent and the valley shows through;
      mid-drag two translucent cards would read through one another, so the
      stack goes solid for as long as it is in motion */
@@ -4166,37 +4189,13 @@ html:not(.js) .gem-still {
    as light. All of it is pointer-transparent and compositor-only.
 --------------------------------------------------------------------------- */
 
-/* the weave: coarse turbulence, stretched flat so it striates across the
-   screen the way light lies along a bolt of silk, drifting one tile every
-   hundred seconds. Read the retirement note above before touching this —
-   the difference is that the glare was a gold luminance band sweeping
-   through, which the eye tracks as a smudge, and this is neutral, evenly
-   distributed, and never brighter in one place than another. At 0.045 it
-   is below the threshold of notice standing still and only registers as
-   the surface being alive. The tile repeats, and the drift is exactly one
-   tile in each axis, so the loop has no seam and no restart. */
-body::before {
-  content: "";
-  position: fixed;
-  /* a tile of extra material on every side, so translating by one tile
-     can never expose an edge */
-  inset: -240px;
-  z-index: 139;
-  pointer-events: none;
-  /* the filter region is pinned to the tile, not left to the default 10%
-     bleed — `stitchTiles` matches the noise across the region's edges, so
-     if the region is larger than the tile the seams reappear at every
-     repeat, which is exactly what happened the first time */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='w' x='0' y='0' width='240' height='240' filterUnits='userSpaceOnUse'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.007 0.085' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23w)'/%3E%3C/svg%3E");
-  opacity: 0.055;
-  will-change: transform;
-  animation: cloth-drift 100s linear infinite;
-}
-
-@keyframes cloth-drift {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-240px, -240px, 0); }
-}
+/* A drifting woven texture was tried in this slot and retired, and so was
+   a gold glare band before it. Both failed the same way: a full-screen
+   moving layer competes with the page instead of supporting it — the
+   weave's striations read as clutter over the dark sections, where there
+   is already a vignette, a watermark and the grain doing quiet work. The
+   lesson is that this page's atmosphere belongs in the sections that own
+   it, not in one layer stretched over everything. Do not add a third. */
 
 /* the grain: a turbulence tile at whisper opacity, over chrome and photos
    alike — one surface, like film. Below the floating panels (250+). */

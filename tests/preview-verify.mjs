@@ -154,13 +154,15 @@ const browser = await chromium.launch({
   await page.close();
 }
 
-/* ---- The hero deck, and the cloth behind it -----------------------------
-   The deck is a strip: the held plate and the arriving one sit a card
-   apart and travel together, so the spent piece leaves the frame and
-   dissolves instead of tucking behind the next. Several of the things
-   that make that work are invisible in the source — a cascade order, an
-   SVG filter region, listeners on the window rather than the deck — and
-   each has already been got wrong once. They are pinned here.           */
+/* ---- The hero deck -------------------------------------------------------
+   A deck you throw, not a slider you scrub. The card in hand goes exactly
+   where the hand goes — no smoothing on either axis, because an earlier
+   version eased the vertical and the result read as lag — and a thrown
+   card carries on out of the frame rather than travelling to a mark. The
+   card beneath is revealed by the one above leaving it. Several of the
+   things that make this work are invisible in the source: a cascade
+   order, listeners on the window rather than the deck, and the rule that
+   keeps both cards opaque while they move. They are pinned here.      */
 {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = [];
@@ -178,20 +180,21 @@ const browser = await chromium.launch({
   const plates = () =>
     page.evaluate(() =>
       [...document.querySelectorAll(".hero-piece")].map((p) => {
-        const r = p.getBoundingClientRect();
+        const s = getComputedStyle(p);
+        const m = new DOMMatrix(s.transform);
         return {
           on: p.classList.contains("is-on"),
-          left: +r.left.toFixed(1),
-          right: +r.right.toFixed(1),
-          top: +r.top.toFixed(1),
-          opacity: +getComputedStyle(p).opacity,
+          x: +m.m41.toFixed(1),
+          y: +m.m42.toFixed(1),
+          opacity: +s.opacity,
+          background: s.backgroundColor,
         };
       })
     );
   const litIndex = async () => (await plates()).findIndex((p) => p.on);
 
   /* The frame clips sideways only. `hidden` would force the other axis to
-     `auto` and cut the drop shadow and the hover lift clean off. */
+     `auto` and cut the drop shadow, the hover lift and vertical throws. */
   const frame = await stage.evaluate((el) => {
     const s = getComputedStyle(el);
     return { x: s.overflowX, y: s.overflowY };
@@ -199,29 +202,52 @@ const browser = await chromium.launch({
   check(frame.x === "clip" && frame.y === "visible",
     `the deck frame clips sideways only (${frame.x}/${frame.y})`);
 
-  // Mid-drag: two plates, side by side, never one behind the other
+  /* One to one, both axes, no smoothing. This is the check that would
+     have caught the easing that read as lag. */
   await page.mouse.move(cx, cy);
   await page.mouse.down();
-  for (let i = 1; i <= 9; i++) {
-    await page.mouse.move(cx - i * 20, cy + i * 5);
-    await page.waitForTimeout(20);
-  }
-  const mid = (await plates()).filter((p) => p.opacity > 0.05).sort((a, b) => a.left - b.left);
-  check(mid.length === 2, `two plates are on the strip mid-drag (${mid.length})`);
-  check(mid.length === 2 && mid[0].right <= mid[1].left + 1,
-    "the two never overlap, so neither can read through the other");
-  const lifted = (await plates()).find((p) => p.on).top;
-  check(Math.abs(lifted - box.y) > 3,
-    `the strip gives vertically as well (${(lifted - box.y).toFixed(1)}px)`);
-  await page.mouse.up();
-  await page.waitForTimeout(900);
+  await page.mouse.move(cx - 40, cy - 25);
+  await page.mouse.move(cx - 90, cy - 60);
+  await page.waitForTimeout(60);
+  const held = (await plates()).find((p) => p.on);
+  check(Math.abs(held.x + 90) < 1.5 && Math.abs(held.y + 60) < 1.5,
+    `the card sits exactly under the hand (${held.x}, ${held.y} for a hand at -90, -60)`);
 
+  /* Both cards opaque while they move, or the one behind reads straight
+     through the one in front and the two captions collide. */
+  const moving = (await plates()).filter((p) => p.opacity > 0.05);
+  check(moving.length === 2, `two cards are in play mid-drag (${moving.length})`);
+  /* an opaque computed colour serialises as rgb(); anything translucent
+     comes back as rgba(), which is the failure being guarded against */
+  check(moving.every((p) => p.opacity === 1 && p.background.indexOf("rgba") === -1),
+    `neither card is see-through while it moves (${moving.map((p) => p.background).join(", ")})`);
+
+  await page.mouse.up();
+  /* off the card before measuring: a cursor left resting on it holds the
+     6px hover lift, which is not the deck failing to sit square */
+  await page.mouse.move(10, 10);
+  await page.waitForTimeout(800);
   const landed = (await plates()).filter((p) => p.opacity > 0.05);
-  check(landed.length === 1 && Math.abs(landed[0].left - box.x) < 2,
-    "the strip lands one plate, centred in the frame");
+  check(landed.length === 1 && Math.abs(landed[0].x) < 1 && Math.abs(landed[0].y) < 1,
+    `one card is left, sitting square (${landed.length} at ${landed.map((p) => p.x + "," + p.y).join(" ")})`);
   const pinned = await page.evaluate(() =>
     [...document.querySelectorAll(".hero-piece")].filter((p) => p.getAttribute("style")).length);
-  check(pinned === 0, `the settle hands every plate back to CSS (${pinned} pinned)`);
+  check(pinned === 0, `the settle hands every card back to CSS (${pinned} pinned)`);
+
+  /* A thrown card must keep going the way it was sent. Sampled while the
+     throw is still running, since it is gone by the end of it. */
+  const t0 = await litIndex();
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 6; i++) { await page.mouse.move(cx - i * 26, cy - i * 8); await page.waitForTimeout(12); }
+  const atRelease = (await plates()).find((p) => p.on).x;
+  await page.mouse.up();
+  await page.waitForTimeout(220);
+  const leaving = (await plates()).find((p, i) => i === t0);
+  check(leaving.x < atRelease - 60,
+    `a thrown card carries on out rather than stopping (${atRelease} to ${leaving.x})`);
+  await page.waitForTimeout(700);
+  check((await litIndex()) === (t0 + 1) % 4, "and the card beneath takes its place");
 
   /* A hand moving fast enough puts its first pointermove outside the card
      before capture can be claimed, and may release outside it too. Both
@@ -230,24 +256,22 @@ const browser = await chromium.launch({
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   await page.mouse.move(cx - 900, cy);
-  await page.waitForTimeout(80);
+  await page.waitForTimeout(60);
   const yanked = (await plates()).find((p) => p.on);
-  const pulled = box.x - yanked.left;
-  check(pulled > 120 && pulled < box.width + 150,
-    `a yank past the card moves the strip but meets resistance (${pulled.toFixed(0)}px)`);
+  check(Math.abs(yanked.x + 900) < 2,
+    `a single fast jump still moves the card (${yanked.x})`);
   await page.mouse.up();
   await page.waitForTimeout(900);
   check((await litIndex()) === (far0 + 1) % 4,
     "a throw begun and released away from the card still lands");
 
-  // A flick carries a short drag; a flick back against it pulls home
   const f0 = await litIndex();
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   for (let i = 1; i <= 4; i++) { await page.mouse.move(cx - i * 11, cy); await page.waitForTimeout(8); }
   await page.mouse.up();
   await page.waitForTimeout(900);
-  check((await litIndex()) === (f0 + 1) % 4, "a quick flick carries even a short drag");
+  check((await litIndex()) === (f0 + 1) % 4, "a quick flick throws even a short drag");
 
   const b0 = await litIndex();
   await page.mouse.move(cx, cy);
@@ -256,43 +280,24 @@ const browser = await chromium.launch({
   for (let i = 5; i >= 1; i--) { await page.mouse.move(cx - i * 14, cy); await page.waitForTimeout(5); }
   await page.mouse.up();
   await page.waitForTimeout(900);
-  check((await litIndex()) === b0, "a flick back against the drag pulls the strip home");
+  check((await litIndex()) === b0, "a flick back against the drag brings the card home");
 
-  /* The cloth: neutral, all but invisible, drifting exactly one tile so
-     the loop has no seam, and never in the way of a pointer. A gold
-     luminance band was tried in this slot once and read as a smudge. */
-  const cloth = await page.evaluate(() => {
+  /* A full-screen drifting texture was tried behind all this and retired:
+     it read as clutter over the dark sections. Nothing should have taken
+     its place. */
+  const layer = await page.evaluate(() => {
     const s = getComputedStyle(document.body, "::before");
-    const sheet = [...document.styleSheets].find((x) => (x.href || "").includes("main.css"));
-    const kf = [...sheet.cssRules].find(
-      (r) => r.type === CSSRule.KEYFRAMES_RULE && r.name === "cloth-drift");
-    return {
-      opacity: +s.opacity,
-      events: s.pointerEvents,
-      name: s.animationName,
-      seconds: parseFloat(s.animationDuration),
-      gold: /C2A25C|b49645/i.test(s.backgroundImage),
-      region: /filterUnits='userSpaceOnUse'/.test(decodeURIComponent(s.backgroundImage)),
-      loop: kf ? [...kf.cssRules].map((k) => k.style.transform).join(" ") : "",
-    };
+    return { content: s.content, name: s.animationName };
   });
-  check(cloth.opacity > 0 && cloth.opacity <= 0.06,
-    `the cloth stays under the threshold of notice (${cloth.opacity})`);
-  check(cloth.events === "none", "the cloth never intercepts a pointer");
-  check(cloth.name === "cloth-drift" && cloth.seconds >= 60,
-    `the cloth drifts, and slowly (${cloth.seconds}s)`);
-  check(!cloth.gold, "the cloth is neutral — not the gold band that was retired here");
-  check(cloth.region,
-    "the turbulence filter region is pinned to the tile, or the repeat shows seams");
-  check(/-240px,\s*-240px/.test(cloth.loop),
-    `the drift travels exactly one tile, so the loop has no seam (${cloth.loop})`);
+  check(layer.content === "none" || layer.name === "none",
+    `no full-screen animated layer sits over the page (${layer.content}/${layer.name})`);
 
   const sideways = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,
     client: document.documentElement.clientWidth,
   }));
   check(sideways.scroll <= sideways.client + 1,
-    `nothing on the strip pushes the page sideways (${sideways.scroll}/${sideways.client})`);
+    `nothing on the deck pushes the page sideways (${sideways.scroll}/${sideways.client})`);
 
   check(errors.length === 0, "hero deck: no console errors");
   if (errors.length) console.log("  errors:", errors.slice(0, 3));
@@ -367,25 +372,40 @@ const browser = await chromium.launch({
   check(gold.top >= 4.5 && gold.bottom >= 4.5,
     `the label clears AA against the ramp it actually sits on (${gold.top}:1 top, ${gold.bottom}:1 bottom)`);
 
-  /* the specular: parked off one side, crossing to the other on hover,
-     and not on --ease-out, which is all but spent in its first third and
-     fires the highlight across in a blink */
-  const sheen = async () =>
-    page.evaluate(() => {
-      const b = getComputedStyle(document.querySelector(".hero-actions .btn--solid"), "::before");
-      return { x: new DOMMatrix(b.transform).m41, seconds: parseFloat(b.transitionDuration) };
-    });
-  const parked = await sheen();
+  /* The glare runs on its own, always: a highlight that only shows up on
+     hover leaves the button looking painted until someone touches it,
+     which is what read as matte. Read from the keyframes rather than from
+     a sampled transform, which would depend on when the sample landed. */
+  const glare = await page.evaluate(() => {
+    const el = document.querySelector(".hero-actions .btn--solid");
+    const b = getComputedStyle(el, "::before");
+    const sheet = [...document.styleSheets].find((s) => (s.href || "").includes("main.css"));
+    const kf = [...sheet.cssRules].find(
+      (r) => r.type === CSSRule.KEYFRAMES_RULE && r.name === b.animationName);
+    const steps = kf ? [...kf.cssRules].map((k) => ({ at: k.keyText, x: k.style.transform })) : [];
+    return {
+      name: b.animationName,
+      seconds: parseFloat(b.animationDuration),
+      loops: b.animationIterationCount,
+      opacity: +b.opacity,
+      steps,
+    };
+  });
+  check(glare.name !== "none" && glare.loops === "infinite",
+    `the glare crosses on its own rather than waiting for a cursor (${glare.name})`);
+  check(glare.seconds >= 4,
+    `and does it slowly, with a wait between passes (${glare.seconds}s)`);
+  check(glare.steps.some((s) => /-1\d\d%/.test(s.x || "")) &&
+        glare.steps.some((s) => /translateX\(1\d\d%\)/.test(s.x || "")),
+    `it parks clear of the button at both ends (${glare.steps.map((s) => s.x).join(" / ")})`);
+
   const btnBox = await page.locator(".hero-actions .btn--solid").boundingBox();
   await page.mouse.move(btnBox.x + btnBox.width / 2, btnBox.y + btnBox.height / 2);
-  await page.waitForTimeout(950);
-  const crossed = await sheen();
-  check(parked.x < -btnBox.width * 0.9,
-    `the specular parks clear of the button (${parked.x.toFixed(0)}px)`);
-  check(crossed.x > btnBox.width * 0.9,
-    `and crosses to the far side on hover (${crossed.x.toFixed(0)}px)`);
-  check(parked.seconds >= 0.6,
-    `the crossing is slow enough to read as light (${parked.seconds}s)`);
+  await page.waitForTimeout(600);
+  const lit = await page.evaluate(() =>
+    +getComputedStyle(document.querySelector(".hero-actions .btn--solid"), "::before").opacity);
+  check(lit > glare.opacity,
+    `hover brings the same light up rather than retiming it (${glare.opacity} to ${lit})`);
 
   await page.close();
 }
